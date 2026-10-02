@@ -1,0 +1,697 @@
+/**
+ * ASTROWORLD — Panchanga (Five Limbs of Vedic Time) & Muhurat Engine
+ * Classical calculations for Tithi, Vara, Nakshatra, Yoga, Karana,
+ * Solar/Lunar Ephemeris, Auspicious/Inauspicious Muhurats, and Choghadiya.
+ */
+
+// @ts-ignore astronomy-engine has cjs/esm export
+import * as Astronomy from 'astronomy-engine';
+import { formatDMS, normalizeDegrees, calculateLahiriAyanamsha } from './astronomy.ts';
+import { NAKSHATRAS, ZODIAC_SIGNS, SANSKRIT_SIGNS } from './constants.ts';
+import { PanchangaFacts, PlanetName, PlanetPosition } from './types.ts';
+
+export const TITHI_NAMES: string[] = [
+  'Pratipada',
+  'Dwitiya',
+  'Tritiya',
+  'Chaturthi',
+  'Panchami',
+  'Shashthi',
+  'Saptami',
+  'Ashtami',
+  'Navami',
+  'Dashami',
+  'Ekadashi',
+  'Dwadashi',
+  'Trayodashi',
+  'Chaturdashi',
+  'Purnima (Full Moon)', // 15
+  'Pratipada',
+  'Dwitiya',
+  'Tritiya',
+  'Chaturthi',
+  'Panchami',
+  'Shashthi',
+  'Saptami',
+  'Ashtami',
+  'Navami',
+  'Dashami',
+  'Ekadashi',
+  'Dwadashi',
+  'Trayodashi',
+  'Chaturdashi',
+  'Amavasya (New Moon)', // 30
+];
+
+export const TITHI_DEITIES: string[] = [
+  'Agni (Fire)', 'Brahma (Creator)', 'Gauri / Shiva', 'Ganesha (Remover of Obstacles)',
+  'Nagas (Serpents)', 'Kartikeya (Commander)', 'Surya (Sun God)', 'Shiva (Rudra)',
+  'Durga (Supreme Shakti)', 'Yama (Dharma)', 'Vishnu (Preserver)', 'Vishnu / Hari',
+  'Kamadeva (Desire & Love)', 'Shiva (Rudra)', 'Moon / Satyanarayana',
+  'Agni (Fire)', 'Brahma (Creator)', 'Gauri / Shiva', 'Ganesha (Remover of Obstacles)',
+  'Nagas (Serpents)', 'Kartikeya (Commander)', 'Surya (Sun God)', 'Shiva (Rudra)',
+  'Durga (Supreme Shakti)', 'Yama (Dharma)', 'Vishnu (Preserver)', 'Vishnu / Hari',
+  'Kamadeva (Desire & Love)', 'Shiva (Rudra)', 'Pitris (Ancestral Deities)'
+];
+
+export const TITHI_NATURES: string[] = [
+  'Nanda (Joy & Delight)', 'Bhadra (Auspicious & Fortunate)', 'Jaya (Victory & Triumph)', 'Rikta (Void & Inauspicious for ventures)', 'Poorna (Complete & Fulfilling)',
+  'Nanda (Joy & Delight)', 'Bhadra (Auspicious & Fortunate)', 'Jaya (Victory & Triumph)', 'Rikta (Void & Inauspicious for ventures)', 'Poorna (Complete & Fulfilling)',
+  'Nanda (Joy & Delight)', 'Bhadra (Auspicious & Fortunate)', 'Jaya (Victory & Triumph)', 'Rikta (Void & Inauspicious for ventures)', 'Poorna (Complete & Fulfilling)',
+  'Nanda (Joy & Delight)', 'Bhadra (Auspicious & Fortunate)', 'Jaya (Victory & Triumph)', 'Rikta (Void & Inauspicious for ventures)', 'Poorna (Complete & Fulfilling)',
+  'Nanda (Joy & Delight)', 'Bhadra (Auspicious & Fortunate)', 'Jaya (Victory & Triumph)', 'Rikta (Void & Inauspicious for ventures)', 'Poorna (Complete & Fulfilling)',
+  'Nanda (Joy & Delight)', 'Bhadra (Auspicious & Fortunate)', 'Jaya (Victory & Triumph)', 'Rikta (Void & Inauspicious for ventures)', 'Poorna (Complete & Fulfilling)',
+];
+
+export const NITHYA_YOGAS: { name: string; quality: 'Auspicious' | 'Inauspicious' | 'Neutral'; meaning: string }[] = [
+  { name: 'Vishkambha', quality: 'Inauspicious', meaning: 'Obstacle or hindrance in initial phase' },
+  { name: 'Priti', quality: 'Auspicious', meaning: 'Love, affection, mutual harmony' },
+  { name: 'Ayushman', quality: 'Auspicious', meaning: 'Long life, vitality, good health' },
+  { name: 'Saubhagya', quality: 'Auspicious', meaning: 'Good fortune, prosperity, marital bliss' },
+  { name: 'Shobhana', quality: 'Auspicious', meaning: 'Splendid, elegant, auspicious undertakings' },
+  { name: 'Atiganda', quality: 'Inauspicious', meaning: 'Severe obstacles and discord' },
+  { name: 'Sukarma', quality: 'Auspicious', meaning: 'Virtuous deeds, righteous success' },
+  { name: 'Dhriti', quality: 'Auspicious', meaning: 'Patience, endurance, mental stability' },
+  { name: 'Shula', quality: 'Inauspicious', meaning: 'Pain, sharp challenges, avoidance advised' },
+  { name: 'Ganda', quality: 'Inauspicious', meaning: 'Knotty hurdles, vulnerability' },
+  { name: 'Vriddhi', quality: 'Auspicious', meaning: 'Growth, expansion, business progress' },
+  { name: 'Dhruva', quality: 'Auspicious', meaning: 'Fixed, permanence, long-term foundations' },
+  { name: 'Vyaghata', quality: 'Inauspicious', meaning: 'Aggressive impact, fierce energy' },
+  { name: 'Harshana', quality: 'Auspicious', meaning: 'Joy, celebration, delightful occurrences' },
+  { name: 'Vajra', quality: 'Inauspicious', meaning: 'Thunderbolt, diamond hardness, sudden shocks' },
+  { name: 'Siddhi', quality: 'Auspicious', meaning: 'Attainment of goals, mastery, success' },
+  { name: 'Vyatipata', quality: 'Inauspicious', meaning: 'Calamitous influence, avoid major transactions' },
+  { name: 'Variyan', quality: 'Auspicious', meaning: 'Comfort, wealth, ease of life' },
+  { name: 'Parigha', quality: 'Inauspicious', meaning: 'Iron bar, confinement, initial blockage' },
+  { name: 'Shiva', quality: 'Auspicious', meaning: 'Pure, auspicious, supreme benevolence' },
+  { name: 'Siddha', quality: 'Auspicious', meaning: 'Accomplished, spiritual perfection' },
+  { name: 'Sadhya', quality: 'Auspicious', meaning: 'Feasible, achievable, fulfillment' },
+  { name: 'Shubha', quality: 'Auspicious', meaning: 'Pure good, fortunate outcomes' },
+  { name: 'Shukla', quality: 'Auspicious', meaning: 'Bright, radiant, intellectual clarity' },
+  { name: 'Brahma', quality: 'Auspicious', meaning: 'Divine knowledge, supreme wisdom' },
+  { name: 'Indra', quality: 'Auspicious', meaning: 'Leadership, authority, high status' },
+  { name: 'Vaidhriti', quality: 'Inauspicious', meaning: 'Divisive energy, avoid auspicious events' },
+];
+
+export const VARA_NAMES: { name: string; english: string; lord: PlanetName; deity: string }[] = [
+  { name: 'Ravivara', english: 'Sunday', lord: 'Sun', deity: 'Surya Narayana' },
+  { name: 'Somavara', english: 'Monday', lord: 'Moon', deity: 'Lord Shiva' },
+  { name: 'Mangalavara', english: 'Tuesday', lord: 'Mars', deity: 'Lord Kartikeya / Hanuman' },
+  { name: 'Budhavara', english: 'Wednesday', lord: 'Mercury', deity: 'Lord Maha Vishnu' },
+  { name: 'Guruvara', english: 'Thursday', lord: 'Jupiter', deity: 'Lord Brahma / Brihaspati' },
+  { name: 'Shukravara', english: 'Friday', lord: 'Venus', deity: 'Goddess Mahalakshmi' },
+  { name: 'Shanivara', english: 'Saturday', lord: 'Saturn', deity: 'Lord Shani / Yama' },
+];
+
+export const MOVABLE_KARANAS = [
+  { name: 'Bava', deity: 'Indra', nature: 'Auspicious for ceremonies and undertakings' },
+  { name: 'Balava', deity: 'Brahma', nature: 'Auspicious for spiritual rituals and learning' },
+  { name: 'Kaulava', deity: 'Mitra', nature: 'Auspicious for friendships and relationships' },
+  { name: 'Taitila', deity: 'Aryaman', nature: 'Auspicious for building wealth and honor' },
+  { name: 'Garija', deity: 'Bhumi (Earth)', nature: 'Auspicious for farming, foundation, and planting' },
+  { name: 'Vanija', deity: 'Manibhadra', nature: 'Auspicious for trade, commerce, and sales' },
+  { name: 'Vishti (Bhadra)', deity: 'Yama', nature: 'Inauspicious for auspicious starts, suitable for destructive/defensive work' },
+];
+
+export const FIXED_KARANAS: Record<number, { name: string; deity: string; nature: string }> = {
+  1: { name: 'Kimstughna', deity: 'Maruts', nature: 'Auspicious for starting benevolent ventures' },
+  58: { name: 'Shakuni', deity: 'Kratu', nature: 'Auspicious for medicine, arbitration, and legal work' },
+  59: { name: 'Chatushpada', deity: 'Ishana', nature: 'Auspicious for cattle, estate, and government affairs' },
+  60: { name: 'Naga', deity: 'Nagas', nature: 'Suitable for aggressive, underground, or secret operations' },
+};
+
+export interface ComprehensiveDailyPanchanga {
+  date: Date;
+  formattedDate: string;
+  cityName: string;
+  latitude: number;
+  longitude: number;
+  timezone: string;
+  panchanga: PanchangaFacts;
+  tithiDetail: {
+    number: number;
+    name: string;
+    paksha: 'Shukla' | 'Krishna';
+    completedPercent: number;
+    deity: string;
+    nature: string;
+  };
+  nakshatraDetail: {
+    number: number;
+    name: string;
+    lord: PlanetName;
+    pada: number;
+    completedPercent: number;
+    deity: string;
+    symbol: string;
+  };
+  yogaDetail: {
+    number: number;
+    name: string;
+    quality: 'Auspicious' | 'Inauspicious' | 'Neutral';
+    meaning: string;
+  };
+  karanaDetail: {
+    number: number;
+    name: string;
+    type: 'Chara' | 'Sthira';
+    deity: string;
+    nature: string;
+  };
+  varaDetail: {
+    name: string;
+    english: string;
+    lord: PlanetName;
+    deity: string;
+  };
+  solarLunar: {
+    sunrise: string;
+    sunset: string;
+    moonrise: string;
+    moonset: string;
+    dayDuration: string;
+    nightDuration: string;
+    sunSign: string;
+    sunDegree: string;
+    moonSign: string;
+    moonDegree: string;
+    ayanamsa: string;
+  };
+  muhurats: {
+    abhijit: { start: string; end: string; status: 'Highly Auspicious' | 'Avoid'; description: string };
+    brahma: { start: string; end: string; status: 'Highly Auspicious'; description: string };
+    amritKaal: { start: string; end: string; status: 'Auspicious'; description: string };
+    vijaya: { start: string; end: string; status: 'Auspicious'; description: string };
+    rahuKaal: { start: string; end: string; status: 'Inauspicious'; description: string };
+    yamaganda: { start: string; end: string; status: 'Inauspicious'; description: string };
+    gulika: { start: string; end: string; status: 'Inauspicious'; description: string };
+    durMuhurat: { start: string; end: string; status: 'Inauspicious'; description: string };
+  };
+  choghadiyaDay: Array<{
+    period: number;
+    name: string;
+    type: 'Auspicious' | 'Inauspicious' | 'Neutral';
+    start: string;
+    end: string;
+    ruler: string;
+    meaning: string;
+    isActive: boolean;
+  }>;
+  choghadiyaNight: Array<{
+    period: number;
+    name: string;
+    type: 'Auspicious' | 'Inauspicious' | 'Neutral';
+    start: string;
+    end: string;
+    ruler: string;
+    meaning: string;
+    isActive: boolean;
+  }>;
+}
+
+/**
+ * Format Date to Local Time String with HH:MM AM/PM
+ */
+export function formatLocalTime(date: Date, timezone: string): string {
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone || 'Asia/Kolkata',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(date);
+  } catch (e) {
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  }
+}
+
+/**
+ * Calculate Panchanga facts from planetary positions and birth date.
+ */
+export function calculatePanchanga(
+  planets: PlanetPosition[],
+  birthDateUtc: Date,
+  ayanamsaDeg: number
+): PanchangaFacts {
+  const sun = planets.find((p) => p.name === 'Sun') || planets[0];
+  const moon = planets.find((p) => p.name === 'Moon') || planets[1];
+
+  // 1. Tithi: (Moon - Sun) % 360 / 12
+  const elongation = normalizeDegrees(moon.siderealLongitude - sun.siderealLongitude);
+  const tithiIndex = Math.min(29, Math.floor(elongation / 12.0));
+  const tithiNum = tithiIndex + 1;
+  const tithiName = TITHI_NAMES[tithiIndex];
+  const paksha = tithiNum <= 15 ? 'Shukla' : 'Krishna';
+  const tithiCompletedPercent = ((elongation % 12.0) / 12.0) * 100;
+
+  // 2. Vara: Day of the week
+  const dayOfWeek = birthDateUtc.getUTCDay(); // 0=Sun .. 6=Sat
+  const varaInfo = VARA_NAMES[dayOfWeek];
+
+  // 3. Nakshatra: Moon's sidereal position
+  const moonNakSpan = 360.0 / 27.0;
+  const nakIndex = Math.min(26, Math.floor(moon.siderealLongitude / moonNakSpan));
+  const nak = NAKSHATRAS[nakIndex];
+  const nakElapsed = moon.siderealLongitude - nak.startDegree;
+  const pada = Math.min(4, Math.floor(nakElapsed / (moonNakSpan / 4)) + 1);
+  const nakCompletedPercent = (nakElapsed / moonNakSpan) * 100;
+
+  // 4. Nithya Yoga: (Sun + Moon) % 360 / 13°20'
+  const sumDegrees = normalizeDegrees(sun.siderealLongitude + moon.siderealLongitude);
+  const yogaIndex = Math.min(26, Math.floor(sumDegrees / moonNakSpan));
+  const yogaObj = NITHYA_YOGAS[yogaIndex];
+
+  // 5. Karana: Elongation divided by 6°
+  const karanaIndex = Math.min(59, Math.floor(elongation / 6.0));
+  const karanaNum = karanaIndex + 1;
+  let karanaName = '';
+  let karanaType: 'Chara' | 'Sthira' = 'Chara';
+
+  if (karanaNum === 1) {
+    karanaName = FIXED_KARANAS[1].name;
+    karanaType = 'Sthira';
+  } else if (karanaNum >= 58) {
+    karanaName = FIXED_KARANAS[karanaNum]?.name || 'Naga';
+    karanaType = 'Sthira';
+  } else {
+    // 7 repeating movable karanas
+    karanaName = MOVABLE_KARANAS[(karanaNum - 2) % 7].name;
+    karanaType = 'Chara';
+  }
+
+  return {
+    tithi: {
+      number: tithiNum,
+      name: tithiName,
+      paksha,
+      completedPercent: Math.round(tithiCompletedPercent * 10) / 10,
+    },
+    vara: {
+      number: dayOfWeek,
+      name: varaInfo.name,
+      rulingPlanet: varaInfo.lord,
+    },
+    nakshatra: {
+      number: nak.number,
+      name: nak.name,
+      lord: nak.ruler,
+      pada,
+      completedPercent: Math.round(nakCompletedPercent * 10) / 10,
+    },
+    yoga: {
+      number: yogaIndex + 1,
+      name: yogaObj.name,
+    },
+    karana: {
+      number: karanaNum,
+      name: karanaName,
+      type: karanaType,
+    },
+    sunriseUtc: '06:00:00Z',
+    sunsetUtc: '18:15:00Z',
+    ayanamsa: {
+      type: 'lahiri',
+      valueDegrees: ayanamsaDeg,
+      formatted: formatDMS(ayanamsaDeg),
+    },
+  };
+}
+
+/**
+ * Choghadiya Sequence definitions
+ */
+const CHOGHADIYA_PROPERTIES: Record<string, { type: 'Auspicious' | 'Inauspicious' | 'Neutral'; ruler: string; meaning: string }> = {
+  Amrit: { type: 'Auspicious', ruler: 'Moon', meaning: 'Nectar — Supreme auspiciousness, ideal for all ventures' },
+  Shubh: { type: 'Auspicious', ruler: 'Jupiter', meaning: 'Good — Ideal for sacred ceremonies, celebrations, and beginnings' },
+  Labh: { type: 'Auspicious', ruler: 'Mercury', meaning: 'Gain — Excellent for commerce, financial transactions, and education' },
+  Char: { type: 'Neutral', ruler: 'Venus', meaning: 'Movable — Favorable for travel, dynamic tasks, and machinery' },
+  Rog: { type: 'Inauspicious', ruler: 'Mars', meaning: 'Disease — Avoid initiating medical treatments or starting ventures' },
+  Kaal: { type: 'Inauspicious', ruler: 'Saturn', meaning: 'Loss & Danger — Avoid major activities and new contracts' },
+  Udveg: { type: 'Inauspicious', ruler: 'Sun', meaning: 'Anxiety — Avoid government interactions, disputes, and investments' },
+};
+
+const DAY_CHOGHADIYA_ORDER = [
+  ['Udveg', 'Char', 'Labh', 'Amrit', 'Kaal', 'Shubh', 'Rog', 'Udveg'], // Sunday (0)
+  ['Amrit', 'Kaal', 'Shubh', 'Rog', 'Udveg', 'Char', 'Labh', 'Amrit'], // Monday (1)
+  ['Rog', 'Udveg', 'Char', 'Labh', 'Amrit', 'Kaal', 'Shubh', 'Rog'], // Tuesday (2)
+  ['Labh', 'Amrit', 'Kaal', 'Shubh', 'Rog', 'Udveg', 'Char', 'Labh'], // Wednesday (3)
+  ['Shubh', 'Rog', 'Udveg', 'Char', 'Labh', 'Amrit', 'Kaal', 'Shubh'], // Thursday (4)
+  ['Char', 'Labh', 'Amrit', 'Kaal', 'Shubh', 'Rog', 'Udveg', 'Char'], // Friday (5)
+  ['Kaal', 'Shubh', 'Rog', 'Udveg', 'Char', 'Labh', 'Amrit', 'Kaal'], // Saturday (6)
+];
+
+const NIGHT_CHOGHADIYA_ORDER = [
+  ['Shubh', 'Amrit', 'Char', 'Rog', 'Kaal', 'Labh', 'Udveg', 'Shubh'], // Sunday (0)
+  ['Char', 'Rog', 'Kaal', 'Labh', 'Udveg', 'Shubh', 'Amrit', 'Char'], // Monday (1)
+  ['Kaal', 'Labh', 'Udveg', 'Shubh', 'Amrit', 'Char', 'Rog', 'Kaal'], // Tuesday (2)
+  ['Udveg', 'Shubh', 'Amrit', 'Char', 'Rog', 'Kaal', 'Labh', 'Udveg'], // Wednesday (3)
+  ['Amrit', 'Char', 'Rog', 'Kaal', 'Labh', 'Udveg', 'Shubh', 'Amrit'], // Thursday (4)
+  ['Rog', 'Kaal', 'Labh', 'Udveg', 'Shubh', 'Amrit', 'Char', 'Rog'], // Friday (5)
+  ['Labh', 'Udveg', 'Shubh', 'Amrit', 'Char', 'Rog', 'Kaal', 'Labh'], // Saturday (6)
+];
+
+/**
+ * Real-time Comprehensive Daily Panchanga and Muhurat Calculator
+ */
+export function calculateComprehensiveDailyPanchanga(
+  date: Date = new Date(),
+  latitude: number = 28.6139,
+  longitude: number = 77.2090,
+  timezone: string = 'Asia/Kolkata',
+  cityName: string = 'New Delhi, India'
+): ComprehensiveDailyPanchanga {
+  const observer = new Astronomy.Observer(latitude, longitude, 0);
+
+  // Astronomy AstroTime
+  const astroTime = new Astronomy.AstroTime(date);
+  const ayanamsaDeg = calculateLahiriAyanamsha(astroTime);
+
+  // Sun and Moon positions
+  const sunEcliptic = Astronomy.Ecliptic(Astronomy.GeoVector(Astronomy.Body.Sun, astroTime, true));
+  const moonEcliptic = Astronomy.Ecliptic(Astronomy.GeoVector(Astronomy.Body.Moon, astroTime, true));
+
+  const sunTropLon = normalizeDegrees(sunEcliptic.elon);
+  const moonTropLon = normalizeDegrees(moonEcliptic.elon);
+
+  const sunSidLon = normalizeDegrees(sunTropLon - ayanamsaDeg);
+  const moonSidLon = normalizeDegrees(moonTropLon - ayanamsaDeg);
+
+  const sunSignIdx = Math.floor(sunSidLon / 30);
+  const moonSignIdx = Math.floor(moonSidLon / 30);
+
+  const sunSign = ZODIAC_SIGNS[sunSignIdx];
+  const moonSign = ZODIAC_SIGNS[moonSignIdx];
+
+  const dummyPlanets: PlanetPosition[] = [
+    {
+      name: 'Sun',
+      sanskritName: 'Surya',
+      tropicalLongitude: sunTropLon,
+      siderealLongitude: sunSidLon,
+      sign: sunSign,
+      signIndex: sunSignIdx,
+      degreeInSign: sunSidLon % 30,
+      formattedDegree: formatDMS(sunSidLon % 30),
+      houseNumber: 1,
+      nakshatra: '',
+      nakshatraNumber: 1,
+      nakshatraLord: 'Ketu',
+      pada: 1,
+      speed: 1,
+      retrograde: false,
+      combust: false,
+      dignity: 'OWN_SIGN',
+      dignityScore: 100,
+      signLord: 'Sun',
+      naturalRelationshipToLord: 'FRIEND',
+    },
+    {
+      name: 'Moon',
+      sanskritName: 'Chandra',
+      tropicalLongitude: moonTropLon,
+      siderealLongitude: moonSidLon,
+      sign: moonSign,
+      signIndex: moonSignIdx,
+      degreeInSign: moonSidLon % 30,
+      formattedDegree: formatDMS(moonSidLon % 30),
+      houseNumber: 1,
+      nakshatra: '',
+      nakshatraNumber: 1,
+      nakshatraLord: 'Ketu',
+      pada: 1,
+      speed: 13,
+      retrograde: false,
+      combust: false,
+      dignity: 'OWN_SIGN',
+      dignityScore: 100,
+      signLord: 'Moon',
+      naturalRelationshipToLord: 'FRIEND',
+    },
+  ];
+
+  const basePanchanga = calculatePanchanga(dummyPlanets, date, ayanamsaDeg);
+
+  // Precise Sunrise & Sunset calculations
+  const startOfDayUtc = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0));
+  const sunRiseResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, +1, startOfDayUtc, 1);
+  const sunSetResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, -1, startOfDayUtc, 1);
+
+  const nextDayUtc = new Date(startOfDayUtc.getTime() + 24 * 3600 * 1000);
+  const nextSunRiseResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, +1, nextDayUtc, 1);
+
+  const sunriseDate = sunRiseResult ? sunRiseResult.date : new Date(startOfDayUtc.getTime() + 6 * 3600 * 1000);
+  const sunsetDate = sunSetResult ? sunSetResult.date : new Date(startOfDayUtc.getTime() + 18 * 3600 * 1000);
+  const nextSunriseDate = nextSunRiseResult ? nextSunRiseResult.date : new Date(sunriseDate.getTime() + 24 * 3600 * 1000);
+
+  // Moonrise & Moonset
+  const moonRiseResult = Astronomy.SearchRiseSet(Astronomy.Body.Moon, observer, +1, startOfDayUtc, 1);
+  const moonSetResult = Astronomy.SearchRiseSet(Astronomy.Body.Moon, observer, -1, startOfDayUtc, 1);
+  const moonriseStr = moonRiseResult ? formatLocalTime(moonRiseResult.date, timezone) : 'No Moonrise';
+  const moonsetStr = moonSetResult ? formatLocalTime(moonSetResult.date, timezone) : 'No Moonset';
+
+  // Durations
+  const dayMs = Math.max(1000, sunsetDate.getTime() - sunriseDate.getTime());
+  const nightMs = Math.max(1000, nextSunriseDate.getTime() - sunsetDate.getTime());
+
+  const dayHrs = Math.floor(dayMs / (3600 * 1000));
+  const dayMins = Math.floor((dayMs % (3600 * 1000)) / (60 * 1000));
+  const nightHrs = Math.floor(nightMs / (3600 * 1000));
+  const nightMins = Math.floor((nightMs % (3600 * 1000)) / (60 * 1000));
+
+  const dayPartMs = dayMs / 8;
+  const nightPartMs = nightMs / 8;
+  const dayOfWeek = date.getDay(); // 0=Sun .. 6=Sat
+
+  // Rahu Kaal, Yamaganda, Gulika Kaal portions (1-indexed 1..8)
+  const rahuPortions = [8, 2, 7, 5, 6, 4, 3]; // Sun=8th, Mon=2nd, Tue=7th, Wed=5th, Thu=6th, Fri=4th, Sat=3rd
+  const yamaPortions = [5, 4, 3, 2, 1, 7, 6];
+  const guliPortions = [7, 6, 5, 4, 3, 2, 1];
+
+  const getWindow = (portionIdx: number) => {
+    const start = new Date(sunriseDate.getTime() + (portionIdx - 1) * dayPartMs);
+    const end = new Date(sunriseDate.getTime() + portionIdx * dayPartMs);
+    return {
+      start: formatLocalTime(start, timezone),
+      end: formatLocalTime(end, timezone),
+    };
+  };
+
+  const rahuWindow = getWindow(rahuPortions[dayOfWeek]);
+  const yamaWindow = getWindow(yamaPortions[dayOfWeek]);
+  const guliWindow = getWindow(guliPortions[dayOfWeek]);
+
+  // Abhijit Muhurat: 8th Muhurat of the day (daytime / 15 * 7 to 8)
+  const muhurat15Ms = dayMs / 15;
+  const abhijitStart = new Date(sunriseDate.getTime() + 7 * muhurat15Ms);
+  const abhijitEnd = new Date(sunriseDate.getTime() + 8 * muhurat15Ms);
+  const isAbhijitAuspicious = dayOfWeek !== 3; // Avoided on Wednesday (Budhavara)
+
+  // Brahma Muhurat: 2 Muhurats before sunrise (96 min to 48 min before sunrise)
+  const brahmaStart = new Date(sunriseDate.getTime() - 96 * 60 * 1000);
+  const brahmaEnd = new Date(sunriseDate.getTime() - 48 * 60 * 1000);
+
+  // Vijaya Muhurat: 11th Muhurat of the day (10 to 11 of 15)
+  const vijayaStart = new Date(sunriseDate.getTime() + 10 * muhurat15Ms);
+  const vijayaEnd = new Date(sunriseDate.getTime() + 11 * muhurat15Ms);
+
+  // Amrit Kaal (auspicious time window)
+  const amritKaalStart = new Date(sunriseDate.getTime() + 4 * muhurat15Ms);
+  const amritKaalEnd = new Date(sunriseDate.getTime() + 5.5 * muhurat15Ms);
+
+  // Dur Muhurat (inauspicious daytime interval)
+  const durMuhuratStart = new Date(sunriseDate.getTime() + (dayOfWeek % 5 + 1) * muhurat15Ms);
+  const durMuhuratEnd = new Date(durMuhuratStart.getTime() + muhurat15Ms);
+
+  // Choghadiya Day & Night
+  const nowMs = date.getTime();
+
+  const dayChoghadiyaNames = DAY_CHOGHADIYA_ORDER[dayOfWeek];
+  const choghadiyaDay = dayChoghadiyaNames.map((name, idx) => {
+    const sDate = new Date(sunriseDate.getTime() + idx * dayPartMs);
+    const eDate = new Date(sunriseDate.getTime() + (idx + 1) * dayPartMs);
+    const props = CHOGHADIYA_PROPERTIES[name];
+    const isActive = nowMs >= sDate.getTime() && nowMs < eDate.getTime();
+    return {
+      period: idx + 1,
+      name,
+      type: props.type,
+      start: formatLocalTime(sDate, timezone),
+      end: formatLocalTime(eDate, timezone),
+      ruler: props.ruler,
+      meaning: props.meaning,
+      isActive,
+    };
+  });
+
+  const nightChoghadiyaNames = NIGHT_CHOGHADIYA_ORDER[dayOfWeek];
+  const choghadiyaNight = nightChoghadiyaNames.map((name, idx) => {
+    const sDate = new Date(sunsetDate.getTime() + idx * nightPartMs);
+    const eDate = new Date(sunsetDate.getTime() + (idx + 1) * nightPartMs);
+    const props = CHOGHADIYA_PROPERTIES[name];
+    const isActive = nowMs >= sDate.getTime() && nowMs < eDate.getTime();
+    return {
+      period: idx + 1,
+      name,
+      type: props.type,
+      start: formatLocalTime(sDate, timezone),
+      end: formatLocalTime(eDate, timezone),
+      ruler: props.ruler,
+      meaning: props.meaning,
+      isActive,
+    };
+  });
+
+  // Tithi Details
+  const tithiIdx = basePanchanga.tithi.number - 1;
+  const tithiDetail = {
+    number: basePanchanga.tithi.number,
+    name: basePanchanga.tithi.name,
+    paksha: basePanchanga.tithi.paksha,
+    completedPercent: basePanchanga.tithi.completedPercent,
+    deity: TITHI_DEITIES[tithiIdx] || 'Supreme Divinity',
+    nature: TITHI_NATURES[tithiIdx] || 'Neutral',
+  };
+
+  // Nakshatra Details
+  const nakIdx = basePanchanga.nakshatra.number - 1;
+  const nakObj = NAKSHATRAS[nakIdx] || NAKSHATRAS[0];
+  const nakshatraDetail = {
+    number: basePanchanga.nakshatra.number,
+    name: basePanchanga.nakshatra.name,
+    lord: basePanchanga.nakshatra.lord,
+    pada: basePanchanga.nakshatra.pada,
+    completedPercent: basePanchanga.nakshatra.completedPercent,
+    deity: nakObj.deity,
+    symbol: nakObj.sanskritName,
+  };
+
+  // Yoga Details
+  const yogaIdx = basePanchanga.yoga.number - 1;
+  const yogaObj = NITHYA_YOGAS[yogaIdx] || NITHYA_YOGAS[0];
+  const yogaDetail = {
+    number: basePanchanga.yoga.number,
+    name: yogaObj.name,
+    quality: yogaObj.quality,
+    meaning: yogaObj.meaning,
+  };
+
+  // Karana Details
+  const karanaNum = basePanchanga.karana.number;
+  let karanaDeity = 'Universal Energy';
+  let karanaNature = 'Regular worldly actions';
+
+  if (FIXED_KARANAS[karanaNum]) {
+    karanaDeity = FIXED_KARANAS[karanaNum].deity;
+    karanaNature = FIXED_KARANAS[karanaNum].nature;
+  } else {
+    const movObj = MOVABLE_KARANAS[(karanaNum - 2) % 7];
+    if (movObj) {
+      karanaDeity = movObj.deity;
+      karanaNature = movObj.nature;
+    }
+  }
+
+  const karanaDetail = {
+    number: karanaNum,
+    name: basePanchanga.karana.name,
+    type: basePanchanga.karana.type,
+    deity: karanaDeity,
+    nature: karanaNature,
+  };
+
+  const varaDetail = {
+    name: VARA_NAMES[dayOfWeek].name,
+    english: VARA_NAMES[dayOfWeek].english,
+    lord: VARA_NAMES[dayOfWeek].lord,
+    deity: VARA_NAMES[dayOfWeek].deity,
+  };
+
+  const formattedDateStr = date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  return {
+    date,
+    formattedDate: formattedDateStr,
+    cityName,
+    latitude,
+    longitude,
+    timezone,
+    panchanga: basePanchanga,
+    tithiDetail,
+    nakshatraDetail,
+    yogaDetail,
+    karanaDetail,
+    varaDetail,
+    solarLunar: {
+      sunrise: formatLocalTime(sunriseDate, timezone),
+      sunset: formatLocalTime(sunsetDate, timezone),
+      moonrise: moonriseStr,
+      moonset: moonsetStr,
+      dayDuration: `${dayHrs}h ${dayMins}m`,
+      nightDuration: `${nightHrs}h ${nightMins}m`,
+      sunSign: `${sunSign} (${SANSKRIT_SIGNS[sunSign]})`,
+      sunDegree: formatDMS(sunSidLon % 30),
+      moonSign: `${moonSign} (${SANSKRIT_SIGNS[moonSign]})`,
+      moonDegree: formatDMS(moonSidLon % 30),
+      ayanamsa: formatDMS(ayanamsaDeg),
+    },
+    muhurats: {
+      abhijit: {
+        start: formatLocalTime(abhijitStart, timezone),
+        end: formatLocalTime(abhijitEnd, timezone),
+        status: isAbhijitAuspicious ? 'Highly Auspicious' : 'Avoid',
+        description: isAbhijitAuspicious
+          ? 'Midday golden window, removes obstacles and brings victory for major deeds.'
+          : 'Avoided on Wednesday (Budhavara) as per classical Muhurat rules.',
+      },
+      brahma: {
+        start: formatLocalTime(brahmaStart, timezone),
+        end: formatLocalTime(brahmaEnd, timezone),
+        status: 'Highly Auspicious',
+        description: 'Pre-dawn divine hour, optimal for meditation, study, yoga, and spiritual prayer.',
+      },
+      amritKaal: {
+        start: formatLocalTime(amritKaalStart, timezone),
+        end: formatLocalTime(amritKaalEnd, timezone),
+        status: 'Auspicious',
+        description: 'Nectar hour for starting important journeys, ceremonies, or business deals.',
+      },
+      vijaya: {
+        start: formatLocalTime(vijayaStart, timezone),
+        end: formatLocalTime(vijayaEnd, timezone),
+        status: 'Auspicious',
+        description: 'Victorious hour, ideal for launching lawsuits, debates, exams, and competitions.',
+      },
+      rahuKaal: {
+        start: rahuWindow.start,
+        end: rahuWindow.end,
+        status: 'Inauspicious',
+        description: 'Rahu-governed period. Avoid beginning travel, signing agreements, or buying assets.',
+      },
+      yamaganda: {
+        start: yamaWindow.start,
+        end: yamaWindow.end,
+        status: 'Inauspicious',
+        description: 'Yamaganda period. Highly discouraged for vital celebrations and financial investments.',
+      },
+      gulika: {
+        start: guliWindow.start,
+        end: guliWindow.end,
+        status: 'Inauspicious',
+        description: 'Saturnian Gulika window. Avoid starting new partnerships or auspicious undertakings.',
+      },
+      durMuhurat: {
+        start: formatLocalTime(durMuhuratStart, timezone),
+        end: formatLocalTime(durMuhuratEnd, timezone),
+        status: 'Inauspicious',
+        description: 'Inauspicious planetary alignment duration for the day.',
+      },
+    },
+    choghadiyaDay,
+    choghadiyaNight,
+  };
+}

@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 9999px;
+  }
+}
+
+/* ========================================================================= */
+/* STRICT PRINT & PDF ISOLATION STYLES                                       */
+/* Guarantees that only the professional report document is printed          */
+/* and hides all website navigation, headers, footers, buttons, and widgets. */
+/* ========================================================================= */
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  /* Universal print resets */
+  *, *:before, *:after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Complete suppression of app chrome, website navigation, and web widgets */
+  header,
+  footer,
+  nav,
+  aside,
+  button,
+  .no-print,
+  .site-header,
+  .site-footer,
+  .navbar,
+  .fixed,
+  .sticky,
+  [role="dialog"]:not(.print-include),
+  #astro-bot-widget,
+  .support-chat-btn {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Unconstrain main layout container for print */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  /* AstroWorld Report Root & Page Flow */
+  .astroworld-report-root {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  .report-page {
+    width: 210mm !important;
+    height: 297mm !important;
+    max-height: 297mm !important;
+    min-height: 297mm !important;
+    padding: 16mm 15mm 15mm 15mm !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+    page-break-before: auto !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    position: relative !important;
+    overflow: hidden !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+  }
+
+  .report-page-cover {
+    background: radial-gradient(circle at 50% 25%, #FAF6EE 0%, #F5EFEB 100%) !important;
+  }
+}
