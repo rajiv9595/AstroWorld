@@ -1,0 +1,6 @@
+{
+  "name": "AstroWorld",
+  "description": "Production-grade classical Vedic astrology application with canonical astronomical calculation, Parashari rules, Shodashavarga, Vimshottari Dasha, Shadbala, Ashtakavarga, Gochara transits, and grounded AI Astrologer.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

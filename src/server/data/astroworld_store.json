@@ -1,0 +1,31 @@
+{
+  "users": [
+    {
+      "id": "usr_9b3322ef39d1",
+      "name": "Rajeev Medapati",
+      "email": "testuser@astroworld.com",
+      "passwordHash": "b09ac20b459a3806cfbb18fd950bce3527d91e44ffe26160a98e27b976982a5fe999c3f3b957a6e66d24e280c142f5b81455f838e195ddf56cc00ea6fd654ae4",
+      "salt": "d6a536b2c7dc629edbab215a5d68d408",
+      "createdAt": "2026-10-02T09:24:00.995Z"
+    }
+  ],
+  "charts": [
+    {
+      "userId": "usr_9b3322ef39d1",
+      "name": "Rajeev Birth Chart",
+      "year": 2000,
+      "month": 5,
+      "day": 15,
+      "hour": 14,
+      "minute": 30,
+      "second": 0,
+      "latitude": 16.9891,
+      "longitude": 82.2475,
+      "timezone": "Asia/Kolkata",
+      "cityName": "Kakinada, India",
+      "chartStyle": "NORTH_INDIAN",
+      "id": "chart_283560187968",
+      "createdAt": "2026-10-02T09:24:19.234Z"
+    }
+  ]
+}
