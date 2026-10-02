@@ -13,6 +13,7 @@ import {
   LogOut,
   ChevronDown,
   Bookmark,
+  Sparkles,
 } from 'lucide-react';
 
 export type ProductTab =
@@ -174,7 +175,6 @@ export const AstroWorldHeader: React.FC<AstroWorldHeaderProps> = ({
                     'transits',
                     'predictions',
                     'report',
-                    'ai',
                     'research',
                   ].includes(activeTab)
                     ? 'text-orange-500 font-extrabold border-b-2 border-orange-500 pb-0.5'
@@ -182,6 +182,21 @@ export const AstroWorldHeader: React.FC<AstroWorldHeaderProps> = ({
                 }`}
               >
                 DASHBOARD
+              </button>
+
+              <button
+                onClick={() => onSelectTab('ai')}
+                className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-xs ${
+                  activeTab === 'ai'
+                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md ring-2 ring-orange-300'
+                    : 'text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200'
+                }`}
+              >
+                <Sparkles size={13} className={activeTab === 'ai' ? 'animate-spin' : 'text-amber-500'} />
+                <span>AI ASTROLOGER</span>
+                <span className="hidden lg:inline bg-amber-400 text-slate-900 text-[9px] font-extrabold px-1.5 py-0.2 rounded-full uppercase tracking-tighter">
+                  Vedic
+                </span>
               </button>
 
               {/* User Dropdown or Login Button */}

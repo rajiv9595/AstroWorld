@@ -46,7 +46,23 @@ import { PredictionsView } from './views/PredictionsView.tsx';
 import { ReportView } from './views/ReportView.tsx';
 import { AIAstrologerView } from './views/AIAstrologerView.tsx';
 import { ResearchView } from './views/ResearchView.tsx';
-import { Compass, User, Bookmark, ChevronDown, Check, Bot } from 'lucide-react';
+import {
+  Compass,
+  User,
+  Bookmark,
+  ChevronDown,
+  Check,
+  Bot,
+  Sparkles,
+  Layers,
+  Clock,
+  Star,
+  Shield,
+  TrendingUp,
+  Calendar,
+  Heart,
+  FileText,
+} from 'lucide-react';
 
 export default function App() {
   const [isSupportChatOpen, setIsSupportChatOpen] = useState(false);
@@ -459,7 +475,161 @@ export default function App() {
               </button>
             </div>
 
-            {/* Sub-view Content */}
+            {/* Kundli Workspace Navigation Tabs Bar */}
+            <div className="no-print bg-white border border-slate-200 rounded-2xl p-1.5 shadow-xs overflow-x-auto scrollbar-none flex items-center gap-1 text-xs">
+              <button
+                onClick={() => handleTabChange('ai')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer shrink-0 ${
+                  activeTab === 'ai'
+                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-xs'
+                    : 'bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200'
+                }`}
+              >
+                <Sparkles size={13} className={activeTab === 'ai' ? 'animate-spin' : 'text-amber-500'} />
+                <span>AI Astrologer</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange('overview')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer shrink-0 ${
+                  activeTab === 'overview'
+                    ? 'bg-[#162058] text-white font-bold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Compass size={13} />
+                <span>Kundli (D1)</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange('vargas')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer shrink-0 ${
+                  activeTab === 'vargas'
+                    ? 'bg-[#162058] text-white font-bold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Layers size={13} />
+                <span>Vargas (D9/D10)</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange('planets')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer shrink-0 ${
+                  activeTab === 'planets'
+                    ? 'bg-[#162058] text-white font-bold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <span>Planets</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange('dasha')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer shrink-0 ${
+                  activeTab === 'dasha'
+                    ? 'bg-[#162058] text-white font-bold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Clock size={13} />
+                <span>Vimshottari Dasha</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange('yogas')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer shrink-0 ${
+                  activeTab === 'yogas'
+                    ? 'bg-[#162058] text-white font-bold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Star size={13} />
+                <span>Yogas &amp; Doshas</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange('strength')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer shrink-0 ${
+                  activeTab === 'strength'
+                    ? 'bg-[#162058] text-white font-bold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Shield size={13} />
+                <span>Shadbala</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange('predictions')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer shrink-0 ${
+                  activeTab === 'predictions'
+                    ? 'bg-[#162058] text-white font-bold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <TrendingUp size={13} />
+                <span>Predictions</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange('transits')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer shrink-0 ${
+                  activeTab === 'transits'
+                    ? 'bg-[#162058] text-white font-bold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Calendar size={13} />
+                <span>Transits</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange('jaimini')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer shrink-0 ${
+                  activeTab === 'jaimini'
+                    ? 'bg-[#162058] text-white font-bold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Heart size={13} />
+                <span>Jaimini</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange('ashtakavarga')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer shrink-0 ${
+                  activeTab === 'ashtakavarga'
+                    ? 'bg-[#162058] text-white font-bold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <span>Ashtakavarga</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange('panchanga')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer shrink-0 ${
+                  activeTab === 'panchanga'
+                    ? 'bg-[#162058] text-white font-bold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <span>Panchanga</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange('report')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer shrink-0 ${
+                  activeTab === 'report'
+                    ? 'bg-[#162058] text-white font-bold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <FileText size={13} />
+                <span>Report PDF</span>
+              </button>
+            </div>
             {activeTab === 'overview' && (
               <OverviewView
                 context={canonicalContext}
