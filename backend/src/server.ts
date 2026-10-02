@@ -49,6 +49,10 @@ app.get('/api/health', (_req: Request, res: Response) => {
 });
 
 export async function startBackendServer(port: number = PORT) {
+  const server = app.listen(port, '0.0.0.0', () => {
+    console.log(`[ASTROWORLD BACKEND] Server running live on port ${port}`);
+  });
+
   if (process.env.NODE_ENV !== 'production') {
     try {
       const frontendDir = path.resolve(__dirname, '../../frontend');
@@ -60,8 +64,9 @@ export async function startBackendServer(port: number = PORT) {
         appType: 'spa',
       });
       app.use(vite.middlewares);
-    } catch {
-      console.log('[Backend Server] Running API standalone mode.');
+      console.log('[ASTROWORLD FRONTEND] Vite development middleware attached.');
+    } catch (err: any) {
+      console.log('[Backend Server] Running API standalone mode:', err?.message || err);
     }
   } else {
     const distPath = path.resolve(__dirname, '../../frontend/dist');
@@ -71,12 +76,10 @@ export async function startBackendServer(port: number = PORT) {
     });
   }
 
-  return app.listen(port, '0.0.0.0', () => {
-    console.log(`[ASTROWORLD BACKEND] Server running live on port ${port}`);
-  });
+  return server;
 }
 
-// Auto-start if run directly
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  startBackendServer(PORT);
-}
+// Auto-start server
+startBackendServer(PORT);
+
+

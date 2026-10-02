@@ -18,6 +18,32 @@ import {
 import * as Astronomy from 'astronomy-engine';
 import { calculatePlanetaryPositions, calculateLahiriAyanamsha } from '../../../../shared/engine/astronomy.ts';
 
+const ZODIAC_SIGNS = [
+  'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+  'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
+];
+
+const SIGN_LORDS: Record<string, PlanetName> = {
+  Aries: 'Mars',
+  Taurus: 'Venus',
+  Gemini: 'Mercury',
+  Cancer: 'Moon',
+  Leo: 'Sun',
+  Virgo: 'Mercury',
+  Libra: 'Venus',
+  Scorpio: 'Mars',
+  Sagittarius: 'Jupiter',
+  Capricorn: 'Saturn',
+  Aquarius: 'Saturn',
+  Pisces: 'Jupiter',
+};
+
+function getSignIndex(signName?: string, fallbackIndex: number = 0): number {
+  if (!signName) return fallbackIndex;
+  const idx = ZODIAC_SIGNS.findIndex((s) => s.toLowerCase() === signName.toLowerCase());
+  return idx >= 0 ? idx : fallbackIndex;
+}
+
 /**
  * 1. Career Specialist
  */
@@ -25,15 +51,17 @@ export function selectCareerEvidence(
   context: AIInterpretationContext,
   entities: ExtractedEntities
 ): Partial<ConsultationContextPacket> {
-  const ascSignIndex = context.ascendant.signIndex;
-  // 10th house is (ascSignIndex + 9) % 12
-  const tenthHouseNum = 10;
+  const planets = context.planets || [];
+  const ascSignIndex = context.ascendant.signIndex ?? getSignIndex(context.ascendant.sign);
+  // 10th house sign
   const tenthSignIndex = (ascSignIndex + 9) % 12;
+  const tenthSign = ZODIAC_SIGNS[tenthSignIndex];
+  const computedTenthLord = SIGN_LORDS[tenthSign] || 'Saturn';
 
   // D1 Planets in 10th house or ruling 10th house
-  const tenthOccupants = context.planets.filter((p) => p.houseNumber === 10);
-  const tenthLord = context.houses.find((h) => h.houseNumber === 10)?.lord;
-  const tenthLordPlanet = context.planets.find((p) => p.name === tenthLord);
+  const tenthOccupants = planets.filter((p) => p.houseNumber === 10);
+  const tenthLord = context.houses?.find((h) => h.houseNumber === 10)?.lord || computedTenthLord;
+  const tenthLordPlanet = planets.find((p) => p.name === tenthLord);
 
   // D10 Dashamsha
   const d10 = context.vargas?.['D10'];
@@ -65,8 +93,8 @@ export function selectCareerEvidence(
     relevantPlanets.push(tenthLordPlanet);
   }
   // Include Sun (natural karaka for profession/authority) and Saturn (karma karaka)
-  const sun = context.planets.find((p) => p.name === 'Sun');
-  const saturn = context.planets.find((p) => p.name === 'Saturn');
+  const sun = planets.find((p) => p.name === 'Sun');
+  const saturn = planets.find((p) => p.name === 'Saturn');
   if (sun && !relevantPlanets.some((p) => p.name === 'Sun')) relevantPlanets.push(sun);
   if (saturn && !relevantPlanets.some((p) => p.name === 'Saturn')) relevantPlanets.push(saturn);
 
@@ -127,13 +155,19 @@ export function selectMarriageEvidence(
   context: AIInterpretationContext,
   entities: ExtractedEntities
 ): Partial<ConsultationContextPacket> {
-  const seventhHouse = context.houses.find((h) => h.houseNumber === 7);
-  const seventhLord = seventhHouse?.lord;
-  const seventhLordPlanet = context.planets.find((p) => p.name === seventhLord);
-  const seventhOccupants = context.planets.filter((p) => p.houseNumber === 7);
+  const planets = context.planets || [];
+  const ascSignIndex = context.ascendant.signIndex ?? getSignIndex(context.ascendant.sign);
+  const seventhSignIndex = (ascSignIndex + 6) % 12;
+  const seventhSign = ZODIAC_SIGNS[seventhSignIndex];
+  const computedSeventhLord = SIGN_LORDS[seventhSign] || 'Venus';
 
-  const venus = context.planets.find((p) => p.name === 'Venus');
-  const jupiter = context.planets.find((p) => p.name === 'Jupiter');
+  const seventhHouse = context.houses?.find((h) => h.houseNumber === 7);
+  const seventhLord = seventhHouse?.lord || computedSeventhLord;
+  const seventhLordPlanet = planets.find((p) => p.name === seventhLord);
+  const seventhOccupants = planets.filter((p) => p.houseNumber === 7);
+
+  const venus = planets.find((p) => p.name === 'Venus');
+  const jupiter = planets.find((p) => p.name === 'Jupiter');
 
   const relevantPlanets = [...seventhOccupants];
   if (seventhLordPlanet && !relevantPlanets.some((p) => p.name === seventhLordPlanet.name)) {
@@ -204,7 +238,7 @@ export function selectMarriageEvidence(
     },
     relevantRules: [
       `7th house is ruled by ${seventhLord || '7th Lord'} in ${seventhLordPlanet?.sign || 'its sign'}.`,
-      `Venus (Kalathrakaraka) is placed in ${venus?.sign} in House ${venus?.houseNumber}.`,
+      `Venus (Kalathrakaraka) is placed in ${venus?.sign || 'its sign'} in House ${venus?.houseNumber || 'H'}.`,
       `D9 Navamsha Lagna is ${d9?.ascendantSign || 'established'}, which governs marital fruit and soul alignment.`,
       manglik && manglik.present ? `Mangal Dosha note: ${manglik.description}` : 'No severe Manglik affliction on 7th house.',
     ],
@@ -219,13 +253,14 @@ export function selectDignityEvidence(
   context: AIInterpretationContext,
   entities: ExtractedEntities
 ): Partial<ConsultationContextPacket> {
+  const planets = context.planets || [];
   const vargaTarget = entities.vargaCode || 'D1';
   const targetPlanets = entities.planetsMentioned && entities.planetsMentioned.length > 0
     ? entities.planetsMentioned
-    : context.planets.map((p) => p.name);
+    : planets.map((p) => p.name);
 
   if (vargaTarget === 'D1') {
-    const matchingPlanets = context.planets.filter((p) => targetPlanets.includes(p.name));
+    const matchingPlanets = planets.filter((p) => targetPlanets.includes(p.name));
     return {
       relevantChartFacts: {
         ascendant: {
@@ -249,7 +284,7 @@ export function selectDignityEvidence(
       },
       relevantRules: matchingPlanets.map(
         (p) =>
-          `D1 ${p.name} in ${p.sign} (${p.formattedDegree}) possesses canonical dignity: ${p.dignity}.`
+          `D1 ${p.name} in ${p.sign} (${p.formattedDegree || ''}) possesses canonical dignity: ${p.dignity}.`
       ),
     };
   }
@@ -289,6 +324,9 @@ export function selectTransitEvidence(
   context: AIInterpretationContext,
   entities: ExtractedEntities
 ): Partial<ConsultationContextPacket> {
+  const planets = context.planets || [];
+  const ascSignIndex = context.ascendant.signIndex ?? getSignIndex(context.ascendant.sign);
+
   // If a specific future month/year was requested (e.g., March 2027), compute exact ephemeris for that target date
   let targetDate = new Date();
   if (entities.targetYear) {
@@ -299,7 +337,7 @@ export function selectTransitEvidence(
   // Compute transit positions for target date using astronomy engine
   const astroTime = new Astronomy.AstroTime(targetDate);
   const ayanamsha = calculateLahiriAyanamsha(astroTime);
-  const transitPlanets = calculatePlanetaryPositions(astroTime, ayanamsha, context.ascendant.signIndex);
+  const transitPlanets = calculatePlanetaryPositions(astroTime, ayanamsha, ascSignIndex);
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const periodLabel = entities.targetYear
@@ -307,11 +345,11 @@ export function selectTransitEvidence(
     : 'Current Live Transits';
 
   // Moon house from natal Moon
-  const natalMoon = context.planets.find((p) => p.name === 'Moon');
-  const natalMoonSignIndex = natalMoon?.signIndex ?? 0;
+  const natalMoon = planets.find((p) => p.name === 'Moon');
+  const natalMoonSignIndex = natalMoon?.signIndex ?? getSignIndex(natalMoon?.sign);
 
   const transitFacts = transitPlanets.map((tp) => {
-    const natalLagnaHouse = ((tp.signIndex - context.ascendant.signIndex + 12) % 12) + 1;
+    const natalLagnaHouse = ((tp.signIndex - ascSignIndex + 12) % 12) + 1;
     const chandraHouse = ((tp.signIndex - natalMoonSignIndex + 12) % 12) + 1;
     return {
       name: tp.name,
@@ -350,6 +388,7 @@ export function selectDashaEvidence(
 
   const mahadasha = currentHierarchy.mahadasha;
   const antardasha = currentHierarchy.antardasha;
+  const planets = context.planets || [];
 
   return {
     relevantDashaFacts: {
@@ -370,9 +409,10 @@ export function selectDashaEvidence(
         : undefined,
     },
     relevantRules: [
-      `Vimshottari Dasha is calculated from Moon's exact nakshatra (${context.planets.find((p) => p.name === 'Moon')?.nakshatra || 'Hasta'}).`,
+      `Vimshottari Dasha is calculated from Moon's exact nakshatra (${planets.find((p) => p.name === 'Moon')?.nakshatra || 'Natal Moon'}).`,
       `Current ruler: ${mahadasha?.lord} Mahadasha active until ${mahadasha?.endDateIso?.slice(0, 10)}.`,
       `Current sub-ruler: ${antardasha?.subLord} Antardasha active until ${antardasha?.endDateIso?.slice(0, 10)}.`,
     ],
   };
 }
+

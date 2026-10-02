@@ -43,15 +43,17 @@ export function classifyUserQuestion(
     depth: 'ANALYSIS',
   };
 
-  // Detect exact date request (e.g. "exact date", "exact day", "when exactly will")
+  // Detect exact date request (e.g. "exact date", "exact day", "when exactly will", "when will i get", "when i will get")
   if (
     normalized.includes('exact date') ||
     normalized.includes('exact day') ||
     normalized.includes('exact time') ||
     normalized.includes('when exactly') ||
-    normalized.includes('give me an exact')
+    normalized.includes('give me an exact') ||
+    /\b(when will i get|when i will get|exact date of|exact day of)\b/i.test(normalized)
   ) {
     entities.isExactDateRequested = true;
+    allIntents.add('TIMING');
   }
 
   // Detect Planets mentioned

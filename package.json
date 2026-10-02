@@ -9,9 +9,9 @@
     "shared"
   ],
   "scripts": {
-    "dev": "tsx backend/src/server.ts",
+    "dev": "tsx watch backend/src/server.ts",
     "dev:frontend": "npm --workspace=@astroworld/frontend run dev",
-    "dev:backend": "npm --workspace=@astroworld/backend run dev",
+    "dev:backend": "tsx watch backend/src/server.ts",
     "build": "npm --workspace=@astroworld/frontend run build",
     "build:frontend": "npm --workspace=@astroworld/frontend run build",
     "build:backend": "npm --workspace=@astroworld/backend run build",
