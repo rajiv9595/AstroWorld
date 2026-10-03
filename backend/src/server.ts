@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url';
 import { authRouter } from './routes/authRoutes.ts';
 import { chartRouter } from './routes/chartRoutes.ts';
 import { geoRouter } from './routes/geoRoutes.ts';
-import { aiRouter } from './routes/aiRoutes.ts';
+import { aiV2Router } from './ai_v2/routes/aiV2Routes.ts';
 import { astrologyRouter } from './routes/astrologyRoutes.ts';
 
 dotenv.config();
@@ -40,8 +40,9 @@ app.use(express.json({ limit: '10mb' }));
 app.use('/api/auth', authRouter);
 app.use('/api/user/charts', chartRouter);
 app.use('/api/geo', geoRouter);
-app.use('/api/ai', aiRouter);
+app.use('/api/ai-v2', aiV2Router);
 app.use('/api/astrology', astrologyRouter);
+
 
 // Health check endpoint
 app.get('/api/health', (_req: Request, res: Response) => {

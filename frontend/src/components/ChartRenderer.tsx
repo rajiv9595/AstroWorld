@@ -1,6 +1,6 @@
 /**
  * ASTROWORLD — Vedic Chart Renderers (North & South Indian formats)
- * Beautiful ivory & warm gold aesthetic matching the unified AstroWorld design.
+ * Beautiful ivory & warm gold aesthetic with Dynamic Chart Entity Highlighting.
  */
 
 import React from 'react';
@@ -12,6 +12,8 @@ interface ChartRendererProps {
   planets: (PlanetPosition | VargaPlanetPlacement)[];
   chartTitle?: string;
   style?: 'NORTH_INDIAN' | 'SOUTH_INDIAN';
+  highlightedHouses?: number[];
+  highlightedPlanets?: string[];
   onPlanetClick?: (planet: PlanetName) => void;
 }
 
@@ -20,6 +22,8 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({
   planets,
   chartTitle = 'D1 Rashi Chart',
   style = 'NORTH_INDIAN',
+  highlightedHouses = [],
+  highlightedPlanets = [],
   onPlanetClick,
 }) => {
   // Map planets to their whole sign house (1-12)
@@ -54,7 +58,11 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({
     }
   });
 
-  const getDignityBadgeClass = (dig?: string) => {
+  const getDignityBadgeClass = (dig?: string, isHighlighted: boolean = false) => {
+    if (isHighlighted) {
+      return 'bg-gradient-to-r from-amber-400 to-orange-500 text-white border-amber-600 ring-2 ring-amber-400 font-black shadow-md scale-110';
+    }
+
     switch (dig) {
       case 'EXALTED':
         return 'bg-emerald-100 text-emerald-800 border-emerald-300';
@@ -112,32 +120,42 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({
 
               const houseNum = ((signIdx - ascendantSignIndex + 12) % 12) + 1;
               const isLagna = signIdx === ascendantSignIndex;
+              const isHouseHighlighted = highlightedHouses.includes(houseNum);
               const signPlanets = planetsByHouse[houseNum] || [];
 
               return (
                 <div
                   key={`sign-${signIdx}`}
-                  className={`p-1.5 flex flex-col justify-between rounded border transition-colors ${
-                    isLagna
+                  className={`p-1.5 flex flex-col justify-between rounded border transition-all duration-300 ${
+                    isHouseHighlighted
+                      ? 'border-amber-500 bg-amber-100/90 ring-2 ring-amber-400/80 shadow-xs'
+                      : isLagna
                       ? 'border-orange-500 bg-orange-50/50'
                       : 'border-amber-200/70 bg-white hover:bg-amber-50/30'
                   }`}
                 >
                   <div className="flex items-center justify-between text-[9px] font-mono leading-none">
                     <span className="font-bold text-slate-500">{ZODIAC_SIGNS[signIdx].slice(0, 3)}</span>
-                    <span className="text-amber-800 font-bold">H{houseNum}</span>
+                    <span className={`font-bold ${isHouseHighlighted ? 'text-amber-900 font-black' : 'text-amber-800'}`}>
+                      H{houseNum}
+                    </span>
                   </div>
 
                   <div className="flex flex-wrap gap-1 my-0.5 justify-center">
-                    {signPlanets.map((pl) => (
-                      <span
-                        key={pl.name}
-                        onClick={() => onPlanetClick?.(pl.name)}
-                        className={`text-[9px] px-1 py-0.2 rounded border font-semibold cursor-pointer ${getDignityBadgeClass(pl.dignity)}`}
-                      >
-                        {pl.text}
-                      </span>
-                    ))}
+                    {signPlanets.map((pl) => {
+                      const isPlanetHighlighted = highlightedPlanets.some(
+                        (hp) => hp.toLowerCase() === pl.name.toLowerCase()
+                      );
+                      return (
+                        <span
+                          key={pl.name}
+                          onClick={() => onPlanetClick?.(pl.name)}
+                          className={`text-[9px] px-1 py-0.2 rounded border font-semibold cursor-pointer transition-transform ${getDignityBadgeClass(pl.dignity, isPlanetHighlighted)}`}
+                        >
+                          {pl.text}
+                        </span>
+                      );
+                    })}
                     {isLagna && (
                       <span className="text-[8px] font-black px-1 rounded bg-orange-500 text-white">
                         ASC
@@ -173,6 +191,22 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({
     12: { x: 300, y: 44, signPos: { x: 265, y: 80 } },
   };
 
+  // SVG Polygons for each House in North Indian Diamond Chart
+  const housePolygons: Record<number, string> = {
+    1: '200,0 300,100 200,200 100,100',
+    2: '100,100 200,0 0,0',
+    3: '0,0 100,100 0,200',
+    4: '100,100 200,200 100,300 0,200',
+    5: '0,200 100,300 0,400',
+    6: '100,300 200,400 0,400',
+    7: '100,300 200,200 300,300 200,400',
+    8: '200,400 300,300 400,400',
+    9: '300,300 400,200 400,400',
+    10: '300,100 400,200 300,300 200,200',
+    11: '300,100 400,0 400,200',
+    12: '200,0 300,100 400,0',
+  };
+
   return (
     <div className="w-full flex flex-col items-center">
       {chartTitle && (
@@ -189,6 +223,22 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({
           {/* Subtle Outer Frame */}
           <rect x="4" y="4" width="392" height="392" fill="none" stroke="#F59E0B" strokeWidth="2" rx="12" />
           <rect x="8" y="8" width="384" height="384" fill="none" stroke="#D97706" strokeWidth="1" strokeDasharray="3 3" rx="8" />
+
+          {/* Highlighted House Shading */}
+          {highlightedHouses.map((h) => {
+            const poly = housePolygons[h];
+            if (!poly) return null;
+            return (
+              <polygon
+                key={`highlight-h-${h}`}
+                points={poly}
+                fill="rgba(245, 158, 11, 0.22)"
+                stroke="#F59E0B"
+                strokeWidth="2.5"
+                className="animate-pulse"
+              />
+            );
+          })}
 
           {/* Diagonals */}
           <line x1="0" y1="0" x2="400" y2="400" stroke="#D97706" strokeWidth="1.8" />
@@ -219,6 +269,8 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({
           {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => {
             const pos = houseCenters[h].signPos;
             const signNum = getHouseSignIndex(h) + 1;
+            const isHighlighted = highlightedHouses.includes(h);
+
             return (
               <text
                 key={`sign-num-${h}`}
@@ -226,9 +278,9 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({
                 y={pos.y}
                 textAnchor="middle"
                 dominantBaseline="central"
-                fill="#94A3B8"
-                fontSize="10"
-                fontWeight="bold"
+                fill={isHighlighted ? '#B45309' : '#94A3B8'}
+                fontSize={isHighlighted ? '11' : '10'}
+                fontWeight={isHighlighted ? '900' : 'bold'}
                 fontFamily="monospace"
               >
                 {signNum}
@@ -256,16 +308,22 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({
                 top: `${(pos.y / 400) * 100}%`,
               }}
             >
-              {hPlanets.map((pl) => (
-                <button
-                  key={pl.name}
-                  onClick={() => onPlanetClick?.(pl.name)}
-                  title={`${pl.name} in H${h} (${pl.dignity || 'Neutral'})`}
-                  className={`px-1 py-0.5 rounded text-[8.5px] sm:text-[9.5px] font-bold border shadow-xs transition-all hover:scale-110 leading-none ${getDignityBadgeClass(pl.dignity)}`}
-                >
-                  {pl.text}
-                </button>
-              ))}
+              {hPlanets.map((pl) => {
+                const isPlanetHighlighted = highlightedPlanets.some(
+                  (hp) => hp.toLowerCase() === pl.name.toLowerCase()
+                );
+
+                return (
+                  <button
+                    key={pl.name}
+                    onClick={() => onPlanetClick?.(pl.name)}
+                    title={`${pl.name} in H${h} (${pl.dignity || 'Neutral'})`}
+                    className={`px-1 py-0.5 rounded text-[8.5px] sm:text-[9.5px] font-bold border shadow-xs transition-all hover:scale-110 leading-none ${getDignityBadgeClass(pl.dignity, isPlanetHighlighted)}`}
+                  >
+                    {pl.text}
+                  </button>
+                );
+              })}
             </div>
           );
         })}

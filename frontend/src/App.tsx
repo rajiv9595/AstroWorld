@@ -12,7 +12,6 @@ import { GenerateKundliSection } from './components/GenerateKundliSection.tsx';
 import { ServicesGrid } from './components/ServicesGrid.tsx';
 import { AstroWorldFooter } from './components/AstroWorldFooter.tsx';
 import { BirthInputModal } from './components/BirthInputModal.tsx';
-import { AstroBotChatModal } from './components/AstroBotChatModal.tsx';
 
 import {
   computeCanonicalChart,
@@ -65,9 +64,8 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  const [isSupportChatOpen, setIsSupportChatOpen] = useState(false);
-
   // Authentication State
+
   const [currentUser, setCurrentUser] = useState<{ id?: string; name: string; email: string } | null>(() => {
     try {
       const saved = localStorage.getItem('astroworld_user');
@@ -701,32 +699,7 @@ export default function App() {
           setIsOnboardingMode(false);
         }}
       />
-
-      {/* AstroBot Support Chatbox Modal */}
-      <AstroBotChatModal
-        isOpen={isSupportChatOpen}
-        onClose={() => setIsSupportChatOpen(false)}
-      />
-
-      {/* Floating Bottom-Right AstroBot Launcher Button */}
-      {!isSupportChatOpen && (
-        <button
-          onClick={() => setIsSupportChatOpen(true)}
-          className="no-print fixed bottom-5 right-5 z-40 bg-gradient-to-tr from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white p-3.5 sm:px-4 sm:py-3 rounded-full shadow-2xl shadow-orange-500/35 border-2 border-white/90 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer group"
-          title="Chat with AstroBot Support"
-        >
-          <div className="relative">
-            <Bot size={22} className="text-white group-hover:animate-bounce" />
-            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 ring-2 ring-white"></span>
-            </span>
-          </div>
-          <span className="hidden sm:inline text-xs font-bold font-serif tracking-wide">
-            Support Chat
-          </span>
-        </button>
-      )}
     </div>
   );
 }
+
