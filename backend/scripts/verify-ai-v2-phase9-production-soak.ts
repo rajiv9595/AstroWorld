@@ -18,6 +18,7 @@ import { AlertManager, ALERT_RULES } from '../src/ai_v2/production/alertManager.
 import {
   ProductionConsultationService,
   ProductionMetrics,
+  MetricsSnapshot,
   ChaosManager,
   RateLimiter,
   ProductionError,
@@ -710,9 +711,10 @@ async function runPhase9ProductionSoakSuite() {
   const steadySnapshot: MetricsSnapshot = {
     ...liveSnap,
     totalRequests: 100,
+    successfulRequests: 100,
+    failedRequests: 0,
     errorRate: 0,
-    statusCodes: { '200': 100 },
-    counters: { ...liveSnap.counters, errors: 0, fallbacks: 0 },
+    counters: { ...liveSnap.counters, fallbacks: 0 },
   };
 
   const activeAlerts = alertMgr.evaluate({

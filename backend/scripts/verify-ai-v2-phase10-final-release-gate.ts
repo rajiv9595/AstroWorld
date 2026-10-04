@@ -24,9 +24,18 @@ import { ConsultationOrchestrator } from '../src/ai_v2/consultation/consultation
 import { GeminiNarrator } from '../src/ai_v2/narrator/geminiNarrator.ts';
 import { MemoryWriteGate } from '../src/ai_v2/memory/memoryWriteGate.ts';
 
+function getRepoRoot(): string {
+  if (fs.existsSync(path.resolve(process.cwd(), 'package.json')) && fs.existsSync(path.resolve(process.cwd(), 'frontend'))) {
+    return process.cwd();
+  }
+  return path.resolve(process.cwd(), '..');
+}
+
+const repoRoot = getRepoRoot();
+
 // Load environment variables
-dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config({ path: path.resolve(repoRoot, '.env') });
+dotenv.config({ path: path.resolve(repoRoot, 'backend/.env') });
 
 const GOLDEN_PROFILE: BirthProfileInput = {
   name: 'Phase 10 Release Gate Native',
@@ -91,7 +100,7 @@ export async function runPhase10ReleaseGateSuite() {
   // ==============================================================================
   console.log('\n--- 1. RELEASE ARTIFACT INTEGRITY ---');
 
-  const frontendDistPath = path.resolve(process.cwd(), '../frontend/dist/index.html');
+  const frontendDistPath = path.resolve(repoRoot, 'frontend/dist/index.html');
   const frontendBuilt = fs.existsSync(frontendDistPath);
   assert(
     frontendBuilt,
@@ -111,7 +120,7 @@ export async function runPhase10ReleaseGateSuite() {
     `applied: ${migrationRes.total}`
   );
 
-  const rootManifestPath = path.resolve(process.cwd(), '../release_manifest.md');
+  const rootManifestPath = path.resolve(repoRoot, 'release_manifest.md');
   const manifestExists = fs.existsSync(rootManifestPath);
   const manifestText = manifestExists ? fs.readFileSync(rootManifestPath, 'utf8') : '';
   assert(
@@ -524,7 +533,7 @@ export async function runPhase10ReleaseGateSuite() {
   // ==============================================================================
   console.log('\n--- 10. ROLLBACK RUNBOOK VERIFICATION ---');
 
-  const rollbackDocPath = path.resolve(process.cwd(), '../rollback_runbook.md');
+  const rollbackDocPath = path.resolve(repoRoot, 'rollback_runbook.md');
   const rollbackExists = fs.existsSync(rollbackDocPath);
   const rollbackText = rollbackExists ? fs.readFileSync(rollbackDocPath, 'utf8') : '';
   assert(
@@ -676,7 +685,7 @@ Stage 4: 100% Launch  --> Full Public Availability
 
 `;
 
-  const reportPath = path.resolve(process.cwd(), '../phase10_final_release_readiness_report.md');
+  const reportPath = path.resolve(repoRoot, 'phase10_final_release_readiness_report.md');
   fs.writeFileSync(reportPath, reportMarkdown, 'utf8');
   console.log(`[Phase 10] Wrote final release readiness report to ${reportPath}`);
 

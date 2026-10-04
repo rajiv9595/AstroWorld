@@ -1,6 +1,6 @@
 # ASTROWORLD AI V2 — PHASE 7B ADVERSARIAL INTEGRATION REPORT
 **Authoritative End-to-End Stress, Security, Concurrency, and Quality Audit Report**  
-*Date: 2026-10-04T12:55:33.926Z*  
+*Date: 2026-10-04T13:57:30.502Z*  
 *Final Gate Status: **READY_FOR_PHASE_8***
 
 ---
@@ -77,10 +77,10 @@ Audited 50 actual consultation responses across 11 production criteria:
 ---
 
 ## 4. Latency & Performance Breakdown
-- **p50 Latency**: `87ms`
-- **p95 Latency**: `88ms`
-- **p99 Latency**: `88ms`
-- **Idempotent Replay Latency**: `17ms`
+- **p50 Latency**: `97ms`
+- **p95 Latency**: `97ms`
+- **p99 Latency**: `97ms`
+- **Idempotent Replay Latency**: `33ms`
 
 ---
 

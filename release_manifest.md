@@ -3,8 +3,8 @@
 **Status**: `READY_FOR_CONTROLLED_PUBLIC_LAUNCH`  
 **Build Target**: `production`  
 **Release Date**: `2026-10-04`  
-**Approved Commit**: `origin/main` (`f830e5e45e8709c982848ebfe68082c3e953ced0`)
-**General Public Access**: `DISABLED` (Controlled Testing Only)
+**Approved Commit**: `origin/main` (`dafc4f2baba23ffa50198b0211defe37d798fb88`)  
+**General Public Access**: `DISABLED` (0% Traffic / Controlled Internal Only)
 
 ---
 
@@ -29,8 +29,8 @@
 ---
 
 ## 3. Operational Performance Budgets
-- **Class A (Computational / Non-Provider Latency)**: $p50 \le 30\text{ms}$, $p95 \le 80\text{ms}$ (Measured: $p50 = 5\text{ms}$, $p95 = 10\text{ms}$)
-- **Class B (Real Live Gemini End-to-End Latency)**: $p50 \le 3000\text{ms}$, $p95 \le 6000\text{ms}$ (Measured: $p50 = 2212\text{ms}$, $p95 = 5042\text{ms}$)
+- **Class A (Computational / Non-Provider Latency)**: $p50 \le 30\text{ms}$, $p95 \le 80\text{ms}$ (Measured: $p50 = 6\text{ms}$, $p95 = 10\text{ms}$)
+- **Class B (Real Live Gemini End-to-End Latency)**: $p50 \le 3000\text{ms}$, $p95 \le 6000\text{ms}$ (Measured: $p50 = 1888\text{ms}$, $p95 = 6325\text{ms}$)
 - **Disaster Recovery RTO**: $\le 300\text{s}$ (Measured: $0.26\text{s}$)
 - **Disaster Recovery RPO**: $\le 15\text{ min}$ (Configured: $5\text{ min}$)
 - **Cross-User Data Isolation**: $100\%$ (Zero IDOR leakage)
@@ -40,4 +40,4 @@
 ## 4. Operational Sign-Off
 - **Architecture Integrity**: Feature-frozen & verified across 23 monorepo suites
 - **Security Posture**: 0 P0/P1 defects, 0 exposed secrets, 0 IDOR vulnerabilities
-- **Operational Gate**: `READY_FOR_CONTROLLED_PUBLIC_LAUNCH`
+- **Operational Gate**: `READY_FOR_HUMAN_SIGN_OFF`

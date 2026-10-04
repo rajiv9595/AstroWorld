@@ -33,7 +33,7 @@
     "test": "tsx scripts/verify-astrology-engine.ts && tsx scripts/verify-ai-v2-boundary.ts && tsx scripts/verify-ai-v2-tools.ts && tsx scripts/verify-ai-v2-orchestrator.ts && tsx scripts/verify-ai-v2-gemini-gate.ts && tsx scripts/verify-ai-v2-rag.ts && tsx scripts/verify-ai-v2-reasoning.ts && tsx scripts/verify-ai-v2-claim-firewall.ts && tsx scripts/verify-ai-v2-narrator.ts && tsx scripts/verify-ai-v2-end-to-end.ts && tsx scripts/verify-ai-v2-quality.ts && tsx scripts/verify-ai-v2-precision.ts && tsx scripts/verify-ai-v2-conversation-benchmark.ts && tsx scripts/verify-ai-v2-conversation-state.ts && tsx scripts/verify-ai-v2-persistent-memory.ts && tsx scripts/verify-ai-v2-longitudinal-memory.ts && tsx scripts/verify-ai-v2-production-hardening.ts && tsx scripts/verify-ai-v2-phase7a-chat-experience.ts && tsx scripts/verify-ai-v2-phase7b-adversarial.ts && tsx scripts/verify-ai-v2-phase8a-staging.ts && tsx scripts/verify-ai-v2-phase8b-release-candidate.ts && tsx scripts/verify-ai-v2-phase9-production-soak.ts && tsx scripts/verify-ai-v2-phase9-1-reconciliation.ts"
   },
   "dependencies": {
-    "@astroworld/shared": "workspace:*",
+    "@astroworld/shared": "*",
     "@google/genai": "^2.4.0",
     "@supabase/supabase-js": "^2.117.2",
     "astronomy-engine": "^2.1.19",
@@ -46,6 +46,7 @@
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "tsx": "^4.21.0",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^3.0.0"
   }
 }

@@ -4,7 +4,7 @@
   "timeSeries": [
     {
       "intervalMinute": 1,
-      "timestamp": "2026-10-04T12:27:50.343Z",
+      "timestamp": "2026-10-04T13:29:37.258Z",
       "trafficPhase": "LOW_BASELINE",
       "requestCount": 1,
       "successRate": 100,
@@ -13,13 +13,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 1,
-      "heapMemoryBytes": 28104216,
-      "p50LatencyMs": 703,
-      "p95LatencyMs": 703
+      "heapMemoryBytes": 23327568,
+      "p50LatencyMs": 762,
+      "p95LatencyMs": 762
     },
     {
       "intervalMinute": 2,
-      "timestamp": "2026-10-04T12:28:51.074Z",
+      "timestamp": "2026-10-04T13:30:37.895Z",
       "trafficPhase": "LOW_BASELINE",
       "requestCount": 1,
       "successRate": 100,
@@ -28,13 +28,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 1,
-      "heapMemoryBytes": 25433560,
-      "p50LatencyMs": 731,
-      "p95LatencyMs": 731
+      "heapMemoryBytes": 28599680,
+      "p50LatencyMs": 637,
+      "p95LatencyMs": 637
     },
     {
       "intervalMinute": 3,
-      "timestamp": "2026-10-04T12:29:51.738Z",
+      "timestamp": "2026-10-04T13:31:38.559Z",
       "trafficPhase": "LOW_BASELINE",
       "requestCount": 1,
       "successRate": 100,
@@ -43,13 +43,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 1,
-      "heapMemoryBytes": 23116496,
+      "heapMemoryBytes": 26402912,
       "p50LatencyMs": 664,
       "p95LatencyMs": 664
     },
     {
       "intervalMinute": 4,
-      "timestamp": "2026-10-04T12:30:52.367Z",
+      "timestamp": "2026-10-04T13:32:39.207Z",
       "trafficPhase": "LOW_BASELINE",
       "requestCount": 1,
       "successRate": 100,
@@ -58,13 +58,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 1,
-      "heapMemoryBytes": 28396112,
-      "p50LatencyMs": 629,
-      "p95LatencyMs": 629
+      "heapMemoryBytes": 23864240,
+      "p50LatencyMs": 648,
+      "p95LatencyMs": 648
     },
     {
       "intervalMinute": 5,
-      "timestamp": "2026-10-04T12:31:53.074Z",
+      "timestamp": "2026-10-04T13:33:39.866Z",
       "trafficPhase": "LOW_BASELINE",
       "requestCount": 1,
       "successRate": 100,
@@ -73,13 +73,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 1,
-      "heapMemoryBytes": 25872584,
-      "p50LatencyMs": 707,
-      "p95LatencyMs": 707
+      "heapMemoryBytes": 29131648,
+      "p50LatencyMs": 659,
+      "p95LatencyMs": 659
     },
     {
       "intervalMinute": 6,
-      "timestamp": "2026-10-04T12:32:53.857Z",
+      "timestamp": "2026-10-04T13:34:46.331Z",
       "trafficPhase": "NORMAL_SUSTAINED",
       "requestCount": 5,
       "successRate": 100,
@@ -88,13 +88,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 5,
-      "heapMemoryBytes": 28893608,
-      "p50LatencyMs": 773,
-      "p95LatencyMs": 783
+      "heapMemoryBytes": 26362312,
+      "p50LatencyMs": 2509,
+      "p95LatencyMs": 6465
     },
     {
       "intervalMinute": 7,
-      "timestamp": "2026-10-04T12:33:54.602Z",
+      "timestamp": "2026-10-04T13:35:50.905Z",
       "trafficPhase": "NORMAL_SUSTAINED",
       "requestCount": 5,
       "successRate": 100,
@@ -103,13 +103,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 5,
-      "heapMemoryBytes": 26664600,
-      "p50LatencyMs": 737,
-      "p95LatencyMs": 745
+      "heapMemoryBytes": 30407192,
+      "p50LatencyMs": 3356,
+      "p95LatencyMs": 4574
     },
     {
       "intervalMinute": 8,
-      "timestamp": "2026-10-04T12:34:55.371Z",
+      "timestamp": "2026-10-04T13:36:53.813Z",
       "trafficPhase": "NORMAL_SUSTAINED",
       "requestCount": 5,
       "successRate": 100,
@@ -118,13 +118,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 5,
-      "heapMemoryBytes": 29532424,
-      "p50LatencyMs": 674,
-      "p95LatencyMs": 769
+      "heapMemoryBytes": 25586576,
+      "p50LatencyMs": 2784,
+      "p95LatencyMs": 2908
     },
     {
       "intervalMinute": 9,
-      "timestamp": "2026-10-04T12:35:58.300Z",
+      "timestamp": "2026-10-04T13:37:56.662Z",
       "trafficPhase": "NORMAL_SUSTAINED",
       "requestCount": 5,
       "successRate": 100,
@@ -133,13 +133,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 5,
-      "heapMemoryBytes": 25643976,
-      "p50LatencyMs": 2544,
-      "p95LatencyMs": 2928
+      "heapMemoryBytes": 35972456,
+      "p50LatencyMs": 2357,
+      "p95LatencyMs": 2848
     },
     {
       "intervalMinute": 10,
-      "timestamp": "2026-10-04T12:37:04.678Z",
+      "timestamp": "2026-10-04T13:38:57.422Z",
       "trafficPhase": "NORMAL_SUSTAINED",
       "requestCount": 5,
       "successRate": 100,
@@ -148,13 +148,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 5,
-      "heapMemoryBytes": 35562368,
-      "p50LatencyMs": 2369,
-      "p95LatencyMs": 6378
+      "heapMemoryBytes": 30618120,
+      "p50LatencyMs": 745,
+      "p95LatencyMs": 760
     },
     {
       "intervalMinute": 11,
-      "timestamp": "2026-10-04T12:38:07.938Z",
+      "timestamp": "2026-10-04T13:39:58.159Z",
       "trafficPhase": "NORMAL_SUSTAINED",
       "requestCount": 5,
       "successRate": 100,
@@ -163,13 +163,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 5,
-      "heapMemoryBytes": 30349216,
-      "p50LatencyMs": 2926,
-      "p95LatencyMs": 3259
+      "heapMemoryBytes": 28193464,
+      "p50LatencyMs": 649,
+      "p95LatencyMs": 737
     },
     {
       "intervalMinute": 12,
-      "timestamp": "2026-10-04T12:39:10.534Z",
+      "timestamp": "2026-10-04T13:40:58.912Z",
       "trafficPhase": "NORMAL_SUSTAINED",
       "requestCount": 5,
       "successRate": 100,
@@ -178,13 +178,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 5,
-      "heapMemoryBytes": 28330088,
-      "p50LatencyMs": 2328,
-      "p95LatencyMs": 2596
+      "heapMemoryBytes": 37841792,
+      "p50LatencyMs": 680,
+      "p95LatencyMs": 753
     },
     {
       "intervalMinute": 13,
-      "timestamp": "2026-10-04T12:40:11.290Z",
+      "timestamp": "2026-10-04T13:41:59.686Z",
       "trafficPhase": "NORMAL_SUSTAINED",
       "requestCount": 5,
       "successRate": 100,
@@ -193,13 +193,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 5,
-      "heapMemoryBytes": 37997808,
-      "p50LatencyMs": 752,
-      "p95LatencyMs": 754
+      "heapMemoryBytes": 32085624,
+      "p50LatencyMs": 771,
+      "p95LatencyMs": 774
     },
     {
       "intervalMinute": 14,
-      "timestamp": "2026-10-04T12:41:11.977Z",
+      "timestamp": "2026-10-04T13:43:00.422Z",
       "trafficPhase": "NORMAL_SUSTAINED",
       "requestCount": 5,
       "successRate": 100,
@@ -208,13 +208,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 5,
-      "heapMemoryBytes": 32173016,
-      "p50LatencyMs": 684,
-      "p95LatencyMs": 687
+      "heapMemoryBytes": 29470568,
+      "p50LatencyMs": 722,
+      "p95LatencyMs": 735
     },
     {
       "intervalMinute": 15,
-      "timestamp": "2026-10-04T12:42:12.680Z",
+      "timestamp": "2026-10-04T13:44:01.172Z",
       "trafficPhase": "NORMAL_SUSTAINED",
       "requestCount": 5,
       "successRate": 100,
@@ -223,13 +223,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 5,
-      "heapMemoryBytes": 29479304,
-      "p50LatencyMs": 694,
-      "p95LatencyMs": 703
+      "heapMemoryBytes": 38793800,
+      "p50LatencyMs": 743,
+      "p95LatencyMs": 750
     },
     {
       "intervalMinute": 16,
-      "timestamp": "2026-10-04T12:43:14.064Z",
+      "timestamp": "2026-10-04T13:45:02.386Z",
       "trafficPhase": "BURST_PEAK",
       "requestCount": 25,
       "successRate": 100,
@@ -238,13 +238,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 20,
-      "heapMemoryBytes": 36316800,
-      "p50LatencyMs": 1028,
-      "p95LatencyMs": 1058
+      "heapMemoryBytes": 36888608,
+      "p50LatencyMs": 1011,
+      "p95LatencyMs": 1034
     },
     {
       "intervalMinute": 17,
-      "timestamp": "2026-10-04T12:44:15.012Z",
+      "timestamp": "2026-10-04T13:46:03.313Z",
       "trafficPhase": "BURST_PEAK",
       "requestCount": 25,
       "successRate": 100,
@@ -253,13 +253,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 20,
-      "heapMemoryBytes": 40900472,
-      "p50LatencyMs": 933,
-      "p95LatencyMs": 946
+      "heapMemoryBytes": 41209680,
+      "p50LatencyMs": 916,
+      "p95LatencyMs": 926
     },
     {
       "intervalMinute": 18,
-      "timestamp": "2026-10-04T12:45:15.956Z",
+      "timestamp": "2026-10-04T13:47:04.403Z",
       "trafficPhase": "BURST_PEAK",
       "requestCount": 25,
       "successRate": 100,
@@ -268,13 +268,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 20,
-      "heapMemoryBytes": 37629312,
-      "p50LatencyMs": 877,
-      "p95LatencyMs": 940
+      "heapMemoryBytes": 37740960,
+      "p50LatencyMs": 908,
+      "p95LatencyMs": 923
     },
     {
       "intervalMinute": 19,
-      "timestamp": "2026-10-04T12:46:16.947Z",
+      "timestamp": "2026-10-04T13:48:05.342Z",
       "trafficPhase": "BURST_PEAK",
       "requestCount": 25,
       "successRate": 100,
@@ -283,88 +283,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 20,
-      "heapMemoryBytes": 41992704,
-      "p50LatencyMs": 953,
-      "p95LatencyMs": 967
-    },
-    {
-      "intervalMinute": 20,
-      "timestamp": "2026-10-04T12:47:17.896Z",
-      "trafficPhase": "BURST_PEAK",
-      "requestCount": 25,
-      "successRate": 100,
-      "status5xxCount": 0,
-      "status429Count": 0,
-      "timeoutCount": 0,
-      "retryCount": 0,
-      "activeDbConnections": 20,
-      "heapMemoryBytes": 39560528,
-      "p50LatencyMs": 936,
-      "p95LatencyMs": 948
-    },
-    {
-      "intervalMinute": 21,
-      "timestamp": "2026-10-04T12:48:18.863Z",
-      "trafficPhase": "BURST_PEAK",
-      "requestCount": 25,
-      "successRate": 100,
-      "status5xxCount": 0,
-      "status429Count": 0,
-      "timeoutCount": 0,
-      "retryCount": 0,
-      "activeDbConnections": 20,
-      "heapMemoryBytes": 42837864,
-      "p50LatencyMs": 947,
-      "p95LatencyMs": 962
-    },
-    {
-      "intervalMinute": 22,
-      "timestamp": "2026-10-04T12:49:19.838Z",
-      "trafficPhase": "BURST_PEAK",
-      "requestCount": 25,
-      "successRate": 100,
-      "status5xxCount": 0,
-      "status429Count": 0,
-      "timeoutCount": 0,
-      "retryCount": 0,
-      "activeDbConnections": 20,
-      "heapMemoryBytes": 41462264,
-      "p50LatencyMs": 960,
-      "p95LatencyMs": 974
-    },
-    {
-      "intervalMinute": 23,
-      "timestamp": "2026-10-04T12:50:20.790Z",
-      "trafficPhase": "BURST_PEAK",
-      "requestCount": 25,
-      "successRate": 100,
-      "status5xxCount": 0,
-      "status429Count": 0,
-      "timeoutCount": 0,
-      "retryCount": 0,
-      "activeDbConnections": 20,
-      "heapMemoryBytes": 44745056,
-      "p50LatencyMs": 899,
-      "p95LatencyMs": 911
-    },
-    {
-      "intervalMinute": 24,
-      "timestamp": "2026-10-04T12:51:21.729Z",
-      "trafficPhase": "BURST_PEAK",
-      "requestCount": 25,
-      "successRate": 100,
-      "status5xxCount": 0,
-      "status429Count": 0,
-      "timeoutCount": 0,
-      "retryCount": 0,
-      "activeDbConnections": 20,
-      "heapMemoryBytes": 43062472,
-      "p50LatencyMs": 838,
+      "heapMemoryBytes": 42013464,
+      "p50LatencyMs": 842,
       "p95LatencyMs": 938
     },
     {
-      "intervalMinute": 25,
-      "timestamp": "2026-10-04T12:52:22.702Z",
+      "intervalMinute": 20,
+      "timestamp": "2026-10-04T13:49:06.270Z",
       "trafficPhase": "BURST_PEAK",
       "requestCount": 25,
       "successRate": 100,
@@ -373,13 +298,88 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 20,
-      "heapMemoryBytes": 46321880,
-      "p50LatencyMs": 950,
-      "p95LatencyMs": 971
+      "heapMemoryBytes": 39690480,
+      "p50LatencyMs": 915,
+      "p95LatencyMs": 927
+    },
+    {
+      "intervalMinute": 21,
+      "timestamp": "2026-10-04T13:50:07.242Z",
+      "trafficPhase": "BURST_PEAK",
+      "requestCount": 25,
+      "successRate": 100,
+      "status5xxCount": 0,
+      "status429Count": 0,
+      "timeoutCount": 0,
+      "retryCount": 0,
+      "activeDbConnections": 20,
+      "heapMemoryBytes": 42875352,
+      "p50LatencyMs": 903,
+      "p95LatencyMs": 916
+    },
+    {
+      "intervalMinute": 22,
+      "timestamp": "2026-10-04T13:51:08.178Z",
+      "trafficPhase": "BURST_PEAK",
+      "requestCount": 25,
+      "successRate": 100,
+      "status5xxCount": 0,
+      "status429Count": 0,
+      "timeoutCount": 0,
+      "retryCount": 0,
+      "activeDbConnections": 20,
+      "heapMemoryBytes": 41563816,
+      "p50LatencyMs": 855,
+      "p95LatencyMs": 894
+    },
+    {
+      "intervalMinute": 23,
+      "timestamp": "2026-10-04T13:52:09.126Z",
+      "trafficPhase": "BURST_PEAK",
+      "requestCount": 25,
+      "successRate": 100,
+      "status5xxCount": 0,
+      "status429Count": 0,
+      "timeoutCount": 0,
+      "retryCount": 0,
+      "activeDbConnections": 20,
+      "heapMemoryBytes": 44925480,
+      "p50LatencyMs": 858,
+      "p95LatencyMs": 947
+    },
+    {
+      "intervalMinute": 24,
+      "timestamp": "2026-10-04T13:53:10.145Z",
+      "trafficPhase": "BURST_PEAK",
+      "requestCount": 25,
+      "successRate": 100,
+      "status5xxCount": 0,
+      "status429Count": 0,
+      "timeoutCount": 0,
+      "retryCount": 0,
+      "activeDbConnections": 20,
+      "heapMemoryBytes": 43242208,
+      "p50LatencyMs": 1003,
+      "p95LatencyMs": 1017
+    },
+    {
+      "intervalMinute": 25,
+      "timestamp": "2026-10-04T13:54:11.086Z",
+      "trafficPhase": "BURST_PEAK",
+      "requestCount": 25,
+      "successRate": 100,
+      "status5xxCount": 0,
+      "status429Count": 0,
+      "timeoutCount": 0,
+      "retryCount": 0,
+      "activeDbConnections": 20,
+      "heapMemoryBytes": 46380576,
+      "p50LatencyMs": 918,
+      "p95LatencyMs": 927
     },
     {
       "intervalMinute": 26,
-      "timestamp": "2026-10-04T12:53:23.369Z",
+      "timestamp": "2026-10-04T13:55:11.753Z",
       "trafficPhase": "POST_BURST_RECOVERY",
       "requestCount": 2,
       "successRate": 100,
@@ -388,13 +388,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 2,
-      "heapMemoryBytes": 44025152,
+      "heapMemoryBytes": 44080744,
       "p50LatencyMs": 667,
       "p95LatencyMs": 667
     },
     {
       "intervalMinute": 27,
-      "timestamp": "2026-10-04T12:54:24.080Z",
+      "timestamp": "2026-10-04T13:56:12.424Z",
       "trafficPhase": "POST_BURST_RECOVERY",
       "requestCount": 2,
       "successRate": 100,
@@ -403,13 +403,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 2,
-      "heapMemoryBytes": 33461256,
-      "p50LatencyMs": 711,
-      "p95LatencyMs": 711
+      "heapMemoryBytes": 33452512,
+      "p50LatencyMs": 671,
+      "p95LatencyMs": 671
     },
     {
       "intervalMinute": 28,
-      "timestamp": "2026-10-04T12:55:24.757Z",
+      "timestamp": "2026-10-04T13:57:13.112Z",
       "trafficPhase": "POST_BURST_RECOVERY",
       "requestCount": 2,
       "successRate": 100,
@@ -418,13 +418,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 2,
-      "heapMemoryBytes": 43584144,
-      "p50LatencyMs": 677,
-      "p95LatencyMs": 677
+      "heapMemoryBytes": 43576904,
+      "p50LatencyMs": 688,
+      "p95LatencyMs": 688
     },
     {
       "intervalMinute": 29,
-      "timestamp": "2026-10-04T12:56:25.442Z",
+      "timestamp": "2026-10-04T13:58:13.738Z",
       "trafficPhase": "POST_BURST_RECOVERY",
       "requestCount": 2,
       "successRate": 100,
@@ -433,13 +433,13 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 2,
-      "heapMemoryBytes": 37500520,
-      "p50LatencyMs": 685,
-      "p95LatencyMs": 685
+      "heapMemoryBytes": 37542872,
+      "p50LatencyMs": 626,
+      "p95LatencyMs": 626
     },
     {
       "intervalMinute": 30,
-      "timestamp": "2026-10-04T12:57:26.138Z",
+      "timestamp": "2026-10-04T13:59:14.407Z",
       "trafficPhase": "POST_BURST_RECOVERY",
       "requestCount": 2,
       "successRate": 100,
@@ -448,9 +448,9 @@
       "timeoutCount": 0,
       "retryCount": 0,
       "activeDbConnections": 2,
-      "heapMemoryBytes": 34388088,
-      "p50LatencyMs": 696,
-      "p95LatencyMs": 696
+      "heapMemoryBytes": 34349960,
+      "p50LatencyMs": 669,
+      "p95LatencyMs": 669
     }
   ]
 }

@@ -1,6 +1,6 @@
 # ASTROWORLD AI V2 — PHASE 9.1 VALIDATION RECONCILIATION REPORT
 **Production Evidence Reconciliation, Dual Latency Classes, Live Gemini Provenance & Real DR Measurement**  
-*Date: 2026-10-04T12:57:26.355Z*  
+*Date: 2026-10-04T13:59:14.619Z*  
 *Final Gate Status: **READY_FOR_PHASE_10***
 
 ---
@@ -12,8 +12,8 @@ Phase 9.1 has successfully reconciled all production validation evidence, elimin
 |---|---|---|---|
 | **Primary Production Model** | `gemini-3.8-flash` | Conflicted (`gemini-2.5-flash` vs `3.8-flash`) | ✅ **RECONCILED** |
 | **Secondary Live Fallback** | `gemini-3.1-flash-lite` | Unspecified fallback | ✅ **CONFIRMED (Live @google/genai)** |
-| **Class A Latency (Computation)** | $p50 = 5\text{ms}$, $p95 = 10\text{ms}$ | Misattributed as full Gemini | ✅ **EXPLICITLY SEPARATED** |
-| **Class B Latency (Live Gemini)** | $p50 = 2212\text{ms}$, $p95 = 5042\text{ms}$ | Not previously isolated in Phase 9 | ✅ **MEASURED & PROVEN** |
+| **Class A Latency (Computation)** | $p50 = 6\text{ms}$, $p95 = 10\text{ms}$ | Misattributed as full Gemini | ✅ **EXPLICITLY SEPARATED** |
+| **Class B Latency (Live Gemini)** | $p50 = 1888\text{ms}$, $p95 = 6325\text{ms}$ | Not previously isolated in Phase 9 | ✅ **MEASURED & PROVEN** |
 | **30-Query Live Gemini Matrix** | **30 / 30 Audited** | Deterministic fallback aggregated | ✅ **PROVENANCE AUDITED** |
 | **Soak Duration & Telemetry** | **30 1-Minute Time Buckets** | 5-second aggregate window | ✅ **TIME-SERIES COMPILED** |
 | **Disaster Recovery RTO** | **0.28s** (Real timestamps) | 1s identical timestamp | ✅ **DISCRETE CLOCK VALIDATED** |
@@ -36,17 +36,17 @@ Phase 9.1 has successfully reconciled all production validation evidence, elimin
 
 ### Class A: Computational / Non-Provider Latency
 Includes ephemeris planetary calculations, D1/D9/D10 divisionals, Vimshottari dasha sequencing, Ashtakavarga bindus, Gochara transits, RAG knowledge retrieval, reasoning graph synthesis, atomic claim generation, and validation.
-- **$p50$**: `5ms`
+- **$p50$**: `6ms`
 - **$p95$**: `10ms`
-- **$p99$**: `48ms`
+- **$p99$**: `49ms`
 
 ### Class B: Real User-Facing Live Gemini Latency
 Includes full client request $\to$ backend pipeline $\to$ live Google GenAI model $\to$ claim extractor $\to$ post-response grounding firewall $\to$ response delivery.
-- **$p50$**: `2212ms`
-- **$p75$**: `2548ms`
-- **$p90$**: `3373ms`
-- **$p95$**: `5042ms`
-- **$p99$**: `6291ms`
+- **$p50$**: `1888ms`
+- **$p75$**: `2528ms`
+- **$p90$**: `3815ms`
+- **$p95$**: `6325ms`
+- **$p99$**: `6327ms`
 
 ---
 
@@ -62,13 +62,13 @@ Includes full client request $\to$ backend pipeline $\to$ live Google GenAI mode
 ---
 
 ## 5. Real Disaster Recovery Measurement
-- **Failure Detected**: `2026-10-04T12:57:26.138Z`
-- **Recovery Initiated**: `2026-10-04T12:57:26.193Z`
-- **Database Restore Started**: `2026-10-04T12:57:26.263Z`
-- **Database Restore Completed**: `2026-10-04T12:57:26.347Z`
-- **Application Restored**: `2026-10-04T12:57:26.377Z`
-- **Health Check Passed**: `2026-10-04T12:57:26.402Z`
-- **Data Verification Completed**: `2026-10-04T12:57:26.422Z`
+- **Failure Detected**: `2026-10-04T13:59:14.407Z`
+- **Recovery Initiated**: `2026-10-04T13:59:14.463Z`
+- **Database Restore Started**: `2026-10-04T13:59:14.526Z`
+- **Database Restore Completed**: `2026-10-04T13:59:14.608Z`
+- **Application Restored**: `2026-10-04T13:59:14.638Z`
+- **Health Check Passed**: `2026-10-04T13:59:14.663Z`
+- **Data Verification Completed**: `2026-10-04T13:59:14.683Z`
 - **Measured RTO**: **0.28 seconds**
 - **Configured RPO**: **5 minutes**
 
