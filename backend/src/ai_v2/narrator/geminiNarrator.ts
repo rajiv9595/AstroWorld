@@ -17,19 +17,42 @@ import { getNarratorSystemInstruction, buildNarratorUserPrompt } from './narrato
 import { ResponseClaimExtractor } from './claimExtractor.ts';
 import { PostResponseGroundingValidator } from './postResponseValidator.ts';
 
+export interface GeminiNarratorOptions {
+  forceMockMode?: boolean;
+  aiClient?: GoogleGenAI;
+  apiKey?: string;
+  primaryModel?: string;
+  fallbackModel?: string;
+  forcePrimaryFailure?: boolean;
+}
+
 export class GeminiNarrator {
   private claimExtractor: ResponseClaimExtractor;
   private validator: PostResponseGroundingValidator;
   private aiClient?: GoogleGenAI;
   private forceMockMode: boolean = false;
+  private primaryModel: string = 'gemini-3.8-flash';
+  private fallbackModel: string = 'gemini-3.1-flash-lite';
+  private forcePrimaryFailure: boolean = false;
+
   private lastExecutionMode: 'live_gemini' | 'mock_gemini' | 'deterministic_ci' = 'deterministic_ci';
+  private lastRequestedModel: string = 'gemini-3.8-flash';
+  private lastSelectedModel: string = 'gemini-3.8-flash';
+  private lastEffectiveModel: string = 'gemini-3.8-flash';
+  private lastFallbackTriggered: boolean = false;
+  private lastFallbackReason?: string;
+  private lastProviderLatencyMs: number = 0;
   private lastModelUsed?: string;
   private lastModelCalls: number = 0;
   private lastRepairAttempts: number = 0;
 
-  constructor(options?: { forceMockMode?: boolean; aiClient?: GoogleGenAI; apiKey?: string }) {
+  constructor(options?: GeminiNarratorOptions) {
     this.claimExtractor = new ResponseClaimExtractor();
     this.validator = new PostResponseGroundingValidator();
+
+    if (options?.primaryModel) this.primaryModel = options.primaryModel;
+    if (options?.fallbackModel) this.fallbackModel = options.fallbackModel;
+    if (options?.forcePrimaryFailure !== undefined) this.forcePrimaryFailure = options.forcePrimaryFailure;
 
     const isLiveRequested = !!options?.apiKey || !!options?.aiClient || process.env.FORCE_LIVE_GEMINI === 'true' || process.argv.includes('--live');
     this.forceMockMode = options?.forceMockMode ?? !isLiveRequested;
@@ -44,14 +67,30 @@ export class GeminiNarrator {
     }
   }
 
+  public setForcePrimaryFailure(force: boolean) {
+    this.forcePrimaryFailure = force;
+  }
+
   public getLastTelemetry(): {
+    requestedModel: string;
+    selectedModel: string;
+    effectiveModel: string;
+    fallbackTriggered: boolean;
+    fallbackReason?: string;
     executionMode: 'live_gemini' | 'mock_gemini' | 'deterministic_ci';
+    providerLatencyMs: number;
     modelCalls: number;
     repairAttempts: number;
     modelUsed?: string;
   } {
     return {
+      requestedModel: this.lastRequestedModel,
+      selectedModel: this.lastSelectedModel,
+      effectiveModel: this.lastEffectiveModel,
+      fallbackTriggered: this.lastFallbackTriggered,
+      fallbackReason: this.lastFallbackReason,
       executionMode: this.lastExecutionMode,
+      providerLatencyMs: this.lastProviderLatencyMs,
       modelCalls: this.lastModelCalls,
       repairAttempts: this.lastRepairAttempts,
       modelUsed: this.lastModelUsed,
@@ -66,17 +105,18 @@ export class GeminiNarrator {
     reasoning: ReasoningPacket,
     approvedClaimSet: ApprovedClaimSet,
     responsePlan: ResponsePlan,
-    options?: { forceMockMode?: boolean }
+    options?: { forceMockMode?: boolean; forcePrimaryFailure?: boolean }
   ): Promise<FinalResponse> {
     const questionId = plan.questionId;
     const responseId = responsePlan.responseId;
     const isMock = options?.forceMockMode ?? this.forceMockMode;
+    const forcePrimaryFail = options?.forcePrimaryFailure ?? this.forcePrimaryFailure;
     this.lastModelCalls = 0;
     this.lastRepairAttempts = 0;
     this.lastExecutionMode = this.aiClient && !isMock ? 'live_gemini' : (isMock ? 'mock_gemini' : 'deterministic_ci');
 
     // 1. Generate Draft Response (Via Gemini or Deterministic Narrator Synthesis)
-    let draftText = await this.generateDraft(plan, responsePlan, approvedClaimSet, isMock);
+    let draftText = await this.generateDraft(plan, responsePlan, approvedClaimSet, isMock, forcePrimaryFail);
     let validatorStatus: 'approved' | 'repaired' | 'fallback_safe' = 'approved';
 
     // 2. Extract Atomic Claims from Draft Prose
@@ -154,19 +194,27 @@ export class GeminiNarrator {
     plan: QuestionPlan,
     responsePlan: ResponsePlan,
     approvedClaimSet: ApprovedClaimSet,
-    forceMock?: boolean
+    forceMock?: boolean,
+    forcePrimaryFail?: boolean
   ): Promise<string> {
     const isMock = forceMock ?? this.forceMockMode;
+    this.lastRequestedModel = this.primaryModel;
+    this.lastSelectedModel = this.primaryModel;
+    this.lastFallbackTriggered = false;
+    this.lastFallbackReason = undefined;
+    this.lastProviderLatencyMs = 0;
+
     if (this.aiClient && !isMock) {
-      const candidateModels = ['gemini-3.8-flash', 'gemini-3.1-flash-lite'];
       const systemInstruction = getNarratorSystemInstruction();
       const userPrompt = buildNarratorUserPrompt(plan.rawQuestion, responsePlan, approvedClaimSet);
 
-      for (const modelName of candidateModels) {
+      // Controlled primary model attempt
+      if (!forcePrimaryFail) {
         try {
           this.lastModelCalls++;
+          const callStart = Date.now();
           const callPromise = this.aiClient.models.generateContent({
-            model: modelName,
+            model: this.primaryModel,
             contents: userPrompt,
             config: {
               systemInstruction,
@@ -177,23 +225,66 @@ export class GeminiNarrator {
           const response: any = await Promise.race([
             callPromise,
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`ModelCallTimeout: 4500ms exceeded for ${modelName}`)), 4500)
+              setTimeout(() => reject(new Error(`ModelCallTimeout: 4500ms exceeded for ${this.primaryModel}`)), 4500)
             ),
           ]);
 
           if (response.text && response.text.trim().length > 10) {
             this.lastExecutionMode = 'live_gemini';
-            this.lastModelUsed = modelName;
+            this.lastEffectiveModel = this.primaryModel;
+            this.lastModelUsed = this.primaryModel;
+            this.lastFallbackTriggered = false;
+            this.lastProviderLatencyMs = Date.now() - callStart;
             return response.text.trim();
           }
         } catch (err: any) {
-          console.warn(`[GeminiNarrator] Live model ${modelName} error: ${err.message}`);
+          this.lastFallbackTriggered = true;
+          this.lastFallbackReason = err?.message || `Error calling primary model ${this.primaryModel}`;
+          console.warn(`[GeminiNarrator] Primary model ${this.primaryModel} failed: ${this.lastFallbackReason}. Activating fallback to ${this.fallbackModel}.`);
         }
+      } else {
+        this.lastFallbackTriggered = true;
+        this.lastFallbackReason = 'CONTROLLED_PRIMARY_FAILURE_SIMULATION';
+      }
+
+      // Fallback model attempt
+      try {
+        this.lastModelCalls++;
+        const callStart = Date.now();
+        const callPromise = this.aiClient.models.generateContent({
+          model: this.fallbackModel,
+          contents: userPrompt,
+          config: {
+            systemInstruction,
+            temperature: 0.3,
+          },
+        });
+
+        const response: any = await Promise.race([
+          callPromise,
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(`ModelCallTimeout: 4500ms exceeded for ${this.fallbackModel}`)), 4500)
+          ),
+        ]);
+
+        if (response.text && response.text.trim().length > 10) {
+          this.lastExecutionMode = 'live_gemini';
+          this.lastEffectiveModel = this.fallbackModel;
+          this.lastModelUsed = this.fallbackModel;
+          this.lastProviderLatencyMs = Date.now() - callStart;
+          return response.text.trim();
+        }
+      } catch (err: any) {
+        this.lastFallbackReason = `ALL_LIVE_MODELS_UNAVAILABLE: Primary(${this.lastFallbackReason}) -> Fallback(${err?.message || 'unknown error'})`;
+        console.warn(`[GeminiNarrator] Fallback model ${this.fallbackModel} also failed: ${err.message}. Reverting to deterministic failsafe.`);
       }
     }
 
     this.lastExecutionMode = isMock ? 'mock_gemini' : 'deterministic_ci';
-    this.lastModelUsed = undefined;
+    this.lastSelectedModel = 'AstroWorld Classical Deterministic Narrator';
+    this.lastEffectiveModel = 'AstroWorld Classical Deterministic Narrator';
+    this.lastModelUsed = 'AstroWorld Classical Deterministic Narrator';
+    this.lastProviderLatencyMs = 0;
     // High-quality deterministic narrator synthesis
     return this.synthesizeDeterministicNarrative(plan, responsePlan, approvedClaimSet);
   }

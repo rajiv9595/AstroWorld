@@ -72,6 +72,15 @@ export interface ProductionConversationMetadata {
 export interface ProductionExecutionMetadata {
   requestId: string;
   durationMs: number;
+  requestedModel?: string;
+  selectedModel?: string;
+  effectiveModel?: string;
+  fallbackTriggered?: boolean;
+  fallbackReason?: string;
+  executionMode?: string;
+  providerLatencyMs?: number;
+  backendDurationMs?: number;
+  totalDurationMs?: number;
   modelUsed?: string;
   stageTimingsMs: {
     validation: number;

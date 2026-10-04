@@ -207,7 +207,16 @@ export class ProductionConsultationService {
         executionMetadata: {
           requestId,
           durationMs: totalDuration,
-          modelUsed: validatedReq.executionMode === 'production' ? 'gemini-2.5-pro' : 'deterministic-narrator',
+          requestedModel: consultResult.trace?.requestedModel || 'gemini-3.8-flash',
+          selectedModel: consultResult.trace?.selectedModel || 'gemini-3.8-flash',
+          effectiveModel: consultResult.trace?.effectiveModel || (consultResult.trace?.geminiModelUsed || 'AstroWorld Classical Deterministic Narrator'),
+          fallbackTriggered: consultResult.trace?.fallbackTriggered ?? false,
+          fallbackReason: consultResult.trace?.fallbackReason,
+          executionMode: consultResult.trace?.executionMode || (validatedReq.executionMode === 'production' ? 'production' : 'deterministic_ci'),
+          providerLatencyMs: consultResult.trace?.providerLatencyMs || consultResult.trace?.latencyMs?.narration || 0,
+          backendDurationMs: totalDuration,
+          totalDurationMs: totalDuration,
+          modelUsed: consultResult.trace?.effectiveModel || consultResult.trace?.geminiModelUsed || (validatedReq.executionMode === 'production' ? 'gemini-3.8-flash' : 'AstroWorld Classical Deterministic Narrator'),
           stageTimingsMs: {
             validation: valDuration,
             memoryLookup: consultResult.memoryPack ? 1 : 0,

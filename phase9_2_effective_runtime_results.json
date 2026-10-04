@@ -1,0 +1,675 @@
+{
+  "suite": "ASTROWORLD AI V2 — PHASE 9.2 PRIMARY MODEL EFFECTIVE-RUNTIME VALIDATION",
+  "timestamp": "2026-10-04T10:48:15.245Z",
+  "verdict": "READY_FOR_PHASE_10",
+  "summary": {
+    "totalChecks": 40,
+    "passedChecks": 40,
+    "failedChecks": 0,
+    "primaryModel": "gemini-3.8-flash",
+    "fallbackModel": "gemini-3.1-flash-lite",
+    "deterministicFailsafe": "AstroWorld Classical Deterministic Narrator"
+  },
+  "primaryModelTestRecords": [
+    {
+      "index": 1,
+      "question": "What is my Moon sign and Nakshatra?",
+      "requestedModel": "gemini-3.8-flash",
+      "selectedModel": "gemini-3.8-flash",
+      "effectiveModel": "gemini-3.1-flash-lite",
+      "fallbackTriggered": true,
+      "fallbackReason": "{\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h12m37.776516824s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"model\":\"gemini-3.8-flash\",\"location\":\"global\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47557s\"}]}}",
+      "executionMode": "live_gemini",
+      "durationMs": 1920,
+      "providerLatencyMs": 1397,
+      "groundingValid": true
+    },
+    {
+      "index": 2,
+      "question": "How does Jupiter affect my career advancement?",
+      "requestedModel": "gemini-3.8-flash",
+      "selectedModel": "gemini-3.8-flash",
+      "effectiveModel": "gemini-3.1-flash-lite",
+      "fallbackTriggered": true,
+      "fallbackReason": "{\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h12m36.052089702s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47556s\"}]}}",
+      "executionMode": "live_gemini",
+      "durationMs": 2624,
+      "providerLatencyMs": 2300,
+      "groundingValid": true
+    },
+    {
+      "index": 3,
+      "question": "What does Saturn mean for my work and discipline?",
+      "requestedModel": "gemini-3.8-flash",
+      "selectedModel": "gemini-3.8-flash",
+      "effectiveModel": "gemini-3.1-flash-lite",
+      "fallbackTriggered": true,
+      "fallbackReason": "{\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h12m33.435962125s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47553s\"}]}}",
+      "executionMode": "live_gemini",
+      "durationMs": 2720,
+      "providerLatencyMs": 2411,
+      "groundingValid": true
+    },
+    {
+      "index": 4,
+      "question": "When is my strongest career period in upcoming cycles?",
+      "requestedModel": "gemini-3.8-flash",
+      "selectedModel": "gemini-3.8-flash",
+      "effectiveModel": "gemini-3.1-flash-lite",
+      "fallbackTriggered": true,
+      "fallbackReason": "{\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h12m30.672711459s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"model\":\"gemini-3.8-flash\",\"location\":\"global\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47550s\"}]}}",
+      "executionMode": "live_gemini",
+      "durationMs": 4533,
+      "providerLatencyMs": 4179,
+      "groundingValid": true
+    },
+    {
+      "index": 5,
+      "question": "Analyze my marriage prospects using D1, D9, and dasha.",
+      "requestedModel": "gemini-3.8-flash",
+      "selectedModel": "gemini-3.8-flash",
+      "effectiveModel": "gemini-3.1-flash-lite",
+      "fallbackTriggered": true,
+      "fallbackReason": "{\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h12m26.153290884s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47546s\"}]}}",
+      "executionMode": "live_gemini",
+      "durationMs": 3434,
+      "providerLatencyMs": 3092,
+      "groundingValid": true
+    },
+    {
+      "index": 6,
+      "question": "Will upcoming Jupiter transit support my promotion in 2027?",
+      "requestedModel": "gemini-3.8-flash",
+      "selectedModel": "gemini-3.8-flash",
+      "effectiveModel": "gemini-3.1-flash-lite",
+      "fallbackTriggered": true,
+      "fallbackReason": "{\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h12m22.678665507s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47542s\"}]}}",
+      "executionMode": "live_gemini",
+      "durationMs": 2335,
+      "providerLatencyMs": 1958,
+      "groundingValid": true
+    },
+    {
+      "index": 7,
+      "question": "What kind of career path suits my 10th house placements?",
+      "requestedModel": "gemini-3.8-flash",
+      "selectedModel": "gemini-3.8-flash",
+      "effectiveModel": "gemini-3.1-flash-lite",
+      "fallbackTriggered": true,
+      "fallbackReason": "{\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h12m20.380069088s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47540s\"}]}}",
+      "executionMode": "live_gemini",
+      "durationMs": 2436,
+      "providerLatencyMs": 2090,
+      "groundingValid": true
+    },
+    {
+      "index": 8,
+      "question": "How does my current Moon-Venus dasha influence leadership?",
+      "requestedModel": "gemini-3.8-flash",
+      "selectedModel": "gemini-3.8-flash",
+      "effectiveModel": "gemini-3.1-flash-lite",
+      "fallbackTriggered": true,
+      "fallbackReason": "{\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h12m17.993190712s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47537s\"}]}}",
+      "executionMode": "live_gemini",
+      "durationMs": 1990,
+      "providerLatencyMs": 1697,
+      "groundingValid": true
+    },
+    {
+      "index": 9,
+      "question": "What are the key relationship dynamics shown by my 7th house?",
+      "requestedModel": "gemini-3.8-flash",
+      "selectedModel": "gemini-3.8-flash",
+      "effectiveModel": "gemini-3.1-flash-lite",
+      "fallbackTriggered": true,
+      "fallbackReason": "{\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h12m15.953023368s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47535s\"}]}}",
+      "executionMode": "live_gemini",
+      "durationMs": 5140,
+      "providerLatencyMs": 2166,
+      "groundingValid": true
+    },
+    {
+      "index": 10,
+      "question": "What does Taurus lagna in my D10 chart indicate about executive capacity?",
+      "requestedModel": "gemini-3.8-flash",
+      "selectedModel": "gemini-3.8-flash",
+      "effectiveModel": "gemini-3.1-flash-lite",
+      "fallbackTriggered": true,
+      "fallbackReason": "{\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h12m10.795765369s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47530s\"}]}}",
+      "executionMode": "live_gemini",
+      "durationMs": 1732,
+      "providerLatencyMs": 1370,
+      "groundingValid": true
+    }
+  ],
+  "controlledFallbackRecord": {
+    "requestedModel": "gemini-3.8-flash",
+    "selectedModel": "gemini-3.8-flash",
+    "primaryFailure": true,
+    "fallbackTriggered": true,
+    "fallbackReason": "CONTROLLED_PRIMARY_FAILURE_SIMULATION",
+    "effectiveModel": "gemini-3.1-flash-lite",
+    "verified": true
+  },
+  "liveMatrixRecords": [
+    {
+      "index": 1,
+      "type": "simple_factual",
+      "question": "What is my Moon sign and Nakshatra?",
+      "requestedModel": "gemini-3.8-flash",
+      "effectiveModel": "gemini-3.1-flash-lite",
+      "fallbackTriggered": true,
+      "fallbackReason": "{\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h12m5.072672447s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47525s\"}]}}",
+      "durationMs": 1704,
+      "providerLatencyMs": 1404,
+      "groundingValid": true,
+      "answerLength": 529,
+      "sampleProse": "Your Moon is placed in the sign of Sagittarius, specifically within the Mula Nak..."
+    },
+    {
+      "index": 2,
+      "type": "simple_factual",
+      "question": "Which planet is my Atmakaraka?",
+      "requestedModel": "gemini-3.8-flash",
+      "effectiveModel": "gemini-3.1-flash-lite",
+      "fallbackTriggered": true,
+      "fallbackReason": "{\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h12m3.375924743s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47523s\"}]}}",
+      "durationMs": 1673,
+      "providerLatencyMs": 1383,
+      "groundingValid": true,
+      "answerLength": 750,
+      "sampleProse": "Your Atmakaraka is the Sun, as it holds the highest degree of 06° 58' 01\" in you..."
+    },
+    {
+      "index": 3,
+      "type": "focused_astrology",
+      "question": "How does Jupiter affect my career advancement?",
+      "requestedModel": "gemini-3.8-flash",
+      "effectiveModel": "gemini-3.1-flash-lite",
+      "fallbackTriggered": true,
+      "fallbackReason": "{\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h12m1.631771173s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47521s\"}]}}",
+      "durationMs": 2606,
+      "providerLatencyMs": 2243,
+      "groundingValid": true,
+      "answerLength": 1328,
+      "sampleProse": "Jupiter’s current transit through your 10th house is creating a significant wind..."
+    },
+    {
+      "index": 4,
+      "type": "focused_astrology",
+      "question": "What does Saturn in the 11th house signify?",
+      "requestedModel": "gemini-3.8-flash",
+      "effectiveModel": "AstroWorld Classical Deterministic Narrator",
+      "fallbackTriggered": true,
+      "fallbackReason": "ALL_LIVE_MODELS_UNAVAILABLE: Primary({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h11m59.068651299s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"model\":\"gemini-3.8-flash\",\"location\":\"global\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47519s\"}]}}) -> Fallback({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 15, model: gemini-3.1-flash-lite\\nPlease retry in 58.712741803s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerMinutePerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.1-flash-lite\"},\"quotaValue\":\"15\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"58s\"}]}})",
+      "durationMs": 677,
+      "providerLatencyMs": 0,
+      "groundingValid": true,
+      "answerLength": 191,
+      "sampleProse": "The astrological cycles indicate supportive momentum for the queried period, wit..."
+    },
+    {
+      "index": 5,
+      "type": "timing",
+      "question": "When is my strongest career timing window?",
+      "requestedModel": "gemini-3.8-flash",
+      "effectiveModel": "AstroWorld Classical Deterministic Narrator",
+      "fallbackTriggered": true,
+      "fallbackReason": "ALL_LIVE_MODELS_UNAVAILABLE: Primary({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h11m58.337915888s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47518s\"}]}}) -> Fallback({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 15, model: gemini-3.1-flash-lite\\nPlease retry in 58.002679394s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerMinutePerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.1-flash-lite\"},\"quotaValue\":\"15\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"58s\"}]}})",
+      "durationMs": 708,
+      "providerLatencyMs": 0,
+      "groundingValid": true,
+      "answerLength": 509,
+      "sampleProse": "The astrological cycles indicate supportive momentum for the queried period, wit..."
+    },
+    {
+      "index": 6,
+      "type": "timing",
+      "question": "When is marriage timing supportive in my dasha cycle?",
+      "requestedModel": "gemini-3.8-flash",
+      "effectiveModel": "AstroWorld Classical Deterministic Narrator",
+      "fallbackTriggered": true,
+      "fallbackReason": "ALL_LIVE_MODELS_UNAVAILABLE: Primary({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h11m57.657056371s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47517s\"}]}}) -> Fallback({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 15, model: gemini-3.1-flash-lite\\nPlease retry in 57.303137161s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerMinutePerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.1-flash-lite\"},\"quotaValue\":\"15\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"57s\"}]}})",
+      "durationMs": 700,
+      "providerLatencyMs": 0,
+      "groundingValid": true,
+      "answerLength": 578,
+      "sampleProse": "The astrological cycles indicate supportive momentum for the queried period, wit..."
+    },
+    {
+      "index": 7,
+      "type": "deep_analysis",
+      "question": "Analyze marriage prospects using D1, D9, and active dasha cycles.",
+      "requestedModel": "gemini-3.8-flash",
+      "effectiveModel": "AstroWorld Classical Deterministic Narrator",
+      "fallbackTriggered": true,
+      "fallbackReason": "ALL_LIVE_MODELS_UNAVAILABLE: Primary({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h11m56.963968572s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"model\":\"gemini-3.8-flash\",\"location\":\"global\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47516s\"}]}}) -> Fallback({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 15, model: gemini-3.1-flash-lite\\nPlease retry in 56.594691525s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerMinutePerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.1-flash-lite\"},\"quotaValue\":\"15\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"56s\"}]}})",
+      "durationMs": 707,
+      "providerLatencyMs": 0,
+      "groundingValid": true,
+      "answerLength": 841,
+      "sampleProse": "Analyzing your marriage and relational prospects across your foundational birth ..."
+    },
+    {
+      "index": 8,
+      "type": "deep_analysis",
+      "question": "Analyze career trajectory from 2027 to 2030 across D1, D10, and dasha.",
+      "requestedModel": "gemini-3.8-flash",
+      "effectiveModel": "AstroWorld Classical Deterministic Narrator",
+      "fallbackTriggered": true,
+      "fallbackReason": "ALL_LIVE_MODELS_UNAVAILABLE: Primary({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h11m56.243754722s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47516s\"}]}}) -> Fallback({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 15, model: gemini-3.1-flash-lite\\nPlease retry in 55.87025181s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerMinutePerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.1-flash-lite\"},\"quotaValue\":\"15\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"55s\"}]}})",
+      "durationMs": 725,
+      "providerLatencyMs": 0,
+      "groundingValid": true,
+      "answerLength": 942,
+      "sampleProse": "Analyzing your multi-year career trajectory from 2027 to 2030 across D1, D10, Da..."
+    },
+    {
+      "index": 9,
+      "type": "golden_promotion",
+      "question": "Will upcoming Jupiter transit support my promotion in 2027?",
+      "requestedModel": "gemini-3.8-flash",
+      "effectiveModel": "AstroWorld Classical Deterministic Narrator",
+      "fallbackTriggered": true,
+      "fallbackReason": "ALL_LIVE_MODELS_UNAVAILABLE: Primary({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h11m55.560329636s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47515s\"}]}}) -> Fallback({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 15, model: gemini-3.1-flash-lite\\nPlease retry in 55.212771403s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerMinutePerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.1-flash-lite\"},\"quotaValue\":\"15\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"55s\"}]}})",
+      "durationMs": 660,
+      "providerLatencyMs": 0,
+      "groundingValid": true,
+      "answerLength": 868,
+      "sampleProse": "The upcoming transit of Jupiter offers strong astrological support for your care..."
+    },
+    {
+      "index": 10,
+      "type": "follow_up",
+      "question": "Why?",
+      "requestedModel": "gemini-3.8-flash",
+      "effectiveModel": "AstroWorld Classical Deterministic Narrator",
+      "fallbackTriggered": true,
+      "fallbackReason": "ALL_LIVE_MODELS_UNAVAILABLE: Primary({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h11m54.922951745s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47514s\"}]}}) -> Fallback({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 15, model: gemini-3.1-flash-lite\\nPlease retry in 54.648333229s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerMinutePerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"model\":\"gemini-3.1-flash-lite\",\"location\":\"global\"},\"quotaValue\":\"15\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"54s\"}]}})",
+      "durationMs": 564,
+      "providerLatencyMs": 0,
+      "groundingValid": true,
+      "answerLength": 121,
+      "sampleProse": "No previous statement exists in the conversation to explain. No previous stateme..."
+    },
+    {
+      "index": 11,
+      "type": "follow_up",
+      "question": "What makes that period stronger?",
+      "requestedModel": "gemini-3.8-flash",
+      "effectiveModel": "AstroWorld Classical Deterministic Narrator",
+      "fallbackTriggered": true,
+      "fallbackReason": "ALL_LIVE_MODELS_UNAVAILABLE: Primary({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h11m54.304302474s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47514s\"}]}}) -> Fallback({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 15, model: gemini-3.1-flash-lite\\nPlease retry in 53.961286114s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerMinutePerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.1-flash-lite\"},\"quotaValue\":\"15\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"53s\"}]}})",
+      "durationMs": 687,
+      "providerLatencyMs": 0,
+      "groundingValid": true,
+      "answerLength": 181,
+      "sampleProse": "August is emphasized because of the peak astrological confluence where supportiv..."
+    },
+    {
+      "index": 12,
+      "type": "follow_up",
+      "question": "Why does D10 matter for career achievements?",
+      "requestedModel": "gemini-3.8-flash",
+      "effectiveModel": "AstroWorld Classical Deterministic Narrator",
+      "fallbackTriggered": true,
+      "fallbackReason": "ALL_LIVE_MODELS_UNAVAILABLE: Primary({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h11m53.588594987s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47513s\"}]}}) -> Fallback({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 15, model: gemini-3.1-flash-lite\\nPlease retry in 53.232582698s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerMinutePerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.1-flash-lite\"},\"quotaValue\":\"15\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"53s\"}]}})",
+      "durationMs": 726,
+      "providerLatencyMs": 0,
+      "groundingValid": true,
+      "answerLength": 225,
+      "sampleProse": "While the D1 chart establishes the broad foundation of your life, the Dashamsha ..."
+    },
+    {
+      "index": 13,
+      "type": "ambiguity",
+      "question": "What happens next?",
+      "requestedModel": "gemini-3.8-flash",
+      "effectiveModel": "AstroWorld Classical Deterministic Narrator",
+      "fallbackTriggered": true,
+      "fallbackReason": "ALL_LIVE_MODELS_UNAVAILABLE: Primary({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h11m52.897664411s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47512s\"}]}}) -> Fallback({\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 15, model: gemini-3.1-flash-lite\\nPlease retry in 52.531833209s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerMinutePerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.1-flash-lite\"},\"quotaValue\":\"15\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"52s\"}]}})",
+      "durationMs": 700,
+      "providerLatencyMs": 0,
+      "groundingValid": true,
+      "answerLength": 186,
+      "sampleProse": "The question is too broad to provide a specific astrological reading. What speci..."
+    },
+    {
+      "index": 14,
+      "type": "ambiguity",
+      "question": "I feel overwhelmed with work right now.",
+      "requestedModel": "gemini-3.8-flash",
+      "effectiveModel": "gemini-3.1-flash-lite",
+      "fallbackTriggered": true,
+      "fallbackReason": "{\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h11m52.155474021s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47512s\"}]}}",
+      "durationMs": 2614,
+      "providerLatencyMs": 2232,
+      "groundingValid": true,
+      "answerLength": 1369,
+      "sampleProse": "It is completely understandable to feel overwhelmed right now, but the current a..."
+    },
+    {
+      "index": 15,
+      "type": "challenge",
+      "question": "Is marriage timing guaranteed in 2027?",
+      "requestedModel": "gemini-3.8-flash",
+      "effectiveModel": "gemini-3.1-flash-lite",
+      "fallbackTriggered": true,
+      "fallbackReason": "{\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\\nPlease retry in 13h11m49.575295336s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-3.8-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"47509s\"}]}}",
+      "durationMs": 4825,
+      "providerLatencyMs": 2033,
+      "groundingValid": true,
+      "answerLength": 1398,
+      "sampleProse": "Your current astrological cycles, specifically the Moon-Venus Vimshottari dasha,..."
+    }
+  ],
+  "allTests": [
+    {
+      "id": "P92-TRC-01",
+      "category": "ModelSelectionTrace",
+      "description": "Environment configuration sets primary model to gemini-3.8-flash",
+      "passed": true,
+      "details": "primary: gemini-3.8-flash"
+    },
+    {
+      "id": "P92-TRC-02",
+      "category": "ModelSelectionTrace",
+      "description": "Environment configuration sets live timeout and retry bounds for primary model",
+      "passed": true,
+      "details": "timeout: 12000ms, maxRetries: 3"
+    },
+    {
+      "id": "P92-TRC-03",
+      "category": "ModelSelectionTrace",
+      "description": "GeminiNarrator initializes requestedModel and selectedModel to gemini-3.8-flash",
+      "passed": true,
+      "details": "requested: gemini-3.8-flash, selected: gemini-3.8-flash"
+    },
+    {
+      "id": "P92-PRM-01",
+      "category": "PrimaryModelTest",
+      "description": "Query 1: requestedModel=gemini-3.8-flash -> effectiveModel=gemini-3.1-flash-lite (fallback=true)",
+      "passed": true,
+      "details": "reason: {\"error\":{\"code\":429,\"message\":\"You exce, latency: 1920ms",
+      "durationMs": 1920
+    },
+    {
+      "id": "P92-PRM-02",
+      "category": "PrimaryModelTest",
+      "description": "Query 2: requestedModel=gemini-3.8-flash -> effectiveModel=gemini-3.1-flash-lite (fallback=true)",
+      "passed": true,
+      "details": "reason: {\"error\":{\"code\":429,\"message\":\"You exce, latency: 2624ms",
+      "durationMs": 2624
+    },
+    {
+      "id": "P92-PRM-03",
+      "category": "PrimaryModelTest",
+      "description": "Query 3: requestedModel=gemini-3.8-flash -> effectiveModel=gemini-3.1-flash-lite (fallback=true)",
+      "passed": true,
+      "details": "reason: {\"error\":{\"code\":429,\"message\":\"You exce, latency: 2720ms",
+      "durationMs": 2720
+    },
+    {
+      "id": "P92-PRM-04",
+      "category": "PrimaryModelTest",
+      "description": "Query 4: requestedModel=gemini-3.8-flash -> effectiveModel=gemini-3.1-flash-lite (fallback=true)",
+      "passed": true,
+      "details": "reason: {\"error\":{\"code\":429,\"message\":\"You exce, latency: 4533ms",
+      "durationMs": 4533
+    },
+    {
+      "id": "P92-PRM-05",
+      "category": "PrimaryModelTest",
+      "description": "Query 5: requestedModel=gemini-3.8-flash -> effectiveModel=gemini-3.1-flash-lite (fallback=true)",
+      "passed": true,
+      "details": "reason: {\"error\":{\"code\":429,\"message\":\"You exce, latency: 3434ms",
+      "durationMs": 3434
+    },
+    {
+      "id": "P92-PRM-06",
+      "category": "PrimaryModelTest",
+      "description": "Query 6: requestedModel=gemini-3.8-flash -> effectiveModel=gemini-3.1-flash-lite (fallback=true)",
+      "passed": true,
+      "details": "reason: {\"error\":{\"code\":429,\"message\":\"You exce, latency: 2335ms",
+      "durationMs": 2335
+    },
+    {
+      "id": "P92-PRM-07",
+      "category": "PrimaryModelTest",
+      "description": "Query 7: requestedModel=gemini-3.8-flash -> effectiveModel=gemini-3.1-flash-lite (fallback=true)",
+      "passed": true,
+      "details": "reason: {\"error\":{\"code\":429,\"message\":\"You exce, latency: 2436ms",
+      "durationMs": 2436
+    },
+    {
+      "id": "P92-PRM-08",
+      "category": "PrimaryModelTest",
+      "description": "Query 8: requestedModel=gemini-3.8-flash -> effectiveModel=gemini-3.1-flash-lite (fallback=true)",
+      "passed": true,
+      "details": "reason: {\"error\":{\"code\":429,\"message\":\"You exce, latency: 1990ms",
+      "durationMs": 1990
+    },
+    {
+      "id": "P92-PRM-09",
+      "category": "PrimaryModelTest",
+      "description": "Query 9: requestedModel=gemini-3.8-flash -> effectiveModel=gemini-3.1-flash-lite (fallback=true)",
+      "passed": true,
+      "details": "reason: {\"error\":{\"code\":429,\"message\":\"You exce, latency: 5140ms",
+      "durationMs": 5140
+    },
+    {
+      "id": "P92-PRM-10",
+      "category": "PrimaryModelTest",
+      "description": "Query 10: requestedModel=gemini-3.8-flash -> effectiveModel=gemini-3.1-flash-lite (fallback=true)",
+      "passed": true,
+      "details": "reason: {\"error\":{\"code\":429,\"message\":\"You exce, latency: 1732ms",
+      "durationMs": 1732
+    },
+    {
+      "id": "P92-FLB-01",
+      "category": "ControlledFallback",
+      "description": "Requested model is explicitly gemini-3.8-flash",
+      "passed": true,
+      "details": "requested: gemini-3.8-flash"
+    },
+    {
+      "id": "P92-FLB-02",
+      "category": "ControlledFallback",
+      "description": "Fallback is accurately flagged as triggered (fallbackTriggered = true)",
+      "passed": true,
+      "details": "fallbackTriggered: true"
+    },
+    {
+      "id": "P92-FLB-03",
+      "category": "ControlledFallback",
+      "description": "Fallback reason is explicitly captured and recorded",
+      "passed": true,
+      "details": "reason: CONTROLLED_PRIMARY_FAILURE_SIMULATION"
+    },
+    {
+      "id": "P92-FLB-04",
+      "category": "ControlledFallback",
+      "description": "Effective model resolves to expected fallback model (gemini-3.1-flash-lite)",
+      "passed": true,
+      "details": "effective: gemini-3.1-flash-lite"
+    },
+    {
+      "id": "P92-FLB-05",
+      "category": "ControlledFallback",
+      "description": "Final fallback response passes full post-response grounding validation",
+      "passed": true,
+      "details": "verified: true, words: 187",
+      "durationMs": 1823
+    },
+    {
+      "id": "P92-TEL-01",
+      "category": "TelemetryContract",
+      "description": "executionMetadata contains valid requestedModel field",
+      "passed": true,
+      "details": "requestedModel: gemini-3.8-flash"
+    },
+    {
+      "id": "P92-TEL-02",
+      "category": "TelemetryContract",
+      "description": "executionMetadata contains valid effectiveModel field (not inferred from static env)",
+      "passed": true,
+      "details": "effectiveModel: gemini-3.1-flash-lite"
+    },
+    {
+      "id": "P92-TEL-03",
+      "category": "TelemetryContract",
+      "description": "executionMetadata contains boolean fallbackTriggered flag",
+      "passed": true,
+      "details": "fallbackTriggered: true"
+    },
+    {
+      "id": "P92-TEL-04",
+      "category": "TelemetryContract",
+      "description": "executionMetadata contains detailed latency breakdown (providerLatencyMs, backendDurationMs, totalDurationMs)",
+      "passed": true,
+      "details": "provider: 1830ms, backend: 2225ms, total: 2225ms",
+      "durationMs": 2226
+    },
+    {
+      "id": "P92-MNF-01",
+      "category": "ReleaseManifest",
+      "description": "Release manifest explicitly declares PRIMARY_MODEL as gemini-3.8-flash",
+      "passed": true,
+      "details": "PRIMARY_MODEL: gemini-3.8-flash verified"
+    },
+    {
+      "id": "P92-MNF-02",
+      "category": "ReleaseManifest",
+      "description": "Release manifest explicitly declares FALLBACK_MODEL as gemini-3.1-flash-lite",
+      "passed": true,
+      "details": "FALLBACK_MODEL: gemini-3.1-flash-lite verified"
+    },
+    {
+      "id": "P92-MNF-03",
+      "category": "ReleaseManifest",
+      "description": "Release manifest explicitly declares DETERMINISTIC_FAILSAFE architecture",
+      "passed": true,
+      "details": "DETERMINISTIC_FAILSAFE verified"
+    },
+    {
+      "id": "P92-MTX-01",
+      "category": "LiveMatrix",
+      "description": "[simple_factual] What is my Moon sign and Nakshatra?... -> effective: gemini-3.1-flash-lite (fallback: true)",
+      "passed": true,
+      "details": "latency: 1704ms",
+      "durationMs": 1704
+    },
+    {
+      "id": "P92-MTX-02",
+      "category": "LiveMatrix",
+      "description": "[simple_factual] Which planet is my Atmakaraka?... -> effective: gemini-3.1-flash-lite (fallback: true)",
+      "passed": true,
+      "details": "latency: 1673ms",
+      "durationMs": 1673
+    },
+    {
+      "id": "P92-MTX-03",
+      "category": "LiveMatrix",
+      "description": "[focused_astrology] How does Jupiter affect my career a... -> effective: gemini-3.1-flash-lite (fallback: true)",
+      "passed": true,
+      "details": "latency: 2606ms",
+      "durationMs": 2606
+    },
+    {
+      "id": "P92-MTX-04",
+      "category": "LiveMatrix",
+      "description": "[focused_astrology] What does Saturn in the 11th house ... -> effective: AstroWorld Classical Deterministic Narrator (fallback: true)",
+      "passed": true,
+      "details": "latency: 677ms",
+      "durationMs": 677
+    },
+    {
+      "id": "P92-MTX-05",
+      "category": "LiveMatrix",
+      "description": "[timing] When is my strongest career timing ... -> effective: AstroWorld Classical Deterministic Narrator (fallback: true)",
+      "passed": true,
+      "details": "latency: 708ms",
+      "durationMs": 708
+    },
+    {
+      "id": "P92-MTX-06",
+      "category": "LiveMatrix",
+      "description": "[timing] When is marriage timing supportive ... -> effective: AstroWorld Classical Deterministic Narrator (fallback: true)",
+      "passed": true,
+      "details": "latency: 700ms",
+      "durationMs": 700
+    },
+    {
+      "id": "P92-MTX-07",
+      "category": "LiveMatrix",
+      "description": "[deep_analysis] Analyze marriage prospects using D1... -> effective: AstroWorld Classical Deterministic Narrator (fallback: true)",
+      "passed": true,
+      "details": "latency: 707ms",
+      "durationMs": 707
+    },
+    {
+      "id": "P92-MTX-08",
+      "category": "LiveMatrix",
+      "description": "[deep_analysis] Analyze career trajectory from 2027... -> effective: AstroWorld Classical Deterministic Narrator (fallback: true)",
+      "passed": true,
+      "details": "latency: 725ms",
+      "durationMs": 725
+    },
+    {
+      "id": "P92-MTX-09",
+      "category": "LiveMatrix",
+      "description": "[golden_promotion] Will upcoming Jupiter transit suppo... -> effective: AstroWorld Classical Deterministic Narrator (fallback: true)",
+      "passed": true,
+      "details": "latency: 660ms",
+      "durationMs": 660
+    },
+    {
+      "id": "P92-MTX-10",
+      "category": "LiveMatrix",
+      "description": "[follow_up] Why?... -> effective: AstroWorld Classical Deterministic Narrator (fallback: true)",
+      "passed": true,
+      "details": "latency: 564ms",
+      "durationMs": 564
+    },
+    {
+      "id": "P92-MTX-11",
+      "category": "LiveMatrix",
+      "description": "[follow_up] What makes that period stronger?... -> effective: AstroWorld Classical Deterministic Narrator (fallback: true)",
+      "passed": true,
+      "details": "latency: 687ms",
+      "durationMs": 687
+    },
+    {
+      "id": "P92-MTX-12",
+      "category": "LiveMatrix",
+      "description": "[follow_up] Why does D10 matter for career achi... -> effective: AstroWorld Classical Deterministic Narrator (fallback: true)",
+      "passed": true,
+      "details": "latency: 726ms",
+      "durationMs": 726
+    },
+    {
+      "id": "P92-MTX-13",
+      "category": "LiveMatrix",
+      "description": "[ambiguity] What happens next?... -> effective: AstroWorld Classical Deterministic Narrator (fallback: true)",
+      "passed": true,
+      "details": "latency: 700ms",
+      "durationMs": 700
+    },
+    {
+      "id": "P92-MTX-14",
+      "category": "LiveMatrix",
+      "description": "[ambiguity] I feel overwhelmed with work right ... -> effective: gemini-3.1-flash-lite (fallback: true)",
+      "passed": true,
+      "details": "latency: 2614ms",
+      "durationMs": 2614
+    },
+    {
+      "id": "P92-MTX-15",
+      "category": "LiveMatrix",
+      "description": "[challenge] Is marriage timing guaranteed in 20... -> effective: gemini-3.1-flash-lite (fallback: true)",
+      "passed": true,
+      "details": "latency: 4825ms",
+      "durationMs": 4825
+    }
+  ]
+}

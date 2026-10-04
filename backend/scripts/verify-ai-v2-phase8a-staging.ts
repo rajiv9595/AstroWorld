@@ -104,7 +104,11 @@ async function runPhase8AStagingSuite() {
   // 2. SECRETS AUDIT
   // =========================================================================
   console.log('\n--- 2. SECRETS AUDIT & SANITIZATION ---');
-  const envExamplePath = path.resolve(process.cwd(), '.env.example');
+  const envExampleCandidates = [
+    path.resolve(process.cwd(), '.env.example'),
+    path.resolve(process.cwd(), '../.env.example'),
+  ];
+  const envExamplePath = envExampleCandidates.find(p => fs.existsSync(p)) || envExampleCandidates[0];
   const envExampleContent = fs.existsSync(envExamplePath) ? fs.readFileSync(envExamplePath, 'utf-8') : '';
   const scanEnvExample = SecretManager.scanForSecrets(envExampleContent);
   assert(!scanEnvExample.containsSecrets, 'SEC_01', 'SecretsAudit', '.env.example contains 0 real hardcoded secrets or API keys');
@@ -171,11 +175,19 @@ async function runPhase8AStagingSuite() {
   // 5. FRONTEND BUILD & STAGING INTEGRATION
   // =========================================================================
   console.log('\n--- 5. FRONTEND BUILD & STAGING INTEGRATION ---');
-  const viteConfigPath = path.resolve(process.cwd(), 'frontend/vite.config.ts');
+  const viteCandidates = [
+    path.resolve(process.cwd(), 'frontend/vite.config.ts'),
+    path.resolve(process.cwd(), '../frontend/vite.config.ts'),
+  ];
+  const viteConfigPath = viteCandidates.find(p => fs.existsSync(p)) || viteCandidates[0];
   const viteExists = fs.existsSync(viteConfigPath);
   assert(viteExists, 'FE_01', 'FrontendStaging', 'Frontend Vite build configuration verified');
 
-  const aiApiClientPath = path.resolve(process.cwd(), 'frontend/src/services/aiV2ApiClient.ts');
+  const aiApiClientCandidates = [
+    path.resolve(process.cwd(), 'frontend/src/services/aiV2ApiClient.ts'),
+    path.resolve(process.cwd(), '../frontend/src/services/aiV2ApiClient.ts'),
+  ];
+  const aiApiClientPath = aiApiClientCandidates.find(p => fs.existsSync(p)) || aiApiClientCandidates[0];
   const aiApiClientCode = fs.existsSync(aiApiClientPath) ? fs.readFileSync(aiApiClientPath, 'utf-8') : '';
   assert(aiApiClientCode.includes('/api/ai-v2'), 'FE_02', 'FrontendStaging', 'Frontend client binds to authoritative backend API endpoint (/api/ai-v2)');
   assert(!aiApiClientCode.includes('mock_gemini_key'), 'FE_03', 'FrontendStaging', 'Zero mock keys or mock data in frontend client bundle');

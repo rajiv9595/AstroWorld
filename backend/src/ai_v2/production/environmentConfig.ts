@@ -137,7 +137,7 @@ export class EnvironmentManager {
             cookieSameSite: 'strict',
           },
           gemini: {
-            modelName: 'gemini-2.5-flash',
+            modelName: 'gemini-3.8-flash',
             timeoutMs: 10000,
             maxRetries: 2,
           },
@@ -178,7 +178,7 @@ export class EnvironmentManager {
             cookieSameSite: 'strict',
           },
           gemini: {
-            modelName: 'gemini-2.5-flash',
+            modelName: 'gemini-3.8-flash',
             timeoutMs: 12000,
             maxRetries: 3,
           },
@@ -218,7 +218,7 @@ export class EnvironmentManager {
             cookieSameSite: 'lax',
           },
           gemini: {
-            modelName: 'gemini-2.5-flash',
+            modelName: 'gemini-3.8-flash',
             timeoutMs: 15000,
             maxRetries: 2,
           },

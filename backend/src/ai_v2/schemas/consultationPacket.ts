@@ -41,6 +41,14 @@ export interface ConsultationTrace {
   traceId: string;
   questionId: string;
   executionMode: ExecutionMode;
+  requestedModel?: string;
+  selectedModel?: string;
+  effectiveModel?: string;
+  fallbackTriggered?: boolean;
+  fallbackReason?: string;
+  providerLatencyMs?: number;
+  backendDurationMs?: number;
+  totalDurationMs?: number;
   geminiModelUsed?: string;
   latencyMs: ConsultationLatencyBreakdown;
   metrics: ConsultationMetrics;

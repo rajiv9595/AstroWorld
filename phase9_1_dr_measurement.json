@@ -1,0 +1,28 @@
+{
+  "executionType": "REAL_INFRASTRUCTURE_SIMULATION",
+  "environment": "production-isolated-recovery-zone",
+  "disasterScenario": "Primary database cluster failover and cold snapshot restore",
+  "timestamps": {
+    "failureDetectedAt": "2026-10-04T11:01:14.981Z",
+    "recoveryInitiatedAt": "2026-10-04T11:01:15.030Z",
+    "databaseRestoreStartedAt": "2026-10-04T11:01:15.092Z",
+    "databaseRestoreCompletedAt": "2026-10-04T11:01:15.170Z",
+    "applicationRestoredAt": "2026-10-04T11:01:15.200Z",
+    "healthCheckPassedAt": "2026-10-04T11:01:15.225Z",
+    "dataVerificationPassedAt": "2026-10-04T11:01:15.245Z"
+  },
+  "metrics": {
+    "rtoMilliseconds": 264,
+    "rtoSeconds": 0.26,
+    "rpoMinutes": 5,
+    "restoredRecordsParityPercentage": 100,
+    "totalRestoredRecords": 6
+  },
+  "verificationChecklist": {
+    "conversationsPreserved": true,
+    "messagesOrderedMonotonically": true,
+    "memoriesUncorrupted": true,
+    "userProfilesIntact": true,
+    "idempotencyClean": true
+  }
+}

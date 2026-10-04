@@ -54,6 +54,9 @@ export interface ConsultationOptions {
   conversationState?: ConversationState;
   userId?: string;
   memoryEnabled?: boolean;
+  primaryModel?: string;
+  fallbackModel?: string;
+  forcePrimaryFailure?: boolean;
 }
 
 export class ConsultationOrchestrator {
@@ -81,6 +84,9 @@ export class ConsultationOrchestrator {
     apiKey?: string;
     aiClient?: GoogleGenAI;
     memoryRepository?: IPersistentMemoryRepository;
+    primaryModel?: string;
+    fallbackModel?: string;
+    forcePrimaryFailure?: boolean;
   }) {
     this.planner = new QuestionPlanner();
     this.toolOrchestrator = new ToolExecutionOrchestrator();
@@ -96,6 +102,9 @@ export class ConsultationOrchestrator {
     this.narrator = new GeminiNarrator({
       ...options,
       forceMockMode: options?.forceMockMode ?? !this.isLiveMode,
+      primaryModel: options?.primaryModel || 'gemini-3.8-flash',
+      fallbackModel: options?.fallbackModel || 'gemini-3.1-flash-lite',
+      forcePrimaryFailure: options?.forcePrimaryFailure,
     });
     this.stateManager = new ConversationStateManager();
     this.stateResolver = new ConversationStateResolver();
@@ -297,7 +306,10 @@ export class ConsultationOrchestrator {
       reasoningPacket,
       approvedClaimSet,
       responsePlan,
-      { forceMockMode: options?.forceMockMode }
+      {
+        forceMockMode: options?.forceMockMode,
+        forcePrimaryFailure: options?.forcePrimaryFailure,
+      }
     );
     const latencyNarration = Date.now() - t6;
 
@@ -338,7 +350,15 @@ export class ConsultationOrchestrator {
       traceId,
       questionId: questionPlan.questionId,
       executionMode,
-      geminiModelUsed: executionMode === 'live_gemini' ? (narratorTelemetry.modelUsed || 'gemini-3.8-flash') : undefined,
+      requestedModel: narratorTelemetry.requestedModel,
+      selectedModel: narratorTelemetry.selectedModel,
+      effectiveModel: narratorTelemetry.effectiveModel,
+      fallbackTriggered: narratorTelemetry.fallbackTriggered,
+      fallbackReason: narratorTelemetry.fallbackReason,
+      providerLatencyMs: narratorTelemetry.providerLatencyMs,
+      backendDurationMs: totalLatency,
+      totalDurationMs: totalLatency,
+      geminiModelUsed: executionMode === 'live_gemini' ? narratorTelemetry.effectiveModel : undefined,
       latencyMs: latencyBreakdown,
       metrics,
       timestampIso: new Date().toISOString(),

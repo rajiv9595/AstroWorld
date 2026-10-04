@@ -24,10 +24,16 @@ export class MigrationRunner {
    * Runs all pending migration scripts in sequential order.
    */
   public async migrateUp(migrationsDir?: string): Promise<{ applied: string[]; total: number }> {
-    const dir = migrationsDir || path.resolve(process.cwd(), 'backend/src/db/migrations');
+    const candidates = [
+      migrationsDir,
+      path.resolve(process.cwd(), 'src/db/migrations'),
+      path.resolve(process.cwd(), 'backend/src/db/migrations'),
+      path.resolve(process.cwd(), '../backend/src/db/migrations'),
+    ].filter(Boolean) as string[];
+    const dir = candidates.find(d => fs.existsSync(d)) || candidates[0];
     const applied: string[] = [];
 
-    if (!fs.existsSync(dir)) {
+    if (!dir || !fs.existsSync(dir)) {
       return { applied: [], total: 0 };
     }
 

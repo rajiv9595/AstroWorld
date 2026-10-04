@@ -5,7 +5,7 @@
 
 export class SecretManager {
   private static sensitivePatterns: RegExp[] = [
-    /AIzaSy[0-9A-Za-z_-]{33}/g, // Google API Key
+    /AIzaSy[0-9A-Za-z_-]{28,}/g, // Google API Key
     /sk-[a-zA-Z0-9]{32,}/g,     // Standard secret keys
     /eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}/g, // JWTs
     /postgres(?:ql)?:\/\/[^:]+:([^@]+)@/g, // DB Passwords in URLs
@@ -23,7 +23,7 @@ export class SecretManager {
     let sanitized = input;
 
     // Mask Google API keys
-    sanitized = sanitized.replace(/AIzaSy[0-9A-Za-z_-]{33}/g, 'AIzaSy[REDACTED_API_KEY]');
+    sanitized = sanitized.replace(/AIzaSy[0-9A-Za-z_-]{28,}/g, 'AIzaSy[REDACTED_API_KEY]');
 
     // Mask DB Connection Strings with passwords
     sanitized = sanitized.replace(/(postgres(?:ql)?:\/\/[^:]+:)([^@]+)(@)/g, '$1[REDACTED_PASSWORD]$3');
@@ -44,7 +44,7 @@ export class SecretManager {
     const matches: string[] = [];
     if (!content) return { containsSecrets: false, matches: [] };
 
-    const googleKeyMatch = content.match(/AIzaSy[0-9A-Za-z_-]{33}/g);
+    const googleKeyMatch = content.match(/AIzaSy[0-9A-Za-z_-]{28,}/g);
     if (googleKeyMatch) matches.push(...googleKeyMatch.map(k => `Google Key: ${k.substring(0, 6)}...`));
 
     const dbPassMatch = content.match(/postgres(?:ql)?:\/\/[^:]+:([^@]{4,})@/g);
