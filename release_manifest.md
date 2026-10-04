@@ -1,10 +1,11 @@
 # ASTROWORLD AI V2 — PRODUCTION RELEASE MANIFEST
 **Release Tag**: `v2.0.0-rc1`  
-**Status**: `READY_FOR_CONTROLLED_PUBLIC_LAUNCH`  
+**Status**: `READY_FOR_HUMAN_SIGN_OFF`  
+**Operational Status**: `NEEDS_OPERATIONAL_REVIEW` (Latency SLO Breach)  
 **Build Target**: `production`  
 **Release Date**: `2026-10-04`  
-**Approved Commit**: `origin/main` (`dafc4f2baba23ffa50198b0211defe37d798fb88`)  
-**General Public Access**: `DISABLED` (0% Traffic / Controlled Internal Only)
+**Release Identity Policy**: Release tag `v2.0.0-rc1` anchored to verified baseline commit `b7ef4f8955455c99ea982c4a7577808c5bab5711` on branch `main`  
+**General Public Access**: `DISABLED` (0% Traffic / Staged Rollout Blocked)
 
 ---
 
@@ -28,16 +29,20 @@
 
 ---
 
-## 3. Operational Performance Budgets
-- **Class A (Computational / Non-Provider Latency)**: $p50 \le 30\text{ms}$, $p95 \le 80\text{ms}$ (Measured: $p50 = 6\text{ms}$, $p95 = 10\text{ms}$)
-- **Class B (Real Live Gemini End-to-End Latency)**: $p50 \le 3000\text{ms}$, $p95 \le 6000\text{ms}$ (Measured: $p50 = 1888\text{ms}$, $p95 = 6325\text{ms}$)
+## 3. Operational Performance Budgets & Real Evidence
+- **Class A (Computational / Non-Provider Latency)**: $p50 \le 30\text{ms}$, $p95 \le 80\text{ms}$  
+  - *Measured*: $p50 = 6\text{ms}$, $p95 = 10\text{ms}$ [Status: **MET** / `REAL_RUNTIME_EVIDENCE`]
+- **Class B (Real Live Gemini End-to-End Latency)**: $p50 \le 3000\text{ms}$, $p95 \le 6000\text{ms}$  
+  - *Measured*: $p50 = 1888\text{ms}$, $p95 = 6325\text{ms}$ [Status: **BREACHED** (+325ms above SLO) / `REAL_RUNTIME_EVIDENCE`]
 - **Disaster Recovery RTO**: $\le 300\text{s}$ (Measured: $0.26\text{s}$)
 - **Disaster Recovery RPO**: $\le 15\text{ min}$ (Configured: $5\text{ min}$)
 - **Cross-User Data Isolation**: $100\%$ (Zero IDOR leakage)
 
 ---
 
-## 4. Operational Sign-Off
-- **Architecture Integrity**: Feature-frozen & verified across 23 monorepo suites
+## 4. Operational Sign-Off & Rollout Readiness
+- **Engineering Architecture Integrity**: Feature-frozen & verified across 23 monorepo suites (100% Passed)
 - **Security Posture**: 0 P0/P1 defects, 0 exposed secrets, 0 IDOR vulnerabilities
-- **Operational Gate**: `READY_FOR_HUMAN_SIGN_OFF`
+- **Operational SLO Gate**: `NEEDS_OPERATIONAL_REVIEW` (Due to Class B $p95 = 6325\text{ms} > 6000\text{ms}$)
+- **Stage 1 Rollout Eligibility**: `BLOCKED` ($p95 < 4000\text{ms}$ threshold not met)
+- **Public Traffic Policy**: Strictly `CLOSED / 0%` until human operational sign-off on latency waiver or quota tier upgrade.

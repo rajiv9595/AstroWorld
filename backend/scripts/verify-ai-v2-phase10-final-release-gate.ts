@@ -636,8 +636,11 @@ ${goldenResults.map(r => `| ${r.id} | ${r.name} | ${r.question.substring(0, 35)}
 ---
 
 ## 7. Operational Latency Profiles
-- **Class A (Computational / Non-Provider Latency):** $p50 = 5\\text{ms}$, $p95 = 12\\text{ms}$
-- **Class B (Live Gemini Provider Latency):** $p50 \\approx 1.5\\text{s}$, $p95 \\approx 2.8\\text{s}$
+- **Class A (Computational / Non-Provider Latency):** $p50 = 6\\text{ms}$, $p95 = 10\\text{ms}$ [Evidence: \`REAL_RUNTIME_EVIDENCE\` from Phase 9.1 30-query computational timing]
+- **Class B (Live Gemini Provider Latency):** $p50 = 1888\\text{ms}$, $p95 = 6325\\text{ms}$ [Evidence: \`REAL_RUNTIME_EVIDENCE\` from Phase 9.1 Live 30-Query Matrix]
+- **Operational Latency SLO Audit:**
+  - Class A SLO ($p95 \\le 80\\text{ms}$): **MET** ($10\\text{ms} \\le 80\\text{ms}$)
+  - Class B SLO ($p95 \\le 6000\\text{ms}$): **BREACHED** ($6325\\text{ms} > 6000\\text{ms}$, variance $+325\\text{ms}$ under free-tier quota limits)
 - **Health States Defined:**
   - \`HEALTHY\`: Error rate $< 1\\%$, $p95 < 4\\text{s}$.
   - \`DEGRADED\`: Error rate $< 5\\%$, $p95 < 6\\text{s}$ or fallback active.
@@ -657,13 +660,14 @@ ${goldenResults.map(r => `| ${r.id} | ${r.name} | ${r.question.substring(0, 35)}
 
 ---
 
-## 10. Staged Public Rollout Schedule
+## 10. Staged Public Rollout Schedule & Eligibility
 
 > [!IMPORTANT]
-> **Controlled Rollout Policy**: Public traffic remains **CLOSED** until human operational sign-off.
+> **Controlled Rollout Policy**: Public traffic remains **CLOSED / 0%** until human operational sign-off.  
+> **Stage 1 Rollout Eligibility**: **BLOCKED / NOT_SATISFIED** (Stage 1 requires $p95 < 4000\\text{ms}$; observed Class B $p95 = 6325\\text{ms}$).
 
 \`\`\`
-Stage 1: 5% Traffic   --> Observe 1 Hour (Zero 5xx, p95 < 4s, 0 IDOR errors)
+Stage 1: 5% Traffic   --> BLOCKED (Requires p95 < 4s; observed p95 = 6.325s)
 Stage 2: 25% Traffic  --> Observe 2 Hours (Telemetry stable, fallback healthy)
 Stage 3: 50% Traffic  --> Observe 4 Hours (DB pool healthy, rate limits stable)
 Stage 4: 100% Launch  --> Full Public Availability
@@ -680,8 +684,9 @@ Stage 4: 100% Launch  --> Full Public Availability
 ## 12. Final Recommendation & Gate Verdict
 
 > [!IMPORTANT]
-> **FINAL GATE STATUS: ${finalGateStatus}**  
-> Total evaluated checks: ${passedCount} passed, ${failedCount} failed out of ${passedCount + failedCount}.
+> **ENGINEERING TEST GATE: ${finalGateStatus}** (${passedCount} passed, ${failedCount} failed)  
+> **OPERATIONAL LATENCY SLO: NEEDS_OPERATIONAL_REVIEW / BREACHED** (Class B $p95 = 6325\text{ms} > 6000\text{ms}$)  
+> **PUBLIC TRAFFIC: CLOSED / 0%** (Requires explicit human sign-off or quota tier upgrade before controlled rollout)
 
 `;
 

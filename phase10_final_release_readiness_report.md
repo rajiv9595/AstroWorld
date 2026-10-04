@@ -1,5 +1,5 @@
 # ASTROWORLD AI V2 — PHASE 10 FINAL RELEASE READINESS REPORT
-**Generated:** 2026-10-04T14:04:28.666Z  
+**Generated:** 2026-10-04T14:11:04.766Z  
 **Release Tag:** `v2.0.0-rc1`  
 **Status:** **READY_FOR_CONTROLLED_PUBLIC_LAUNCH**  
 **Total Checks:** 32 | **Passed:** 32 | **Failed:** 0
@@ -27,16 +27,16 @@
 
 | # | Query Type | Question | Requested Model | Effective Model | Fallback Triggered | Latency (ms) | Grounding Status |
 |---|---|---|---|---|---|---|---|
-| 1 | Moon sign | What is my Moon sign and Nakshatra?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 5851ms | ✅ Verified |
-| 2 | D10 Lagna | What is my D10 Lagna sign?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 1702ms | ✅ Verified |
-| 3 | Jupiter career | How does Jupiter affect my career a... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2798ms | ✅ Verified |
-| 4 | Jupiter promotion timing | Will upcoming Jupiter transit suppo... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 6376ms | ✅ Verified |
-| 5 | Strongest career period | When is my strongest career timing ... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2468ms | ✅ Verified |
-| 6 | Why? | Why?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 1947ms | ✅ Verified |
-| 7 | False Gajakesari assumption | Since Jupiter and Moon form Gajakes... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 11397ms | ✅ Verified |
-| 8 | Emotional career setback | I was rejected from my dream job an... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 4713ms | ✅ Verified |
-| 9 | Jupiter vs Saturn contradiction | Your previous answer emphasized Jup... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 6305ms | ✅ Verified |
-| 10 | Ambiguous Jupiter question | What about Jupiter?... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 6442ms | ✅ Verified |
+| 1 | Moon sign | What is my Moon sign and Nakshatra?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 1861ms | ✅ Verified |
+| 2 | D10 Lagna | What is my D10 Lagna sign?... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 6440ms | ✅ Verified |
+| 3 | Jupiter career | How does Jupiter affect my career a... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 4539ms | ✅ Verified |
+| 4 | Jupiter promotion timing | Will upcoming Jupiter transit suppo... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2016ms | ✅ Verified |
+| 5 | Strongest career period | When is my strongest career timing ... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 5076ms | ✅ Verified |
+| 6 | Why? | Why?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 6219ms | ✅ Verified |
+| 7 | False Gajakesari assumption | Since Jupiter and Moon form Gajakes... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 15174ms | ✅ Verified |
+| 8 | Emotional career setback | I was rejected from my dream job an... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2742ms | ✅ Verified |
+| 9 | Jupiter vs Saturn contradiction | Your previous answer emphasized Jup... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2347ms | ✅ Verified |
+| 10 | Ambiguous Jupiter question | What about Jupiter?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2023ms | ✅ Verified |
 
 ---
 
@@ -67,8 +67,11 @@
 ---
 
 ## 7. Operational Latency Profiles
-- **Class A (Computational / Non-Provider Latency):** $p50 = 5\text{ms}$, $p95 = 12\text{ms}$
-- **Class B (Live Gemini Provider Latency):** $p50 \approx 1.5\text{s}$, $p95 \approx 2.8\text{s}$
+- **Class A (Computational / Non-Provider Latency):** $p50 = 6\text{ms}$, $p95 = 10\text{ms}$ [Evidence: `REAL_RUNTIME_EVIDENCE` from Phase 9.1 30-query computational timing]
+- **Class B (Live Gemini Provider Latency):** $p50 = 1888\text{ms}$, $p95 = 6325\text{ms}$ [Evidence: `REAL_RUNTIME_EVIDENCE` from Phase 9.1 Live 30-Query Matrix]
+- **Operational Latency SLO Audit:**
+  - Class A SLO ($p95 \le 80\text{ms}$): **MET** ($10\text{ms} \le 80\text{ms}$)
+  - Class B SLO ($p95 \le 6000\text{ms}$): **BREACHED** ($6325\text{ms} > 6000\text{ms}$, variance $+325\text{ms}$ under free-tier quota limits)
 - **Health States Defined:**
   - `HEALTHY`: Error rate $< 1\%$, $p95 < 4\text{s}$.
   - `DEGRADED`: Error rate $< 5\%$, $p95 < 6\text{s}$ or fallback active.
@@ -88,13 +91,14 @@
 
 ---
 
-## 10. Staged Public Rollout Schedule
+## 10. Staged Public Rollout Schedule & Eligibility
 
 > [!IMPORTANT]
-> **Controlled Rollout Policy**: Public traffic remains **CLOSED** until human operational sign-off.
+> **Controlled Rollout Policy**: Public traffic remains **CLOSED / 0%** until human operational sign-off.  
+> **Stage 1 Rollout Eligibility**: **BLOCKED / NOT_SATISFIED** (Stage 1 requires $p95 < 4000	ext{ms}$; observed Class B $p95 = 6325	ext{ms}$).
 
 ```
-Stage 1: 5% Traffic   --> Observe 1 Hour (Zero 5xx, p95 < 4s, 0 IDOR errors)
+Stage 1: 5% Traffic   --> BLOCKED (Requires p95 < 4s; observed p95 = 6.325s)
 Stage 2: 25% Traffic  --> Observe 2 Hours (Telemetry stable, fallback healthy)
 Stage 3: 50% Traffic  --> Observe 4 Hours (DB pool healthy, rate limits stable)
 Stage 4: 100% Launch  --> Full Public Availability
@@ -111,6 +115,7 @@ Stage 4: 100% Launch  --> Full Public Availability
 ## 12. Final Recommendation & Gate Verdict
 
 > [!IMPORTANT]
-> **FINAL GATE STATUS: READY_FOR_CONTROLLED_PUBLIC_LAUNCH**  
-> Total evaluated checks: 32 passed, 0 failed out of 32.
+> **ENGINEERING TEST GATE: READY_FOR_CONTROLLED_PUBLIC_LAUNCH** (32 passed, 0 failed)  
+> **OPERATIONAL LATENCY SLO: NEEDS_OPERATIONAL_REVIEW / BREACHED** (Class B $p95 = 6325	ext{ms} > 6000	ext{ms}$)  
+> **PUBLIC TRAFFIC: CLOSED / 0%** (Requires explicit human sign-off or quota tier upgrade before controlled rollout)
 
