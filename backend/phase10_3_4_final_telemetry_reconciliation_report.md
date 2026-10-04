@@ -69,8 +69,10 @@ Records ending in fallback or deterministic execution:
 - **Correct Metric Label:** **`Overall AI End-to-End Request Latency`**
 - **Deconstruction:**
   - When Gemini successfully responds, the provider latency is $p95 = 3371\text{ms}$ ($\max = 3807\text{ms}$).
-  - The $6325\text{ms}$ / $6327\text{ms}$ tail records represent requests that underwent a primary model call attempt with a ~6000ms timeout budget before falling back to the deterministic classical narrator ($< 25\text{ms}$).
-  - Therefore, $6325\text{ms}$ is NOT "Live Gemini Provider Latency" and NOT "Deterministic Narrator CPU Time" — it is the total user-visible request duration on a timeout-fallback path.
+  - Historical Phase 9.1 fallback-path latency includes upstream model-attempt time, but the archived telemetry does not preserve sufficient attempt-level causality to identify the exact timeout/failure source.
+  - The Phase 9.1 dataset records these requests as deterministic fallback paths with approximately 6325–6327ms total duration and zero providerLatencyMs, but it does not preserve sufficient causal telemetry to determine which upstream model attempt or failure mode consumed the latency tail.
+  - Attempt-level telemetry now records primary/fallback success, failure, timeout, and deterministic-fallback transitions explicitly.
+  - Therefore, $6325\text{ms}$ is NOT "Live Gemini Provider Latency" and NOT "Deterministic Narrator CPU Time" — it is the total user-visible request duration on a historical fallback path.
 
 ---
 

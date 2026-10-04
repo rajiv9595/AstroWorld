@@ -66,7 +66,7 @@ The **Operational Estimator ($6325\text{ms}$)** strictly controls the release ga
 
 ### C. Fallback / Failsafe Path End-to-End Latency ($n = 17$)
 - **Measured (Operational):** $p50 = 672\text{ms}$, $p75 = 750\text{ms}$, $p90 = 2991\text{ms}$, $p95 = 6325\text{ms}$, $\max = 6327\text{ms}$
-- **Definition:** Total elapsed time for requests resolved via deterministic fallback. The tail latency ($6325\text{ms}$ / $6327\text{ms}$) reflects the preceding primary model call attempt (~6000ms timeout budget) before falling back to the deterministic engine.
+- **Definition:** The Phase 9.1 dataset records these requests as deterministic fallback paths with approximately 6325–6327ms total duration and zero providerLatencyMs, but it does not preserve sufficient causal telemetry to determine which upstream model attempt or failure mode consumed the latency tail. Attempt-level telemetry now records primary/fallback success, failure, timeout, and deterministic-fallback transitions explicitly.
 
 ### D. Non-Narration / Backend Computational Duration
 - **Measured:** $p50 = 8\text{ms}$, $p95 = 22\text{ms}$, $\max = 25\text{ms}$

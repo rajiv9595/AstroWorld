@@ -47,7 +47,7 @@
 - **Secondary Statistical View (Linear Interpolation)**: $p50 = 1328\text{ms}$, $p75 = 2504\text{ms}$, $p90 = 3174\text{ms}$, $p95 = 5195\text{ms}$, $\max = 6327\text{ms}$
 - **Classification**: `REAL_RUNTIME_EVIDENCE`
 - **Status**: **BREACHED** on fallback timeout tail path ($6325\text{ms} > 6000\text{ms}$)
-- **Telemetry Note**: Observed latency includes fallback/model-attempt paths; the available Phase 9.1 dataset does not isolate provider-side latency sufficiently to attribute the full tail to quota.
+- **Telemetry Note**: Historical Phase 9.1 fallback-path latency includes upstream model-attempt time, but the archived telemetry does not preserve sufficient attempt-level causality to identify the exact timeout/failure source. Current runtime telemetry records primary/fallback success, failure, timeout, and deterministic transitions explicitly.
 
 ### C. Successful Live Model Provider Latency ($n = 13$)
 - **Measured (Operational Estimator)**: $p50 = 2404\text{ms}$, $p75 = 2706\text{ms}$, $p90 = 3068\text{ms}$, $p95 = 3371\text{ms}$, $\max = 3807\text{ms}$
@@ -56,7 +56,7 @@
 ### D. End-to-End Latency of Requests in Fallback/Failsafe ($n = 17$)
 - **Measured (Operational Estimator)**: $p50 = 672\text{ms}$, $p75 = 750\text{ms}$, $p90 = 2991\text{ms}$, $p95 = 6325\text{ms}$, $\max = 6327\text{ms}$
 - **Classification**: `REAL_RUNTIME_EVIDENCE` (Includes direct deterministic calls and timeout fallback attempts)
-- **Note**: The Phase 9.1 dataset does not provide a dedicated stopwatch measurement for deterministic narrator synthesis itself.
+- **Causality Note**: The Phase 9.1 dataset records these requests as deterministic fallback paths with approximately 6325–6327ms total duration and zero providerLatencyMs, but it does not preserve sufficient causal telemetry to determine which upstream model attempt or failure mode consumed the latency tail.
 
 ### E. Disaster Recovery & Security
 - **Disaster Recovery RTO**: $\le 300\text{s}$ (Measured: $0.26\text{s}$)

@@ -395,6 +395,19 @@ export class ConsultationOrchestrator {
       latencyMs: latencyBreakdown,
       metrics,
       timestampIso: new Date().toISOString(),
+      primaryAttempted: narratorTelemetry.primaryAttempted,
+      primarySucceeded: narratorTelemetry.primarySucceeded,
+      primaryFailureReason: narratorTelemetry.primaryFailureReason,
+      primaryDurationMs: narratorTelemetry.primaryDurationMs,
+      primaryTimeoutTriggered: narratorTelemetry.primaryTimeoutTriggered,
+      fallbackAttempted: narratorTelemetry.fallbackAttempted,
+      fallbackSucceeded: narratorTelemetry.fallbackSucceeded,
+      fallbackFailureReason: narratorTelemetry.fallbackFailureReason,
+      fallbackDurationMs: narratorTelemetry.fallbackDurationMs,
+      fallbackTimeoutTriggered: narratorTelemetry.fallbackTimeoutTriggered,
+      deterministicFallbackUsed: narratorTelemetry.deterministicFallbackUsed,
+      deterministicFallbackDurationMs: narratorTelemetry.deterministicFallbackDurationMs,
+      finalExecutionPath: narratorTelemetry.finalExecutionPath,
     };
 
     const consultationResult: ConsultationResult = {

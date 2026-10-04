@@ -53,6 +53,20 @@ export interface ConsultationTrace {
   latencyMs: ConsultationLatencyBreakdown;
   metrics: ConsultationMetrics;
   timestampIso: string;
+  // Enhanced fallback causality telemetry fields
+  primaryAttempted?: boolean;
+  primarySucceeded?: boolean;
+  primaryFailureReason?: string;
+  primaryDurationMs?: number;
+  primaryTimeoutTriggered?: boolean;
+  fallbackAttempted?: boolean;
+  fallbackSucceeded?: boolean;
+  fallbackFailureReason?: string;
+  fallbackDurationMs?: number;
+  fallbackTimeoutTriggered?: boolean;
+  deterministicFallbackUsed?: boolean;
+  deterministicFallbackDurationMs?: number;
+  finalExecutionPath?: 'primary_model' | 'fallback_model' | 'deterministic_failsafe' | 'mock_gemini';
 }
 
 export interface ConsultationResult {

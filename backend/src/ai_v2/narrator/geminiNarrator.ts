@@ -59,6 +59,21 @@ export class GeminiNarrator {
   private lastTimeoutTriggered: boolean = false;
   private lastEffectiveModelBudgetMs: number = 8000;
 
+  // Enhanced fallback causality telemetry fields
+  private lastPrimaryAttempted: boolean = false;
+  private lastPrimarySucceeded: boolean = false;
+  private lastPrimaryFailureReason?: string;
+  private lastPrimaryDurationMs?: number;
+  private lastPrimaryTimeoutTriggered: boolean = false;
+  private lastFallbackAttempted: boolean = false;
+  private lastFallbackSucceeded: boolean = false;
+  private lastFallbackFailureReason?: string;
+  private lastFallbackDurationMs?: number;
+  private lastFallbackTimeoutTriggered: boolean = false;
+  private lastDeterministicFallbackUsed: boolean = false;
+  private lastDeterministicFallbackDurationMs?: number;
+  private lastFinalExecutionPath: 'primary_model' | 'fallback_model' | 'deterministic_failsafe' | 'mock_gemini' = 'deterministic_failsafe';
+
   constructor(options?: GeminiNarratorOptions) {
     this.claimExtractor = new ResponseClaimExtractor();
     this.validator = new PostResponseGroundingValidator();
@@ -102,6 +117,19 @@ export class GeminiNarrator {
     modelUsed?: string;
     modelTimeoutBudgetMs: number;
     timeoutTriggered: boolean;
+    primaryAttempted: boolean;
+    primarySucceeded: boolean;
+    primaryFailureReason?: string;
+    primaryDurationMs?: number;
+    primaryTimeoutTriggered: boolean;
+    fallbackAttempted: boolean;
+    fallbackSucceeded: boolean;
+    fallbackFailureReason?: string;
+    fallbackDurationMs?: number;
+    fallbackTimeoutTriggered: boolean;
+    deterministicFallbackUsed: boolean;
+    deterministicFallbackDurationMs?: number;
+    finalExecutionPath: 'primary_model' | 'fallback_model' | 'deterministic_failsafe' | 'mock_gemini';
   } {
     return {
       requestedModel: this.lastRequestedModel,
@@ -116,6 +144,19 @@ export class GeminiNarrator {
       modelUsed: this.lastModelUsed,
       modelTimeoutBudgetMs: this.lastEffectiveModelBudgetMs,
       timeoutTriggered: this.lastTimeoutTriggered,
+      primaryAttempted: this.lastPrimaryAttempted,
+      primarySucceeded: this.lastPrimarySucceeded,
+      primaryFailureReason: this.lastPrimaryFailureReason,
+      primaryDurationMs: this.lastPrimaryDurationMs,
+      primaryTimeoutTriggered: this.lastPrimaryTimeoutTriggered,
+      fallbackAttempted: this.lastFallbackAttempted,
+      fallbackSucceeded: this.lastFallbackSucceeded,
+      fallbackFailureReason: this.lastFallbackFailureReason,
+      fallbackDurationMs: this.lastFallbackDurationMs,
+      fallbackTimeoutTriggered: this.lastFallbackTimeoutTriggered,
+      deterministicFallbackUsed: this.lastDeterministicFallbackUsed,
+      deterministicFallbackDurationMs: this.lastDeterministicFallbackDurationMs,
+      finalExecutionPath: this.lastFinalExecutionPath,
     };
   }
 
@@ -250,27 +291,45 @@ export class GeminiNarrator {
     this.lastProviderLatencyMs = 0;
     this.lastTimeoutTriggered = false;
 
+    // Reset attempt-level causality telemetry
+    this.lastPrimaryAttempted = false;
+    this.lastPrimarySucceeded = false;
+    this.lastPrimaryFailureReason = undefined;
+    this.lastPrimaryDurationMs = undefined;
+    this.lastPrimaryTimeoutTriggered = false;
+    this.lastFallbackAttempted = false;
+    this.lastFallbackSucceeded = false;
+    this.lastFallbackFailureReason = undefined;
+    this.lastFallbackDurationMs = undefined;
+    this.lastFallbackTimeoutTriggered = false;
+    this.lastDeterministicFallbackUsed = false;
+    this.lastDeterministicFallbackDurationMs = undefined;
+    this.lastFinalExecutionPath = isMock ? 'mock_gemini' : 'deterministic_failsafe';
+
     if (this.aiClient && !isMock) {
       const systemInstruction = getNarratorSystemInstruction();
       const userPrompt = buildNarratorUserPrompt(plan.rawQuestion, responsePlan, approvedClaimSet);
 
       // Controlled primary model attempt
       if (!forcePrimaryFail) {
+        this.lastPrimaryAttempted = true;
         const remainingForPrimary = parentDeadlineTimestampMs !== undefined
           ? parentDeadlineTimestampMs - Date.now()
           : Infinity;
 
         if (remainingForPrimary <= 50) {
           this.lastTimeoutTriggered = true;
+          this.lastPrimaryTimeoutTriggered = true;
           this.lastFallbackTriggered = true;
-          this.lastFallbackReason = `PARENT_DEADLINE_EXHAUSTED_BEFORE_PRIMARY (${Math.round(remainingForPrimary)}ms remaining)`;
+          this.lastPrimaryFailureReason = `PARENT_DEADLINE_EXHAUSTED_BEFORE_PRIMARY (${Math.round(remainingForPrimary)}ms remaining)`;
+          this.lastFallbackReason = this.lastPrimaryFailureReason;
         } else {
           const effectivePrimaryBudget = Math.min(this.primaryTimeoutMs, remainingForPrimary);
           this.lastEffectiveModelBudgetMs = effectivePrimaryBudget;
 
+          const callStart = Date.now();
           try {
             this.lastModelCalls++;
-            const callStart = Date.now();
             const callPromise = this.aiClient.models.generateContent({
               model: this.primaryModel,
               contents: userPrompt,
@@ -285,45 +344,58 @@ export class GeminiNarrator {
               new Promise((_, reject) =>
                 setTimeout(() => {
                   this.lastTimeoutTriggered = true;
+                  this.lastPrimaryTimeoutTriggered = true;
                   reject(new Error(`ModelCallTimeout: ${effectivePrimaryBudget}ms exceeded for ${this.primaryModel}`));
                 }, effectivePrimaryBudget)
               ),
             ]);
 
+            this.lastPrimaryDurationMs = Date.now() - callStart;
             if (response.text && response.text.trim().length > 10) {
               this.lastExecutionMode = 'live_gemini';
               this.lastEffectiveModel = this.primaryModel;
               this.lastModelUsed = this.primaryModel;
               this.lastFallbackTriggered = false;
-              this.lastProviderLatencyMs = Date.now() - callStart;
+              this.lastPrimarySucceeded = true;
+              this.lastFinalExecutionPath = 'primary_model';
+              this.lastProviderLatencyMs = this.lastPrimaryDurationMs;
               return response.text.trim();
             }
           } catch (err: any) {
+            this.lastPrimaryDurationMs = Date.now() - callStart;
+            this.lastPrimarySucceeded = false;
+            this.lastPrimaryFailureReason = err?.message || `Error calling primary model ${this.primaryModel}`;
             this.lastFallbackTriggered = true;
-            this.lastFallbackReason = err?.message || `Error calling primary model ${this.primaryModel}`;
+            this.lastFallbackReason = this.lastPrimaryFailureReason;
             console.warn(`[GeminiNarrator] Primary model ${this.primaryModel} failed: ${this.lastFallbackReason}. Activating fallback to ${this.fallbackModel}.`);
           }
         }
       } else {
+        this.lastPrimaryAttempted = true;
+        this.lastPrimarySucceeded = false;
+        this.lastPrimaryFailureReason = 'CONTROLLED_PRIMARY_FAILURE_SIMULATION';
         this.lastFallbackTriggered = true;
         this.lastFallbackReason = 'CONTROLLED_PRIMARY_FAILURE_SIMULATION';
       }
 
       // Fallback model attempt: strictly derives remaining parent budget
+      this.lastFallbackAttempted = true;
       const remainingForFallback = parentDeadlineTimestampMs !== undefined
         ? parentDeadlineTimestampMs - Date.now()
         : Infinity;
 
       if (remainingForFallback <= 50) {
         this.lastTimeoutTriggered = true;
-        this.lastFallbackReason = `PARENT_DEADLINE_EXHAUSTED_BEFORE_FALLBACK (${Math.round(remainingForFallback)}ms remaining)`;
+        this.lastFallbackTimeoutTriggered = true;
+        this.lastFallbackFailureReason = `PARENT_DEADLINE_EXHAUSTED_BEFORE_FALLBACK (${Math.round(remainingForFallback)}ms remaining)`;
+        this.lastFallbackReason = this.lastFallbackFailureReason;
       } else {
         const effectiveFallbackBudget = Math.min(this.fallbackTimeoutMs, remainingForFallback);
         this.lastEffectiveModelBudgetMs = effectiveFallbackBudget;
 
+        const callStart = Date.now();
         try {
           this.lastModelCalls++;
-          const callStart = Date.now();
           const callPromise = this.aiClient.models.generateContent({
             model: this.fallbackModel,
             contents: userPrompt,
@@ -338,20 +410,27 @@ export class GeminiNarrator {
             new Promise((_, reject) =>
               setTimeout(() => {
                 this.lastTimeoutTriggered = true;
+                this.lastFallbackTimeoutTriggered = true;
                 reject(new Error(`ModelCallTimeout: ${effectiveFallbackBudget}ms exceeded for ${this.fallbackModel}`));
               }, effectiveFallbackBudget)
             ),
           ]);
 
+          this.lastFallbackDurationMs = Date.now() - callStart;
           if (response.text && response.text.trim().length > 10) {
             this.lastExecutionMode = 'live_gemini';
             this.lastEffectiveModel = this.fallbackModel;
             this.lastModelUsed = this.fallbackModel;
-            this.lastProviderLatencyMs = Date.now() - callStart;
+            this.lastFallbackSucceeded = true;
+            this.lastFinalExecutionPath = 'fallback_model';
+            this.lastProviderLatencyMs = this.lastFallbackDurationMs;
             return response.text.trim();
           }
         } catch (err: any) {
-          this.lastFallbackReason = `ALL_LIVE_MODELS_UNAVAILABLE: Primary(${this.lastFallbackReason}) -> Fallback(${err?.message || 'unknown error'})`;
+          this.lastFallbackDurationMs = Date.now() - callStart;
+          this.lastFallbackSucceeded = false;
+          this.lastFallbackFailureReason = err?.message || 'unknown error';
+          this.lastFallbackReason = `ALL_LIVE_MODELS_UNAVAILABLE: Primary(${this.lastPrimaryFailureReason || this.lastFallbackReason}) -> Fallback(${this.lastFallbackFailureReason})`;
           console.warn(`[GeminiNarrator] Fallback model ${this.fallbackModel} also failed: ${err.message}. Reverting to deterministic failsafe.`);
         }
       }
@@ -362,8 +441,14 @@ export class GeminiNarrator {
     this.lastEffectiveModel = 'AstroWorld Classical Deterministic Narrator';
     this.lastModelUsed = 'AstroWorld Classical Deterministic Narrator';
     this.lastProviderLatencyMs = 0;
+    this.lastDeterministicFallbackUsed = !isMock;
+    this.lastFinalExecutionPath = isMock ? 'mock_gemini' : 'deterministic_failsafe';
+
     // Pure, dynamic claim-grounded deterministic narrative synthesis
-    return this.synthesizeDeterministicNarrative(plan, responsePlan, approvedClaimSet);
+    const detStart = Date.now();
+    const detResult = this.synthesizeDeterministicNarrative(plan, responsePlan, approvedClaimSet);
+    this.lastDeterministicFallbackDurationMs = Date.now() - detStart;
+    return detResult;
   }
 
   /**
@@ -642,10 +727,10 @@ Regarding timing: Your active dasha cycles provide supportive phases for philoso
       (plan.intent === 'promotion_timing' ||
       /\btransits?\b/i.test(rawLower) ||
       /\bgochara\b/i.test(rawLower) ||
-      (plan.planetFocus.length > 0 && /\bupcoming\b/i.test(rawLower)));
+      ((plan.planetFocus?.length || 0) > 0 && /\bupcoming\b/i.test(rawLower)));
 
     if (isTransitQuery) {
-      const planetName = plan.planetFocus[0] || 'Jupiter';
+      const planetName = plan.planetFocus?.[0] || 'Jupiter';
       const p1 = `The upcoming transit of ${planetName} offers strong astrological support for your career momentum and promotion timing.`;
 
       const supporting = pack?.supportingFactors?.[0] || 'Favorable placements in your chart reinforce your executive capacity';
