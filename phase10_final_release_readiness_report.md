@@ -1,5 +1,5 @@
 # ASTROWORLD AI V2 — PHASE 10 FINAL RELEASE READINESS REPORT
-**Generated:** 2026-10-04T13:00:43.303Z  
+**Generated:** 2026-10-04T13:40:21.798Z  
 **Release Tag:** `v2.0.0-rc1`  
 **Status:** **READY_FOR_CONTROLLED_PUBLIC_LAUNCH**  
 **Total Checks:** 32 | **Passed:** 32 | **Failed:** 0
@@ -27,16 +27,16 @@
 
 | # | Query Type | Question | Requested Model | Effective Model | Fallback Triggered | Latency (ms) | Grounding Status |
 |---|---|---|---|---|---|---|---|
-| 1 | Moon sign | What is my Moon sign and Nakshatra?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2895ms | ✅ Verified |
-| 2 | D10 Lagna | What is my D10 Lagna sign?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 3579ms | ✅ Verified |
-| 3 | Jupiter career | How does Jupiter affect my career a... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2991ms | ✅ Verified |
-| 4 | Jupiter promotion timing | Will upcoming Jupiter transit suppo... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2284ms | ✅ Verified |
-| 5 | Strongest career period | When is my strongest career timing ... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 6131ms | ✅ Verified |
-| 6 | Why? | Why?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2367ms | ✅ Verified |
-| 7 | False Gajakesari assumption | Since Jupiter and Moon form Gajakes... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 4993ms | ✅ Verified |
-| 8 | Emotional career setback | I was rejected from my dream job an... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 6358ms | ✅ Verified |
-| 9 | Jupiter vs Saturn contradiction | Your previous answer emphasized Jup... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2369ms | ✅ Verified |
-| 10 | Ambiguous Jupiter question | What about Jupiter?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2091ms | ✅ Verified |
+| 1 | Moon sign | What is my Moon sign and Nakshatra?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2143ms | ✅ Verified |
+| 2 | D10 Lagna | What is my D10 Lagna sign?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 1990ms | ✅ Verified |
+| 3 | Jupiter career | How does Jupiter affect my career a... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 3544ms | ✅ Verified |
+| 4 | Jupiter promotion timing | Will upcoming Jupiter transit suppo... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2410ms | ✅ Verified |
+| 5 | Strongest career period | When is my strongest career timing ... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2460ms | ✅ Verified |
+| 6 | Why? | Why?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2121ms | ✅ Verified |
+| 7 | False Gajakesari assumption | Since Jupiter and Moon form Gajakes... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 4827ms | ✅ Verified |
+| 8 | Emotional career setback | I was rejected from my dream job an... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2683ms | ✅ Verified |
+| 9 | Jupiter vs Saturn contradiction | Your previous answer emphasized Jup... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 3116ms | ✅ Verified |
+| 10 | Ambiguous Jupiter question | What about Jupiter?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 3204ms | ✅ Verified |
 
 ---
 
