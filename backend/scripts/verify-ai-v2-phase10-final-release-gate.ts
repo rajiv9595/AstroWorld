@@ -577,16 +577,82 @@ export async function runPhase10ReleaseGateSuite() {
   const engineeringStatus = allPassed ? 'PASSED' : 'NEEDS_REFINEMENT';
   const canonicalFinalStatus = 'NEEDS_OPERATIONAL_REVIEW';
 
+  // Dynamically load and calculate Phase 9.1 raw latency statistics
+  const liveResultsPath = path.resolve(repoRoot, 'backend/phase9_1_live_gemini_results.json');
+  let overallOpP50 = 1888, overallOpP75 = 2528, overallOpP90 = 3815, overallOpP95 = 6325, overallMax = 6327;
+  let overallLinP50 = 1328, overallLinP75 = 2504, overallLinP90 = 3174, overallLinP95 = 5195;
+  let liveOpP50 = 2404, liveOpP75 = 2706, liveOpP90 = 3068, liveOpP95 = 3371, liveMax = 3807, liveCount = 13;
+  let fbOpP50 = 672, fbOpP75 = 750, fbOpP90 = 2991, fbOpP95 = 6325, fbMax = 6327, fbCount = 17;
+  let compP50 = 8, compP95 = 22, compMax = 25;
+
+  if (fs.existsSync(liveResultsPath)) {
+    try {
+      const rawData = JSON.parse(fs.readFileSync(liveResultsPath, 'utf8'));
+      const allDurations: number[] = rawData.records.map((r: any) => r.totalDurationMs).sort((a: number, b: number) => a - b);
+      const nAll = allDurations.length;
+      if (nAll > 0) {
+        overallOpP50 = allDurations[Math.floor(nAll * 0.50)];
+        overallOpP75 = allDurations[Math.floor(nAll * 0.75)];
+        overallOpP90 = allDurations[Math.floor(nAll * 0.90)];
+        overallOpP95 = allDurations[Math.floor(nAll * 0.95)];
+        overallMax = allDurations[nAll - 1];
+
+        const interp = (p: number) => {
+          const idx = (p / 100) * (nAll - 1);
+          const low = Math.floor(idx);
+          const high = Math.ceil(idx);
+          const weight = idx - low;
+          return Math.round(allDurations[low] * (1 - weight) + allDurations[high] * weight);
+        };
+        overallLinP50 = interp(50);
+        overallLinP75 = interp(75);
+        overallLinP90 = interp(90);
+        overallLinP95 = interp(95);
+      }
+
+      const liveRecords = rawData.records.filter((r: any) => r.providerLatencyMs > 0 && r.executionMode === 'LIVE_GEMINI');
+      const liveDurations: number[] = liveRecords.map((r: any) => r.providerLatencyMs).sort((a: number, b: number) => a - b);
+      liveCount = liveDurations.length;
+      if (liveCount > 0) {
+        liveOpP50 = liveDurations[Math.floor(liveCount * 0.50)];
+        liveOpP75 = liveDurations[Math.floor(liveCount * 0.75)];
+        liveOpP90 = liveDurations[Math.floor(liveCount * 0.90)];
+        liveOpP95 = liveDurations[Math.floor(liveCount * 0.95)];
+        liveMax = liveDurations[liveCount - 1];
+      }
+
+      const fbRecords = rawData.records.filter((r: any) => r.fallbackUsed || r.executionMode === 'DETERMINISTIC_FALLBACK' || r.providerLatencyMs === 0);
+      const fbDurations: number[] = fbRecords.map((r: any) => r.totalDurationMs).sort((a: number, b: number) => a - b);
+      fbCount = fbDurations.length;
+      if (fbCount > 0) {
+        fbOpP50 = fbDurations[Math.floor(fbCount * 0.50)];
+        fbOpP75 = fbDurations[Math.floor(fbCount * 0.75)];
+        fbOpP90 = fbDurations[Math.floor(fbCount * 0.90)];
+        fbOpP95 = fbDurations[Math.floor(fbCount * 0.95)];
+        fbMax = fbDurations[fbCount - 1];
+      }
+
+      const compDurations: number[] = rawData.records.map((r: any) => r.backendComputationalDurationMs).sort((a: number, b: number) => a - b);
+      if (compDurations.length > 0) {
+        compP50 = compDurations[Math.floor(compDurations.length * 0.50)];
+        compP95 = compDurations[Math.floor(compDurations.length * 0.95)];
+        compMax = compDurations[compDurations.length - 1];
+      }
+    } catch (e: any) {
+      console.warn(`[Phase 10] Could not dynamically parse live metrics: ${e.message}`);
+    }
+  }
+
   const reportMarkdown = `# ASTROWORLD AI V2 — PHASE 10 FINAL RELEASE READINESS REPORT
 **Generated:** ${new Date().toISOString()}  
 **Release Candidate Identifier:** \`v2.0.0-rc1\`  
-**Current HEAD:** \`0db51aa2e23ee55c619586d3dfd9e9523bd8759d\`  
+**Evidence Source Commit:** \`2e2563eedb421cd815001840c3c0f96c912a7b56\`  
 **Verified Engineering Baseline:** \`b7ef4f8955455c99ea982c4a7577808c5bab5711\`  
-**Git Tag Status:** \`NONE\` (Candidate identifier; no tag created)  
+**Git Tag Status:** \`NONE\` (Candidate identifier; no tag created in repository)  
 **Status:** **${canonicalFinalStatus}**  
 **Engineering Test Gate:** **${engineeringStatus}** (${passedCount}/${passedCount + failedCount} Checks Passed)  
-**Operational SLO Gate:** **NEEDS_OPERATIONAL_REVIEW** (Class B End-to-End Latency SLO Tail Breach)  
-**Stage 1 Rollout Eligibility:** **BLOCKED** ($p95 = 6325\\text{ms} > 4000\\text{ms}$)  
+**Operational SLO Gate:** **NEEDS_OPERATIONAL_REVIEW** (Overall End-to-End Latency SLO Tail Breach)  
+**Stage 1 Rollout Eligibility:** **BLOCKED** ($p95 = ${overallOpP95}\\text{ms} > 4000\\text{ms}$)  
 **Public Traffic State:** **CLOSED / 0%**  
 
 ---
@@ -642,24 +708,23 @@ ${goldenResults.map(r => `| ${r.id} | ${r.name} | ${r.question.substring(0, 35)}
 
 ---
 
-## 7. Operational Latency Profiles (Recomputed Raw Evidence)
+## 7. Operational Latency Profiles (Phase 9.1 Dataset)
 
-### A. Class A (Computational / Non-Provider Latency)
-- **Measured:** $p50 = 6\\text{ms}$, $p95 = 10\\text{ms}$ [\`REAL_RUNTIME_EVIDENCE\` from Phase 9.1 30-query computational timing]
-- **SLO Target:** $p95 \\le 80\\text{ms}$
-- **SLO Status:** **MET**
-
-### B. Class B (Overall AI End-to-End Request Latency — All 30 Production Queries)
-- **Measured:** $p50 = 1328\\text{ms}$, $p75 = 2504\\text{ms}$, $p90 = 3174\\text{ms}$, $p95 = 5195\\text{ms}$ (interpolated) / $6325\\text{ms}$ (tail peak) [\`REAL_RUNTIME_EVIDENCE\`]
-- **SLO Target:** $p95 \\le 6000\\text{ms}$
-- **SLO Status:** **BREACHED** on fallback timeout tail path ($6325\\text{ms} > 6000\\text{ms}$)
-- **Telemetry Note:** Observed latency includes fallback/model-attempt paths; the available Phase 9.1 dataset does not isolate provider-side latency sufficiently to attribute the full tail to quota.
-
-### C. Successful Live Model Provider Latency ($n = 13$)
-- **Measured:** $p50 = 2404\\text{ms}$, $p75 = 2706\\text{ms}$, $p90 = 3068\\text{ms}$, $p95 = 3371\\text{ms}$, $\\max = 3807\\text{ms}$ [\`REAL_RUNTIME_EVIDENCE\`]
-
-### D. Fallback / Failsafe Path Latency ($n = 17$)
-- **Measured:** $p50 = 672\\text{ms}$, $p75 = 750\\text{ms}$, $p90 = 2991\\text{ms}$, $p95 = 6325\\text{ms}$, $\\max = 6327\\text{ms}$ [\`REAL_RUNTIME_EVIDENCE\`]
+### Operational Estimator Policy: \`sorted[Math.floor(n * p)]\`
+- **Class A (Computational / Non-Provider Latency):** $p50 = ${compP50}\\text{ms}$, $p95 = ${compP95}\\text{ms}$, $\\max = ${compMax}\\text{ms}$ [\`REAL_RUNTIME_EVIDENCE\`]  
+  - *SLO Target*: $p95 \\le 80\\text{ms}$  
+  - *SLO Status*: **MET**
+- **Class B (Overall AI End-to-End Request Latency — All 30 Production Queries):**
+  - **Operational Metrics (\`sorted[Math.floor(n * p)]\`):** $p50 = ${overallOpP50}\\text{ms}$, $p75 = ${overallOpP75}\\text{ms}$, $p90 = ${overallOpP90}\\text{ms}$, $p95 = ${overallOpP95}\\text{ms}$, $\\max = ${overallMax}\\text{ms}$ [\`REAL_RUNTIME_EVIDENCE\`]
+  - **Secondary Statistical View (Linear Interpolation):** $p50 = ${overallLinP50}\\text{ms}$, $p75 = ${overallLinP75}\\text{ms}$, $p90 = ${overallLinP90}\\text{ms}$, $p95 = ${overallLinP95}\\text{ms}$, $\\max = ${overallMax}\\text{ms}$
+  - *SLO Target*: $p95 \\le 6000\\text{ms}$
+  - *SLO Status*: **BREACHED** under operational estimator (${overallOpP95}\\text{ms} > 6000\\text{ms}$)
+  - *Telemetry Note*: Observed latency includes fallback/model-attempt paths; the available Phase 9.1 dataset does not isolate provider-side latency sufficiently to attribute the full tail to quota.
+- **Successful Live Model Provider Latency ($n = ${liveCount}$):**
+  - $p50 = ${liveOpP50}\\text{ms}$, $p75 = ${liveOpP75}\\text{ms}$, $p90 = ${liveOpP90}\\text{ms}$, $p95 = ${liveOpP95}\\text{ms}$, $\\max = ${liveMax}\\text{ms}$ [\`REAL_RUNTIME_EVIDENCE\`]
+- **End-to-End Latency of Requests Classified into Fallback/Failsafe ($n = ${fbCount}$):**
+  - $p50 = ${fbOpP50}\\text{ms}$, $p75 = ${fbOpP75}\\text{ms}$, $p90 = ${fbOpP90}\\text{ms}$, $p95 = ${fbOpP95}\\text{ms}$, $\\max = ${fbMax}\\text{ms}$ [\`REAL_RUNTIME_EVIDENCE\`]
+  - *Note*: The Phase 9.1 dataset does not provide a dedicated stopwatch measurement for deterministic narrator synthesis itself.
 
 ---
 
@@ -679,7 +744,7 @@ ${goldenResults.map(r => `| ${r.id} | ${r.name} | ${r.question.substring(0, 35)}
 
 > [!IMPORTANT]
 > **Controlled Rollout Policy**: Public traffic remains **CLOSED / 0%** until human operational sign-off.  
-> **Stage 1 Rollout Eligibility**: **BLOCKED / NOT_SATISFIED** (Stage 1 requires $p95 < 4000\\text{ms}$; observed Class B End-to-End $p95 = 6325\\text{ms}$, which is $+2325\\text{ms}$ above threshold).
+> **Stage 1 Rollout Eligibility**: **BLOCKED / NOT_SATISFIED** (Stage 1 requires $p95 < 4000\\text{ms}$; observed Class B End-to-End $p95 = ${overallOpP95}\\text{ms}$, which is $+${overallOpP95 - 4000}\\text{ms}$ above threshold).
 
 \`\`\`
 Stage 1: 5% Traffic   --> BLOCKED (Requires p95 < 4s; observed p95 = 6.325s)
@@ -690,9 +755,9 @@ Stage 4: 100% Launch  --> Full Public Availability
 
 ---
 
-## 11. Known Limitations & Operational Constraints
-- **Provider Quota & Timeout Tail:** Outbound model attempts subject to quota or latency failover engage the secondary live model or the air-gapped deterministic failsafe.
-- **Internet Dependency:** Live Gemini narration requires outbound HTTPS access; offline environments automatically utilize the deterministic classical narrator.
+## 11. Consultation Deadline Evidence & Path Distinction
+- **Production Service Contract:** \`ProductionConsultationService\` enforces a 15000ms outer timeout around the consultation pipeline, verified by the Phase 10.2.1 deterministic timeout suite (25/25 passed).
+- **Direct Orchestrator Golden Harness:** The 15174ms golden-harness sample was collected through the direct orchestrator path and therefore is not equivalent to the production-service response deadline.
 
 ---
 
@@ -700,8 +765,8 @@ Stage 4: 100% Launch  --> Full Public Availability
 
 > [!IMPORTANT]
 > **ENGINEERING TEST GATE: ${engineeringStatus}** (${passedCount} passed, ${failedCount} failed out of ${passedCount + failedCount})  
-> **OPERATIONAL LATENCY SLO: NEEDS_OPERATIONAL_REVIEW** (Class B End-to-End $p95 = 6325\\text{ms} > 6000\\text{ms}$)  
-> **STAGE 1 ROLLOUT: BLOCKED** (Requires $p95 < 4000\\text{ms}$; observed $6325\\text{ms}$)  
+> **OPERATIONAL LATENCY SLO: NEEDS_OPERATIONAL_REVIEW** (Class B End-to-End $p95 = ${overallOpP95}\\text{ms} > 6000\\text{ms}$)  
+> **STAGE 1 ROLLOUT: BLOCKED** (Requires $p95 < 4000\\text{ms}$; observed ${overallOpP95}\\text{ms}$)  
 > **PUBLIC TRAFFIC: CLOSED / 0%**  
 > **FINAL DECISION: NOT_READY_FOR_CONTROLLED_PUBLIC_LAUNCH (NEEDS_OPERATIONAL_REVIEW)**
 
