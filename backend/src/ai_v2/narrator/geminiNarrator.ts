@@ -203,7 +203,7 @@ export class GeminiNarrator {
 
     // Step 6: Assemble final validated response packet
     const referencedClaimIds = approvedClaimSet.claims.map(c => c.claimId);
-    const referencedEvidenceIds = Array.from(new Set(approvedClaimSet.claims.flatMap(c => c.sourceEvidenceIds)));
+    const referencedEvidenceIds = Array.from(new Set(approvedClaimSet.claims.flatMap(c => c.evidenceIds || [])));
     const responseId = `resp_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const questionId = plan.questionId;
 
@@ -512,7 +512,7 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
 
     // 2b. Conversational Ambiguity & Clarification Scoping
     if (
-      responsePlan.responseType === 'clarification' ||
+      (responsePlan.responseType as string) === 'clarification' ||
       plan.clarificationRequired ||
       plan.intent === 'clarification_required' ||
       rawLower.includes('what happens next') ||
@@ -568,7 +568,7 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     }
 
     // 3. Conversational Memory Recall
-    const memoryClaims = claims.filter(c => c.type === 'memory' || c.text.toLowerCase().includes('user noted') || c.text.toLowerCase().includes('consultations') || c.text.toLowerCase().includes('leadership') || c.text.toLowerCase().includes('preparing for') || c.text.toLowerCase().includes('ai engineering'));
+    const memoryClaims = claims.filter(c => c.type === 'user_context' || (c.type as string) === 'memory' || c.text.toLowerCase().includes('user noted') || c.text.toLowerCase().includes('consultations') || c.text.toLowerCase().includes('leadership') || c.text.toLowerCase().includes('preparing for') || c.text.toLowerCase().includes('ai engineering'));
     if (memoryClaims.length > 0 && (rawLower.includes('what do you remember') || rawLower.includes('career goal') || rawLower.includes('remember about me') || rawLower.includes('what i am targeting') || rawLower.includes('tell you') || rawLower.includes('targeting'))) {
       const memoryDetail = memoryClaims.map(c => this.normalizeSimpleFact(c.text)).join('. ');
       return `Based on our consultations, you noted that ${memoryDetail}. Your chart placements and active dasha cycles provide constructive timing and executive capacity for this path.`;
