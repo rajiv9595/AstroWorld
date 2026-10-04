@@ -586,12 +586,26 @@ async function runPhase91ReconciliationSuite() {
 - **Operational Gate**: \`READY_FOR_PHASE_10\`
 `;
 
-  // Write all deliverables
+  // Write all deliverables (preserving locked historical evidence)
   const writeDeliverable = (filename: string, content: string) => {
-    fs.writeFileSync(path.resolve(process.cwd(), filename), content, 'utf-8');
+    const targetPath = path.resolve(process.cwd(), filename);
+    const lockedHistoricalFiles = [
+      'release_manifest.md',
+      'phase9_live_quality_audit.json',
+      'phase9_1_live_gemini_results.json',
+      'phase9_1_soak_metrics.json',
+      'phase9_1_dr_measurement.json',
+      'phase9_1_validation_reconciliation_report.md',
+    ];
+    if (lockedHistoricalFiles.includes(filename) && fs.existsSync(targetPath)) {
+      return;
+    }
+    fs.writeFileSync(targetPath, content, 'utf-8');
     const rootPath = path.resolve(process.cwd(), '..', filename);
     if (fs.existsSync(path.resolve(process.cwd(), '..', 'package.json'))) {
-      fs.writeFileSync(rootPath, content, 'utf-8');
+      if (!lockedHistoricalFiles.includes(filename) || !fs.existsSync(rootPath)) {
+        fs.writeFileSync(rootPath, content, 'utf-8');
+      }
     }
   };
 

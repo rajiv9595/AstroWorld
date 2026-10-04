@@ -997,10 +997,21 @@ async function runPhase9ProductionSoakSuite() {
   });
 
   const writeDeliverable = (filename: string, content: string) => {
-    fs.writeFileSync(path.resolve(process.cwd(), filename), content, 'utf-8');
+    const targetPath = path.resolve(process.cwd(), filename);
+    const lockedHistoricalFiles = [
+      'phase9_production_soak_report.md',
+      'phase9_live_quality_audit.json',
+      'phase9_operational_metrics.json',
+    ];
+    if (lockedHistoricalFiles.includes(filename) && fs.existsSync(targetPath)) {
+      return;
+    }
+    fs.writeFileSync(targetPath, content, 'utf-8');
     const rootPath = path.resolve(process.cwd(), '..', filename);
     if (fs.existsSync(path.resolve(process.cwd(), '..', 'package.json'))) {
-      fs.writeFileSync(rootPath, content, 'utf-8');
+      if (!lockedHistoricalFiles.includes(filename) || !fs.existsSync(rootPath)) {
+        fs.writeFileSync(rootPath, content, 'utf-8');
+      }
     }
   };
 
