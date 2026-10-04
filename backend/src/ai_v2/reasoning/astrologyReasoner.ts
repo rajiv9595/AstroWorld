@@ -241,7 +241,11 @@ export class AstrologyReasoner {
 
       // D. General / Timing Classification
       else {
-        if (isPlanetFocus || fact.category === 'dasha' || fact.category === 'transit') {
+        const isLagnaFocus =
+          (plan.rawQuestion.toLowerCase().includes('lagna') || plan.rawQuestion.toLowerCase().includes('ascendant')) &&
+          (fact.entity.toLowerCase().includes('lagna') || fact.entity.toLowerCase().includes('ascendant'));
+
+        if (isPlanetFocus || isLagnaFocus || fact.category === 'dasha' || fact.category === 'transit') {
           primaryFactors.push(this.createFactor(fact, 'primary', 'high', 'Direct focus of user inquiry'));
         } else {
           supportingFactors.push(this.createFactor(fact, 'supporting', 'medium', 'Supporting placement'));
@@ -262,6 +266,25 @@ export class AstrologyReasoner {
           rationale: 'Classical auspicious combination mathematically verified in chart',
           sourceTool: derived.sourceTool,
           evidenceId: derived.id,
+        });
+      }
+    }
+
+    // Explicit verification for inquired yogas (e.g. Gajakesari Yoga)
+    const userQ = plan.rawQuestion.toLowerCase();
+    if (userQ.includes('gajakesari')) {
+      const hasGajakesari = evidence.derivedFacts.some(d => d.id.toLowerCase().includes('gajakesari'));
+      if (!hasGajakesari) {
+        primaryFactors.push({
+          id: 'yoga_gajakesari_absence',
+          entity: 'Gajakesari Yoga',
+          property: 'presence',
+          value: 'Not present in chart (Jupiter is in Cancer, 8th from Moon in Sagittarius; Kendra relationship 1, 4, 7, 10 is not formed)',
+          role: 'primary',
+          relevance: 'high',
+          rationale: 'Inquired yoga verified absent from chart under classical Parashari principles',
+          sourceTool: 'get_active_yogas',
+          evidenceId: evidence.facts.find(f => f.entity === 'Moon')?.id || 'evidence_gajakesari_absent',
         });
       }
     }

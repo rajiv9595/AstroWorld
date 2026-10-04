@@ -38,8 +38,8 @@ async function main() {
   if (!layer) {
     assert('AI V2 Status Route', false, 'GET /api/ai-v2/status route not found in aiV2Router');
   } else {
-    const handler = layer.route.stack[0].handle;
-    handler(req, res);
+    const handler = (layer as any)?.route?.stack[0]?.handle;
+    handler?.(req, res, () => {});
 
     assert(
       'AI V2 Status Route Output',

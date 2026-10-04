@@ -1,0 +1,33 @@
+{
+  "generatedAtIso": "2026-10-04T08:00:37.232Z",
+  "totalLongitudinalScenarios": 40,
+  "longitudinalScenariosPassed": 40,
+  "totalLiveScenarios": 15,
+  "liveScenariosPassed": 15,
+  "totalTestsExecuted": 60,
+  "totalTestsPassed": 60,
+  "totalTestsFailed": 0,
+  "executionMode": "deterministic_ci",
+  "metrics": {
+    "memoryPrecision": 1,
+    "memoryRecall": 1,
+    "irrelevantMemoryRate": 0,
+    "memoryInjectionRate": 0.1414,
+    "memoryDeletionCorrectness": 1,
+    "memoryConflictCorrectness": 1,
+    "crossUserLeakageCount": 0,
+    "staleMemoryMisuseCount": 0,
+    "astrologyMemoryOverrideCount": 0,
+    "domainDriftCount": 0,
+    "memoryMetadataLeakageCount": 0,
+    "naturalMemoryMentionRate": 0.5253,
+    "contextContinuityRate": 1
+  },
+  "latencySummary": {
+    "memoryLookupLatencyMs": "< 1ms",
+    "memoryConsolidationLatencyMs": "< 1ms",
+    "memoryWriteLatencyMs": "< 1ms",
+    "fullConsultationAverageMs": "12ms"
+  },
+  "gateStatus": "READY_FOR_PHASE_6"
+}

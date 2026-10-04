@@ -1,6 +1,6 @@
 # AstroWorld AI V2 — Phase 4F Conversation Quality Review
 
-**Generated At**: 2026-10-03T16:56:33.011Z
+**Generated At**: 2026-10-04T08:00:33.638Z
 **Total Scenarios**: 50
 **Passed Scenarios**: 50 / 50
 
@@ -19,9 +19,9 @@
 ## Category: A_SIMPLE_FACTUAL (5 Scenarios)
 
 ### [A1_MOON_SIGN] What's my Moon sign?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
-- **Word Count**: 12 words
+- **Word Count**: 10 words
 - **Question Coverage**: 100%
 - **Timing Accurate**: Yes
 - **Certainty Controlled (Non-fatalistic)**: Yes
@@ -29,12 +29,12 @@
 - **Status**: ✅ PASSED
 
 **Generated Response:**
-> Looking at your chart: Your Moon is in Sagittarius (at 9° 41').
+> Looking at your chart: Moon (position: Sagittarius 09° 41' 45").
 
 ---
 
 ### [A2_CURRENT_MAHADASHA] What is my current Mahadasha?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 30 words
 - **Question Coverage**: 100%
@@ -49,9 +49,9 @@
 ---
 
 ### [A3_ASCENDANT] What is my Ascendant?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
-- **Word Count**: 10 words
+- **Word Count**: 7 words
 - **Question Coverage**: 100%
 - **Timing Accurate**: Yes
 - **Certainty Controlled (Non-fatalistic)**: Yes
@@ -59,12 +59,12 @@
 - **Status**: ✅ PASSED
 
 **Generated Response:**
-> Looking at your chart: Your Ascendant (Lagna) is in Aquarius.
+> Looking at your chart: Ascendant (sign: Aquarius).
 
 ---
 
 ### [A4_MOON_NAKSHATRA] What is my Moon Nakshatra?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 12 words
 - **Question Coverage**: 100%
@@ -79,7 +79,7 @@
 ---
 
 ### [A5_D10_LAGNA] What is my D10 lagna?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 11 words
 - **Question Coverage**: 100%
@@ -96,7 +96,7 @@
 ## Category: B_FOCUSED_ASTROLOGY (5 Scenarios)
 
 ### [B1_JUPITER_CAREER] How does Jupiter affect my career?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 75 words
 - **Question Coverage**: 100%
@@ -115,7 +115,7 @@
 ---
 
 ### [B2_SATURN_WORK] What does Saturn mean for my work?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 80 words
 - **Question Coverage**: 100%
@@ -134,7 +134,7 @@
 ---
 
 ### [B3_D10_CAREER] What does my D10 say about career?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 60 words
 - **Question Coverage**: 100%
@@ -153,7 +153,7 @@
 ---
 
 ### [B4_7TH_HOUSE_MARRIAGE] What does my 7th house indicate about marriage?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 38 words
 - **Question Coverage**: 100%
@@ -168,7 +168,7 @@
 ---
 
 ### [B5_VENUS_INDICATION] What does Venus indicate in my chart?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 30 words
 - **Question Coverage**: 100%
@@ -185,7 +185,7 @@
 ## Category: C_TIMING (5 Scenarios)
 
 ### [C1_STRONGEST_CAREER_PERIOD] When is my strongest career period?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 50 words
 - **Question Coverage**: 100%
@@ -202,7 +202,7 @@
 ---
 
 ### [C2_CAREER_IN_2027] What does 2027 look like for my career?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 28 words
 - **Question Coverage**: 100%
@@ -217,7 +217,7 @@
 ---
 
 ### [C3_MARRIAGE_TIMING] When is marriage timing stronger?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 46 words
 - **Question Coverage**: 100%
@@ -234,7 +234,7 @@
 ---
 
 ### [C4_CURRENT_DASHA_CAREER] How does my current Dasha affect career?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 48 words
 - **Question Coverage**: 100%
@@ -251,7 +251,7 @@
 ---
 
 ### [C5_JUPITER_PROMOTION_GOLDEN] How does the upcoming transit of Jupiter support my promotion timing?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 119 words
 - **Question Coverage**: 100%
@@ -274,7 +274,7 @@
 ## Category: D_DEEP_MULTI_LAYER (5 Scenarios)
 
 ### [D1_CAREER_2027_2030_SYNTHESIS] Analyze my career from 2027 to 2030 using D1, D10, Dasha and transits.
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 116 words
 - **Question Coverage**: 100%
@@ -295,7 +295,7 @@
 ---
 
 ### [D2_MARRIAGE_D1_D9_DASHA] Analyze marriage using D1, D9 and Dasha.
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 107 words
 - **Question Coverage**: 100%
@@ -314,7 +314,7 @@
 ---
 
 ### [D3_BUSINESS_D1_D10_YOGAS] Analyze business prospects using D1, D10, Dasha and relevant yogas.
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 39 words
 - **Question Coverage**: 100%
@@ -329,26 +329,24 @@
 ---
 
 ### [D4_LEADERSHIP_10TH_LORD_D10] Provide a comprehensive career and leadership evaluation examining 10th lord, D10 and current dasha.
-- **Execution Mode**: `deterministic_ci`
-- **Reviewer Label**: `excellent`
-- **Word Count**: 60 words
-- **Question Coverage**: 100%
+- **Execution Mode**: `mock_gemini`
+- **Reviewer Label**: `natural`
+- **Word Count**: 48 words
+- **Question Coverage**: 67%
 - **Timing Accurate**: Yes
 - **Certainty Controlled (Non-fatalistic)**: Yes
 - **Remedy Leakage**: None
 - **Status**: ✅ PASSED
 
 **Generated Response:**
-> Your Dashamsha (D10) chart has Taurus rising, with key placements in Kendra and Trikona houses reinforcing your executive leadership and strategic problem-solving.
+> You are currently running the Moon Mahadasha with Venus Antardasha, spanning from July 2026 to March 2028.
 > 
-> In classical Jyotish, the D10 chart refines 10th house indications to evaluate professional status, public authority, and major career milestones.
-> 
-> Regarding timing: your active Vimshottari Dasha (Moon–Venus) window runs July 2026 to March 2028, supporting structured career moves.
+> In your chart, this dasha cycle activates constructive career momentum and professional advancement, supported by favorable alignments in your Dashamsha (D10) chart that encourage vocational expansion, creative initiative, and leadership responsibility.
 
 ---
 
 ### [D5_SPIRITUAL_DHARMA_D9] Evaluate spiritual inclinations and dharma using 9th house, 12th house, D9 and current dasha.
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 40 words
 - **Question Coverage**: 100%
@@ -365,7 +363,7 @@
 ## Category: E_FOLLOW_UP (5 Scenarios)
 
 ### [E1_FOLLOWUP_WHY_CAREER] Why?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 31 words
 - **Question Coverage**: 100%
@@ -380,7 +378,7 @@
 ---
 
 ### [E2_FOLLOWUP_AUGUST_STRONGER] What makes August stronger?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 23 words
 - **Question Coverage**: 100%
@@ -395,7 +393,7 @@
 ---
 
 ### [E3_FOLLOWUP_DOMAIN_SWITCH_MARRIAGE] What about the same thing for marriage?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 24 words
 - **Question Coverage**: 100%
@@ -410,7 +408,7 @@
 ---
 
 ### [E4_FOLLOWUP_SATURN_DURATION] How long will this Saturn influence last?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 19 words
 - **Question Coverage**: 100%
@@ -425,7 +423,7 @@
 ---
 
 ### [E5_FOLLOWUP_D10_CONTRIBUTING_PLANETS] Which planets in D10 contribute to this?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 22 words
 - **Question Coverage**: 100%
@@ -442,7 +440,7 @@
 ## Category: F_CHALLENGE_WHY (5 Scenarios)
 
 ### [F1_CHALLENGE_FAVORABLE_WHY] You said this period was favorable. Why?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 31 words
 - **Question Coverage**: 100%
@@ -457,7 +455,7 @@
 ---
 
 ### [F2_CHALLENGE_JUPITER_SUPPORTIVE_WHY] Why are you saying Jupiter is supportive?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 22 words
 - **Question Coverage**: 100%
@@ -472,7 +470,7 @@
 ---
 
 ### [F3_CHALLENGE_SATURN_RESTRICTION_WHY] Why is Saturn considered a restriction here?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 23 words
 - **Question Coverage**: 100%
@@ -487,7 +485,7 @@
 ---
 
 ### [F4_CHALLENGE_D10_VS_D1_WHY] Why does D10 matter if D1 already shows my 10th house?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 30 words
 - **Question Coverage**: 100%
@@ -502,7 +500,7 @@
 ---
 
 ### [F5_CHALLENGE_DISCIPLINE_VS_PASSIVE_WAITING] Why do you emphasize conscious discipline instead of just waiting for the transit?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 25 words
 - **Question Coverage**: 100%
@@ -519,7 +517,7 @@
 ## Category: G_FALSE_ASSUMPTION (5 Scenarios)
 
 ### [G1_FALSE_GAJAKESARI] I have Gajakesari Yoga, right?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 42 words
 - **Question Coverage**: 100%
@@ -534,7 +532,7 @@
 ---
 
 ### [G2_FALSE_JUPITER_10TH_HOUSE] My Jupiter is in the 10th house, correct?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 17 words
 - **Question Coverage**: 100%
@@ -549,7 +547,7 @@
 ---
 
 ### [G3_FALSE_PROMOTION_GUARANTEED] My promotion is guaranteed in 2027, right?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 33 words
 - **Question Coverage**: 100%
@@ -564,7 +562,7 @@
 ---
 
 ### [G4_FALSE_SATURN_EXALTED_ARIES] Is my Saturn exalted in Aries?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 25 words
 - **Question Coverage**: 100%
@@ -579,9 +577,9 @@
 ---
 
 ### [G5_FALSE_MARRIAGE_GUARANTEE_2026] My chart guarantees marriage in 2026, correct?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
-- **Word Count**: 25 words
+- **Word Count**: 29 words
 - **Question Coverage**: 100%
 - **Timing Accurate**: Yes
 - **Certainty Controlled (Non-fatalistic)**: Yes
@@ -589,14 +587,14 @@
 - **Status**: ✅ PASSED
 
 **Generated Response:**
-> Astrologically, no event is fatalistically guaranteed. The timing windows indicate favorable astrological support and relational harmony for marriage initiatives rather than a fixed predestined date.
+> Astrologically, no milestone is fatalistically guaranteed. Regarding timing: your chart indicates supportive relational momentum and favorable dasha timing across July 2026 to March 2028 rather than an automatic certainty.
 
 ---
 
 ## Category: H_AMBIGUOUS (5 Scenarios)
 
 ### [H1_AMBIGUOUS_WILL_JUPITER_HELP] Will Jupiter help me?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 32 words
 - **Question Coverage**: 100%
@@ -611,7 +609,7 @@
 ---
 
 ### [H2_AMBIGUOUS_WHAT_HAPPENS_NEXT] What happens next?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 29 words
 - **Question Coverage**: 100%
@@ -626,7 +624,7 @@
 ---
 
 ### [H3_AMBIGUOUS_IS_THIS_GOOD] Is this good?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 29 words
 - **Question Coverage**: 100%
@@ -641,7 +639,7 @@
 ---
 
 ### [H4_AMBIGUOUS_TELL_ME_ABOUT_MYSELF] Tell me about myself.
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 29 words
 - **Question Coverage**: 100%
@@ -656,7 +654,7 @@
 ---
 
 ### [H5_AMBIGUOUS_IS_MY_FUTURE_GOOD] Is my future good?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 29 words
 - **Question Coverage**: 100%
@@ -673,7 +671,7 @@
 ## Category: I_EMOTIONAL_UNCERTAINTY (5 Scenarios)
 
 ### [I1_EMOTIONAL_REJECTIONS] I've been rejected several times. Does my chart show a better career phase?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 32 words
 - **Question Coverage**: 100%
@@ -688,7 +686,7 @@
 ---
 
 ### [I2_EMOTIONAL_CAREER_CONFUSION] I'm confused about my career direction. Which period looks more supportive?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 23 words
 - **Question Coverage**: 100%
@@ -703,7 +701,7 @@
 ---
 
 ### [I3_EMOTIONAL_NOTHING_HAPPENED] Nothing happened during the period you mentioned. What does that mean?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 30 words
 - **Question Coverage**: 100%
@@ -718,7 +716,7 @@
 ---
 
 ### [I4_EMOTIONAL_JOB_STABILITY_ANXIETY] I feel anxious about job security and stability right now.
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 25 words
 - **Question Coverage**: 100%
@@ -733,7 +731,7 @@
 ---
 
 ### [I5_EMOTIONAL_OVERWHELMED_RESPONSIBILITY] I feel overwhelmed by responsibilities—is there relief in my dasha?
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 25 words
 - **Question Coverage**: 100%
@@ -750,7 +748,7 @@
 ## Category: J_CONTRADICTION_CORRECTION (5 Scenarios)
 
 ### [J1_CONTRADICTION_MONTH_TIMING] Earlier you said August was stronger, but now you're saying September.
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 23 words
 - **Question Coverage**: 100%
@@ -765,7 +763,7 @@
 ---
 
 ### [J2_CONTRADICTION_JUPITER_VS_SATURN] Your previous answer mentioned Jupiter, but now Saturn seems more important.
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 22 words
 - **Question Coverage**: 100%
@@ -780,7 +778,7 @@
 ---
 
 ### [J3_CONTRADICTION_TIMING_DISAGREEMENT] I think your earlier timing was wrong.
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 21 words
 - **Question Coverage**: 100%
@@ -795,7 +793,7 @@
 ---
 
 ### [J4_CONTRADICTION_10TH_VS_7TH_HOUSE] You mentioned 10th house earlier, but now you are discussing the 7th house.
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 23 words
 - **Question Coverage**: 100%
@@ -810,7 +808,7 @@
 ---
 
 ### [J5_CONTRADICTION_RAHU_VS_MOON_DASHA] You said Rahu was active, but earlier you said it was Moon dasha.
-- **Execution Mode**: `deterministic_ci`
+- **Execution Mode**: `mock_gemini`
 - **Reviewer Label**: `excellent`
 - **Word Count**: 21 words
 - **Question Coverage**: 100%

@@ -20,6 +20,8 @@ export * from './reasoning/index.ts';
 export * from './claims/index.ts';
 export * from './narrator/index.ts';
 export * from './consultation/index.ts';
+export * from './conversation_state/index.ts';
+export * from './memory/index.ts';
 export * from './routes/aiV2Routes.ts';
 
 

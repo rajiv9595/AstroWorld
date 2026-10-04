@@ -19,8 +19,15 @@
     "test:ai-v2-quality": "tsx scripts/verify-ai-v2-quality.ts",
     "test:ai-v2-precision": "tsx scripts/verify-ai-v2-precision.ts",
     "test:ai-v2-conversation-benchmark": "tsx scripts/verify-ai-v2-conversation-benchmark.ts",
+    "test:ai-v2-conversation-state": "tsx scripts/verify-ai-v2-conversation-state.ts",
+    "test:ai-v2-persistent-memory": "tsx scripts/verify-ai-v2-persistent-memory.ts",
+    "test:ai-v2-longitudinal-memory": "tsx scripts/verify-ai-v2-longitudinal-memory.ts",
+    "test:ai-v2-production-hardening": "tsx scripts/verify-ai-v2-production-hardening.ts",
+    "test:ai-v2-chat-experience": "tsx scripts/verify-ai-v2-phase7a-chat-experience.ts",
+    "test:ai-v2-adversarial": "tsx scripts/verify-ai-v2-phase7b-adversarial.ts",
+    "test:ai-v2-staging": "tsx scripts/verify-ai-v2-phase8a-staging.ts",
     "audit:real-gemini": "tsx scripts/audit-real-gemini.ts",
-    "test": "tsx scripts/verify-astrology-engine.ts && tsx scripts/verify-ai-v2-boundary.ts && tsx scripts/verify-ai-v2-tools.ts && tsx scripts/verify-ai-v2-orchestrator.ts && tsx scripts/verify-ai-v2-gemini-gate.ts && tsx scripts/verify-ai-v2-rag.ts && tsx scripts/verify-ai-v2-reasoning.ts && tsx scripts/verify-ai-v2-claim-firewall.ts && tsx scripts/verify-ai-v2-narrator.ts && tsx scripts/verify-ai-v2-end-to-end.ts && tsx scripts/verify-ai-v2-quality.ts && tsx scripts/verify-ai-v2-precision.ts && tsx scripts/verify-ai-v2-conversation-benchmark.ts"
+    "test": "tsx scripts/verify-astrology-engine.ts && tsx scripts/verify-ai-v2-boundary.ts && tsx scripts/verify-ai-v2-tools.ts && tsx scripts/verify-ai-v2-orchestrator.ts && tsx scripts/verify-ai-v2-gemini-gate.ts && tsx scripts/verify-ai-v2-rag.ts && tsx scripts/verify-ai-v2-reasoning.ts && tsx scripts/verify-ai-v2-claim-firewall.ts && tsx scripts/verify-ai-v2-narrator.ts && tsx scripts/verify-ai-v2-end-to-end.ts && tsx scripts/verify-ai-v2-quality.ts && tsx scripts/verify-ai-v2-precision.ts && tsx scripts/verify-ai-v2-conversation-benchmark.ts && tsx scripts/verify-ai-v2-conversation-state.ts && tsx scripts/verify-ai-v2-persistent-memory.ts && tsx scripts/verify-ai-v2-longitudinal-memory.ts && tsx scripts/verify-ai-v2-production-hardening.ts && tsx scripts/verify-ai-v2-phase7a-chat-experience.ts && tsx scripts/verify-ai-v2-phase7b-adversarial.ts && tsx scripts/verify-ai-v2-phase8a-staging.ts"
   },
   "dependencies": {
     "@astroworld/shared": "workspace:*",

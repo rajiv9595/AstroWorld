@@ -51,8 +51,12 @@ function assert(condition: boolean, testName: string, details?: string) {
 async function runPhase4BSuite() {
   console.log('\n🌌 Starting AstroWorld AI V2 Phase 4B End-to-End Consultation Verification Suite...\n');
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  const orchestrator = new ConsultationOrchestrator();
+  const forceLive = process.argv.includes('--live');
+  const apiKey = forceLive ? process.env.GEMINI_API_KEY : undefined;
+  const orchestrator = new ConsultationOrchestrator({
+    forceMockMode: !forceLive,
+    apiKey,
+  });
 
   console.log(`📡 Execution Environment: ${apiKey ? 'LIVE GEMINI API KEY DETECTED' : 'DETERMINISTIC CI / NO API KEY'}`);
   console.log('========================================================================\n');

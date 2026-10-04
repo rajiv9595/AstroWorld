@@ -1,0 +1,348 @@
+[
+  {
+    "caseIndex": 1,
+    "caseId": "CASE_1_MOON_SIGN",
+    "userQuestion": "What is my Moon sign?",
+    "conversationContext": [],
+    "executionMode": "live_gemini",
+    "geminiModel": "gemini-3.1-flash-lite",
+    "response": "Your Moon is positioned in the sign of Sagittarius. \n\nThis placement brings a natural inclination toward seeking wisdom and maintaining an optimistic outlook, which harmonizes beautifully with your Aquarius Ascendant. Because your chart reflects a supportive alignment between these two positions, you likely find that your emotional well-being is most stable when you are pursuing personal growth or exploring new ideas. While this energy offers a wonderful sense of momentum, remember that the Sagittarian influence thrives best when you balance your expansive vision with the grounded, objective approach characteristic of your Aquarius rising.",
+    "latencyMs": 2871,
+    "toolCalls": [
+      "get_birth_chart"
+    ],
+    "approvedClaimsCount": 12,
+    "approvedClaimsSample": [
+      "The verified chart placement of Moon (position: Sagittarius 09° 41' 45\") acts as a primary astrological driver.",
+      "The verified chart placement of Ascendant (sign: Aquarius) provides supporting astrological background.",
+      "The verified chart placement of Sun (position: Libra 06° 58' 01\") provides supporting astrological background.",
+      "The verified chart placement of Mars (position: Taurus 20° 44' 24\") provides supporting astrological background."
+    ],
+    "postResponseValidationResult": "approved",
+    "metadataLeakage": false,
+    "rawRagCitationLeakage": false,
+    "timingLeakage": false,
+    "unsupportedClaims": 0,
+    "technicalNoise": false,
+    "guaranteedOutcomeLanguage": false,
+    "answerFirst": true,
+    "firstSentence": "Your Moon is positioned in the sign of Sagittarius",
+    "wordCount": 93
+  },
+  {
+    "caseIndex": 2,
+    "caseId": "CASE_2_D10_LAGNA",
+    "userQuestion": "What is my D10 Lagna?",
+    "conversationContext": [],
+    "executionMode": "live_gemini",
+    "geminiModel": "gemini-3.1-flash-lite",
+    "response": "Your D10 Lagna, which governs your professional life and public standing, is situated in Taurus. \n\nThis placement brings a grounded, steady energy to your career path, suggesting that you are best served by building your professional reputation through persistence and practical, tangible results. Because your primary Ascendant is in Aquarius, there is a natural tension between your desire for innovative, unconventional ideas and the Taurus need for stability and security in your work. \n\nNavigating this effectively means balancing your visionary approach with the patience required to see long-term projects through to completion. This professional signature is currently active, providing a supportive foundation for your career development throughout this period.",
+    "latencyMs": 3634,
+    "toolCalls": [
+      "get_birth_chart",
+      "get_divisional_chart"
+    ],
+    "approvedClaimsCount": 24,
+    "approvedClaimsSample": [
+      "The verified chart placement of Jupiter (position: Cancer 17° 45' 14\") acts as a primary astrological driver.",
+      "The verified chart placement of Saturn (position: Sagittarius 25° 46' 08\") acts as a primary astrological driver.",
+      "The verified chart placement of Ketu (position: Cancer 09° 02' 06\") acts as a primary astrological driver.",
+      "The verified chart placement of D10 Lagna (sign: Taurus) acts as a primary astrological driver."
+    ],
+    "postResponseValidationResult": "approved",
+    "metadataLeakage": false,
+    "rawRagCitationLeakage": false,
+    "timingLeakage": false,
+    "unsupportedClaims": 0,
+    "technicalNoise": false,
+    "guaranteedOutcomeLanguage": false,
+    "answerFirst": true,
+    "firstSentence": "Your D10 Lagna, which governs your professional life and public standing, is situated in Taurus",
+    "wordCount": 109
+  },
+  {
+    "caseIndex": 3,
+    "caseId": "CASE_3_JUPITER_CAREER",
+    "userQuestion": "How does Jupiter affect my career?",
+    "conversationContext": [],
+    "executionMode": "live_gemini",
+    "geminiModel": "gemini-3.1-flash-lite",
+    "response": "Jupiter’s current transit through your 10th house is acting as a significant catalyst for professional growth, bringing a period of expanded responsibility and potential for leadership. \n\nBecause your Dashamsha (D10) chart places Jupiter in the 4th house within a Taurus Lagna, this transit effectively bridges your internal sense of stability with your external career ambitions. When Jupiter activates the 10th house, it often brings opportunities that align your long-term professional goals with a sense of purpose, making this an ideal time to step into roles that require mentorship or a broader strategic vision.\n\nThis momentum is further amplified by your Vimshottari Dasha cycle of Moon-Venus, which runs from July 2026 to March 2028. This period creates a supportive overlap where the external opportunities brought by Jupiter’s transit are met with the internal drive and creative capacity signaled by your Dasha. \n\nWhile this alignment is quite favorable for career milestones, remember that Jupiter’s influence is most effective when paired with conscious discipline. The energy is supportive, but it asks you to remain grounded in your professional ethics and to avoid overextending yourself as you pursue these new heights. By focusing on steady, sustainable growth during this window, you can make the most of the leadership capacity this transit is currently fostering.",
+    "latencyMs": 4019,
+    "toolCalls": [
+      "get_birth_chart",
+      "get_divisional_chart",
+      "get_current_dasha",
+      "get_active_yogas"
+    ],
+    "approvedClaimsCount": 28,
+    "approvedClaimsSample": [
+      "The verified chart placement of Jupiter (position: Cancer 17° 45' 14\") acts as a primary astrological driver.",
+      "The verified chart placement of Saturn (position: Sagittarius 25° 46' 08\") acts as a primary astrological driver.",
+      "The verified chart placement of Ketu (position: Cancer 09° 02' 06\") acts as a primary astrological driver.",
+      "The verified chart placement of D10 Lagna (sign: Taurus) acts as a primary astrological driver."
+    ],
+    "postResponseValidationResult": "approved",
+    "metadataLeakage": false,
+    "rawRagCitationLeakage": false,
+    "timingLeakage": false,
+    "unsupportedClaims": 0,
+    "technicalNoise": false,
+    "guaranteedOutcomeLanguage": false,
+    "answerFirst": true,
+    "firstSentence": "Jupiter’s current transit through your 10th house is acting as a significant catalyst for professional growth, bringing a period of expanded responsibility and potential for leadership",
+    "wordCount": 210
+  },
+  {
+    "caseIndex": 4,
+    "caseId": "CASE_4_JUPITER_PROMOTION_GOLDEN",
+    "userQuestion": "How does the upcoming transit of Jupiter support my promotion timing?",
+    "conversationContext": [],
+    "executionMode": "live_gemini",
+    "geminiModel": "gemini-3.1-flash-lite",
+    "response": "The upcoming transit of Jupiter offers a promising window for your professional advancement, as it activates your 10th house of career and status, providing the necessary momentum for a potential promotion. This influence is particularly potent because it aligns with your Vimshottari Dasha of Moon-Venus, which runs from July 2026 to March 2028, creating a supportive period for growth and recognition.\n\nWhen Jupiter moves through these sensitive areas of your chart, it tends to amplify your leadership capacity and professional visibility. Because your Dasha lord is currently operating in a way that favors constructive life experiences, the timing is well-aligned for you to step into a more elevated role. \n\nHowever, it is important to remember that while the transit provides the opportunity, the outcome will require your conscious discipline. In classical practice, Jupiter’s transit through certain positions relative to your natal Moon can sometimes introduce complexities or require you to navigate obstacles before the promotion is fully realized. By staying focused and maintaining your professional standards throughout this period, you can best harness this cycle to achieve the milestone you are aiming for.",
+    "latencyMs": 3953,
+    "toolCalls": [
+      "get_birth_chart",
+      "get_divisional_chart",
+      "get_current_dasha",
+      "get_active_yogas",
+      "get_dasha_at",
+      "get_transits"
+    ],
+    "approvedClaimsCount": 32,
+    "approvedClaimsSample": [
+      "The verified chart placement of Jupiter (position: Cancer 17° 45' 14\") acts as a primary astrological driver.",
+      "The verified chart placement of Saturn (position: Sagittarius 25° 46' 08\") acts as a primary astrological driver.",
+      "The verified chart placement of Ketu (position: Cancer 09° 02' 06\") acts as a primary astrological driver.",
+      "The verified chart placement of D10 Lagna (sign: Taurus) acts as a primary astrological driver."
+    ],
+    "postResponseValidationResult": "approved",
+    "metadataLeakage": false,
+    "rawRagCitationLeakage": false,
+    "timingLeakage": false,
+    "unsupportedClaims": 0,
+    "technicalNoise": false,
+    "guaranteedOutcomeLanguage": false,
+    "answerFirst": true,
+    "firstSentence": "The upcoming transit of Jupiter offers a promising window for your professional advancement, as it activates your 10th house of career and status, providing the necessary momentum for a potential promotion",
+    "wordCount": 183
+  },
+  {
+    "caseIndex": 5,
+    "caseId": "CASE_5_STRONGEST_CAREER_PERIOD",
+    "userQuestion": "When is my strongest career period?",
+    "conversationContext": [],
+    "executionMode": "live_gemini",
+    "geminiModel": "gemini-3.1-flash-lite",
+    "response": "Your most significant career momentum is set to unfold between July 2026 and March 2028, a period defined by the supportive influence of your Moon-Venus dasha.\n\nThis window is particularly potent because it aligns with the structure of your Dashamsha (D10) chart, which governs your professional trajectory. With your D10 Lagna in Taurus, the current planetary cycles are working to harmonize your professional ambitions with your long-term goals. The placement of your Moon in the 11th house of the D10 suggests that this period will be especially fruitful for networking, gains through professional associations, and the fulfillment of long-held career aspirations.\n\nWhile the Sun’s position in the 8th house of your D10 indicates that you may encounter moments of deep transformation or behind-the-scenes challenges, these are not obstacles so much as catalysts for the growth you’ll experience during these months. To make the most of this time, focus on maintaining steady, disciplined action; the energy is highly supportive of leadership, but it rewards those who remain grounded while navigating the shifts in their professional environment.",
+    "latencyMs": 3734,
+    "toolCalls": [
+      "get_birth_chart",
+      "get_divisional_chart",
+      "get_current_dasha",
+      "get_active_yogas"
+    ],
+    "approvedClaimsCount": 28,
+    "approvedClaimsSample": [
+      "The verified chart placement of Jupiter (position: Cancer 17° 45' 14\") acts as a primary astrological driver.",
+      "The verified chart placement of Saturn (position: Sagittarius 25° 46' 08\") acts as a primary astrological driver.",
+      "The verified chart placement of Ketu (position: Cancer 09° 02' 06\") acts as a primary astrological driver.",
+      "The verified chart placement of D10 Lagna (sign: Taurus) acts as a primary astrological driver."
+    ],
+    "postResponseValidationResult": "approved",
+    "metadataLeakage": false,
+    "rawRagCitationLeakage": false,
+    "timingLeakage": false,
+    "unsupportedClaims": 0,
+    "technicalNoise": false,
+    "guaranteedOutcomeLanguage": false,
+    "answerFirst": true,
+    "firstSentence": "Your most significant career momentum is set to unfold between July 2026 and March 2028, a period defined by the supportive influence of your Moon-Venus dasha",
+    "wordCount": 175
+  },
+  {
+    "caseIndex": 6,
+    "caseId": "CASE_6_FOLLOWUP_WHY",
+    "userQuestion": "Why?",
+    "conversationContext": [
+      {
+        "role": "user",
+        "text": "When is my strongest career period?"
+      },
+      {
+        "role": "model",
+        "text": "Your most supportive career timing window runs from July 2026 to March 2028 during the Moon-Venus dasha cycle, bolstered by the favorable transit activation of your 10th house."
+      }
+    ],
+    "executionMode": "live_gemini",
+    "geminiModel": "gemini-3.1-flash-lite",
+    "response": "You are finding yourself in a period of significant momentum throughout 2026 because your current planetary cycles are aligning to create a rare, constructive confluence of energy. This \"why\" behind your recent experiences stems from the harmonious interplay between your Moon in Sagittarius and Venus in Libra, which are currently being activated by supportive transit influences.\n\nWhen these specific placements are energized together, they tend to open doors for personal growth and social ease that might have felt stalled previously. The reason this window feels so distinct is that your internal emotional landscape, represented by the Moon, is finding a natural resonance with the diplomatic and aesthetic grace of your Venus. Throughout 2026, this synergy acts as a catalyst, making it easier for you to navigate challenges with a sense of clarity and purpose. \n\nWhile the currents are moving in your favor, remember that this energy is most effective when you remain intentional with your choices. By staying grounded in your long-term goals rather than just reacting to the immediate flow, you can make the most of this peak window through the end of the year.",
+    "latencyMs": 3643,
+    "toolCalls": [
+      "get_birth_chart"
+    ],
+    "approvedClaimsCount": 13,
+    "approvedClaimsSample": [
+      "The verified chart placement of Moon (position: Sagittarius 09° 41' 45\") acts as a primary astrological driver.",
+      "The verified chart placement of Venus (position: Libra 04° 51' 32\") acts as a primary astrological driver.",
+      "The verified chart placement of Ascendant (sign: Aquarius) provides supporting astrological background.",
+      "The verified chart placement of Sun (position: Libra 06° 58' 01\") provides supporting astrological background."
+    ],
+    "postResponseValidationResult": "approved",
+    "metadataLeakage": false,
+    "rawRagCitationLeakage": false,
+    "timingLeakage": false,
+    "unsupportedClaims": 0,
+    "technicalNoise": true,
+    "guaranteedOutcomeLanguage": false,
+    "answerFirst": true,
+    "firstSentence": "You are finding yourself in a period of significant momentum throughout 2026 because your current planetary cycles are aligning to create a rare, constructive confluence of energy",
+    "wordCount": 186
+  },
+  {
+    "caseIndex": 7,
+    "caseId": "CASE_7_FALSE_GAJAKESARI",
+    "userQuestion": "I have Gajakesari Yoga, right?",
+    "conversationContext": [],
+    "executionMode": "live_gemini",
+    "geminiModel": "gemini-3.1-flash-lite",
+    "response": "You do not have a Gajakesari Yoga in your chart, as that specific formation requires the Moon and Jupiter to be in a mutual Kendra (angular) relationship, which is not present here. However, your chart is anchored by other powerful configurations that provide significant strength and intellectual clarity.\n\nThe combination of your Budhaditya Yoga and the Raja Yoga formed by the Kendra-Trikona alignment creates a strong foundation for professional and personal growth. With your Aquarius ascendant, these placements suggest a life path defined by analytical depth and a unique, forward-thinking approach to your goals. \n\nWhile you don't have the specific Jupiter-Moon connection, the current planetary cycles are highlighting these existing yogas, offering you a period of constructive momentum. To make the most of this energy, focus on maintaining consistency in your long-term projects, as the influence of these yogas is best realized through disciplined application rather than sudden, impulsive shifts. You are currently in a window where your ability to synthesize information and lead with vision is particularly well-supported, and this supportive influence remains active throughout the current period.",
+    "latencyMs": 3367,
+    "toolCalls": [
+      "get_birth_chart",
+      "get_active_yogas"
+    ],
+    "approvedClaimsCount": 14,
+    "approvedClaimsSample": [
+      "The verified chart placement of Budhaditya Yoga (बुधादित्य योग) (classical_yoga: Brihat Parashara Hora Shastra) acts as a primary astrological driver.",
+      "The verified chart placement of Raja Yoga — Kendra-Trikona Conjunction (राज योग) (classical_yoga: Brihat Parashara Hora Shastra) acts as a primary astrological driver.",
+      "The verified chart placement of Ascendant (sign: Aquarius) provides supporting astrological background.",
+      "The verified chart placement of Sun (position: Libra 06° 58' 01\") provides supporting astrological background."
+    ],
+    "postResponseValidationResult": "approved",
+    "metadataLeakage": false,
+    "rawRagCitationLeakage": false,
+    "timingLeakage": false,
+    "unsupportedClaims": 1,
+    "technicalNoise": false,
+    "guaranteedOutcomeLanguage": false,
+    "answerFirst": true,
+    "firstSentence": "You do not have a Gajakesari Yoga in your chart, as that specific formation requires the Moon and Jupiter to be in a mutual Kendra (angular) relationship, which is not present here",
+    "wordCount": 179
+  },
+  {
+    "caseIndex": 8,
+    "caseId": "CASE_8_EMOTIONAL_REJECTIONS",
+    "userQuestion": "I've had several rejections. Does my chart show a better career phase?",
+    "conversationContext": [],
+    "executionMode": "live_gemini",
+    "geminiModel": "gemini-3.1-flash-lite",
+    "response": "You are entering a much more supportive professional phase, as the upcoming cycle brings a shift in momentum that favors growth and recognition.\n\nBetween July 2026 and March 2028, you will be moving through the Moon-Venus dasha, a period that historically aligns with greater stability and the fruition of your efforts. In your Dashamsha (D10) chart, which governs your career trajectory, the placement of the Moon in the 11th house is particularly encouraging; it suggests that your professional network and long-term aspirations are likely to receive a significant boost during this window.\n\nWhile the Sun’s position in the 8th house of your D10 chart suggests that your path may involve some behind-the-scenes transformation or a need to navigate complex organizational dynamics, this is not a hindrance. Instead, it indicates that your career progress will be most sustainable when you embrace a degree of adaptability and patience. By focusing on building strong alliances and remaining consistent through this period, you are well-positioned to move past the recent string of rejections and find a role that better reflects your capabilities.",
+    "latencyMs": 2725,
+    "toolCalls": [
+      "get_birth_chart",
+      "get_divisional_chart",
+      "get_current_dasha",
+      "get_active_yogas"
+    ],
+    "approvedClaimsCount": 28,
+    "approvedClaimsSample": [
+      "The verified chart placement of Jupiter (position: Cancer 17° 45' 14\") acts as a primary astrological driver.",
+      "The verified chart placement of Saturn (position: Sagittarius 25° 46' 08\") acts as a primary astrological driver.",
+      "The verified chart placement of Ketu (position: Cancer 09° 02' 06\") acts as a primary astrological driver.",
+      "The verified chart placement of D10 Lagna (sign: Taurus) acts as a primary astrological driver."
+    ],
+    "postResponseValidationResult": "approved",
+    "metadataLeakage": false,
+    "rawRagCitationLeakage": false,
+    "timingLeakage": false,
+    "unsupportedClaims": 0,
+    "technicalNoise": false,
+    "guaranteedOutcomeLanguage": false,
+    "answerFirst": true,
+    "firstSentence": "You are entering a much more supportive professional phase, as the upcoming cycle brings a shift in momentum that favors growth and recognition",
+    "wordCount": 178
+  },
+  {
+    "caseIndex": 9,
+    "caseId": "CASE_9_CONTRADICTION_JUPITER_SATURN",
+    "userQuestion": "Earlier you said Jupiter was strongest, now you're saying Saturn.",
+    "conversationContext": [
+      {
+        "role": "user",
+        "text": "What is driving my career right now?"
+      },
+      {
+        "role": "model",
+        "text": "Jupiter provides expansive momentum and upcoming promotion opportunities in your professional trajectory."
+      },
+      {
+        "role": "user",
+        "text": "Why is work feeling so heavy and demanding?"
+      },
+      {
+        "role": "model",
+        "text": "Saturn is currently the strongest factor enforcing discipline, structural perseverance, and patience in your career."
+      }
+    ],
+    "executionMode": "live_gemini",
+    "geminiModel": "gemini-3.1-flash-lite",
+    "response": "It is a common point of confusion, but the distinction lies in how these two planets govern different layers of your life: Jupiter is currently acting as the primary engine for your professional growth, while Saturn provides the necessary structure to sustain it.\n\nJupiter is currently transiting through your 10th house, which is why it feels like the strongest influence regarding your career momentum and public standing. This transit is opening doors and creating opportunities for expansion that feel quite natural and supportive. However, Saturn’s position in Sagittarius acts as the anchor; it demands the discipline and long-term strategy required to ensure that the growth Jupiter brings doesn't become fleeting or unmanageable.\n\nThink of it as a partnership: Jupiter provides the wind in your sails, while Saturn ensures the ship is sturdy enough to handle the journey. This dynamic is particularly active throughout this current period. While Jupiter offers the \"what\" and the \"where\" of your professional advancement, Saturn is the \"how,\" requiring you to remain grounded and methodical in your approach. By balancing Jupiter’s expansive energy with Saturn’s need for deliberate, steady progress, you are in a position to turn these current opportunities into lasting achievements.",
+    "latencyMs": 3232,
+    "toolCalls": [
+      "get_birth_chart"
+    ],
+    "approvedClaimsCount": 12,
+    "approvedClaimsSample": [
+      "The verified chart placement of Jupiter (position: Cancer 17° 45' 14\") acts as a primary astrological driver.",
+      "The verified chart placement of Saturn (position: Sagittarius 25° 46' 08\") acts as a primary astrological driver.",
+      "The verified chart placement of Ascendant (sign: Aquarius) provides supporting astrological background.",
+      "The verified chart placement of Sun (position: Libra 06° 58' 01\") provides supporting astrological background."
+    ],
+    "postResponseValidationResult": "approved",
+    "metadataLeakage": false,
+    "rawRagCitationLeakage": false,
+    "timingLeakage": false,
+    "unsupportedClaims": 0,
+    "technicalNoise": false,
+    "guaranteedOutcomeLanguage": false,
+    "answerFirst": true,
+    "firstSentence": "It is a common point of confusion, but the distinction lies in how these two planets govern different layers of your life: Jupiter is currently acting as the primary engine for your professional growth, while Saturn provides the necessary structure to sustain it",
+    "wordCount": 197
+  },
+  {
+    "caseIndex": 10,
+    "caseId": "CASE_10_AMBIGUOUS_JUPITER",
+    "userQuestion": "Will Jupiter help me?",
+    "conversationContext": [
+      {
+        "role": "user",
+        "text": "Hello, I want to ask about my chart."
+      },
+      {
+        "role": "model",
+        "text": "Namaste! I would be glad to examine your Vedic horoscope. What specific area would you like to explore?"
+      }
+    ],
+    "executionMode": "live_gemini",
+    "geminiModel": "gemini-3.1-flash-lite",
+    "response": "Whether Jupiter will be a source of support for you depends entirely on the specific area of your life you are hoping to cultivate, as its influence is quite broad. Jupiter is currently transiting your 10th house, which often highlights your professional path, public reputation, and the way you contribute your talents to the world.\n\nBecause this transit activates the house of career and status, it can bring constructive developments if your current dasha period aligns with these themes. However, astrology is rarely a one-way street; this transit acts more like a supportive wind than a destination, meaning your personal initiative and conscious discipline remain the primary drivers of any outcome. \n\nTo give you a more meaningful perspective, could you share which domain you are focusing on—perhaps a career transition, a long-term project, or a shift in your professional responsibilities? Knowing what you are aiming for will help me better interpret how this current influence through 2025 might best serve your goals.",
+    "latencyMs": 3697,
+    "toolCalls": [],
+    "approvedClaimsCount": 1,
+    "approvedClaimsSample": [
+      "The available astrological evidence is insufficient or too ambiguous to formulate a definitive evaluation. Clarification is required regarding Unspecified domain and outcome criteria.."
+    ],
+    "postResponseValidationResult": "approved",
+    "metadataLeakage": false,
+    "rawRagCitationLeakage": false,
+    "timingLeakage": false,
+    "unsupportedClaims": 0,
+    "technicalNoise": false,
+    "guaranteedOutcomeLanguage": false,
+    "answerFirst": true,
+    "firstSentence": "Whether Jupiter will be a source of support for you depends entirely on the specific area of your life you are hoping to cultivate, as its influence is quite broad",
+    "wordCount": 162
+  }
+]

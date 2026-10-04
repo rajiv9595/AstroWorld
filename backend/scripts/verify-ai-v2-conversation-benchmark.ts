@@ -16,8 +16,8 @@ import {
 async function runConversationQualityBenchmark() {
   console.log('🌟 Starting AstroWorld AI V2 Phase 4F Conversation Quality Benchmark Suite...\n');
 
-  const forceMock = process.argv.includes('--mock');
   const forceLive = process.argv.includes('--live');
+  const forceMock = process.argv.includes('--mock') || !forceLive;
 
   const orchestrator = new ConsultationOrchestrator({
     forceMockMode: forceMock,

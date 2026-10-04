@@ -107,7 +107,7 @@ async function runPhase3CSuite() {
   const fakeSet = firewall.validate([fakeEntityClaim], planCareer, reasoningCareer, evidenceCareer);
   assert(
     fakeSet.rejectedClaims.length === 1 &&
-      fakeSet.rejectedClaims[0].failedChecks?.some(f => f.includes('Unverified astrological entity')),
+      Boolean(fakeSet.rejectedClaims[0].failedChecks?.some(f => f.includes('Unverified astrological entity'))),
     'Step 5: Astrological Invention Firewall Rejection',
     'Strictly rejected unverified planet (Neptune) absent from canonical Vedic ephemeris'
   );
@@ -133,7 +133,7 @@ async function runPhase3CSuite() {
   const dateSet = firewall.validate([fakeDateClaim], planCareer, reasoningCareer, evidenceCareer);
   assert(
     dateSet.rejectedClaims.length === 1 &&
-      dateSet.rejectedClaims[0].failedChecks?.some(f => f.includes('Fabricated specific event date')),
+      Boolean(dateSet.rejectedClaims[0].failedChecks?.some(f => f.includes('Fabricated specific event date'))),
     'Step 4: Temporal Date Fabrication Rejection',
     'Strictly rejected fabricated specific event date ("July 17, 2027") not calculated by ephemeris engine'
   );
@@ -158,7 +158,7 @@ async function runPhase3CSuite() {
   const linSet = firewall.validate([noLineageClaim], planCareer, reasoningCareer, evidenceCareer);
   assert(
     linSet.rejectedClaims.length === 1 &&
-      linSet.rejectedClaims[0].failedChecks?.some(f => f.includes('missing required evidence or rule lineage')),
+      Boolean(linSet.rejectedClaims[0].failedChecks?.some(f => f.includes('missing required evidence or rule lineage'))),
     'Step 6: Missing Lineage Firewall Rejection',
     'Strictly rejected interpretive claim lacking evidence and rule lineage IDs'
   );
@@ -183,7 +183,7 @@ async function runPhase3CSuite() {
   const certSet = firewall.validate([guaranteedClaim], planCareer, reasoningCareer, evidenceCareer);
   assert(
     certSet.rejectedClaims.length === 1 &&
-      certSet.rejectedClaims[0].failedChecks?.some(f => f.includes('Unsupported fatalistic certainty language')),
+      Boolean(certSet.rejectedClaims[0].failedChecks?.some(f => f.includes('Unsupported fatalistic certainty language'))),
     'Step 7: Fatalistic Certainty Language Rejection',
     'Strictly blocked forbidden certainty term ("guaranteed") in astrological prediction'
   );
@@ -219,7 +219,7 @@ async function runPhase3CSuite() {
   const driftSet = firewall.validate([driftClaim], planCareer, reasoningCareer, evidenceCareer);
   assert(
     driftSet.rejectedClaims.length === 1 &&
-      driftSet.rejectedClaims[0].failedChecks?.some(f => f.includes('Relevance drift')),
+      Boolean(driftSet.rejectedClaims[0].failedChecks?.some(f => f.includes('Relevance drift'))),
     'Step 9 & 10: Cross-Domain Drift Firewall Rejection',
     'Strictly rejected unrelated marriage claim injected into professional career inquiry'
   );
@@ -271,7 +271,7 @@ async function runPhase3CSuite() {
   const remSet = firewall.validate([remedyClaim], planCareer, reasoningCareer, evidenceCareer);
   assert(
     remSet.rejectedClaims.length === 1 &&
-      remSet.rejectedClaims[0].failedChecks?.some(f => f.includes('Unsupported remedy')),
+      Boolean(remSet.rejectedClaims[0].failedChecks?.some(f => f.includes('Unsupported remedy'))),
     'Step 13: Unsupported Remedy Firewall Rejection',
     'Blocked commercial gemstone prescription lacking classical rule citation'
   );
@@ -399,7 +399,7 @@ async function runPhase3CSuite() {
     const caseReasoning = casePlan.clarificationRequired
       ? { ...mockReasoning, direction: 'insufficient_evidence' as const, coverageStatus: 'insufficient_evidence' as const }
       : mockReasoning;
-    const caseResult = firewall.validate([testCase.candidateClaim], casePlan, caseReasoning, mockEvidence);
+    const caseResult = firewall.validate([testCase.candidateClaim], casePlan, caseReasoning as any, mockEvidence);
 
     const actualAllowed = caseResult.claims.length === 1 && caseResult.rejectedClaims.length === 0;
     const allowedMatches = actualAllowed === testCase.expectedAllowed;

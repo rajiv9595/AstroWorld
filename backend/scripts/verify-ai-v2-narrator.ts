@@ -55,7 +55,11 @@ async function runPhase4ASuite() {
   const claimGen = new ClaimSetGenerator();
   const firewall = new GroundingFirewall();
   const responsePlanner = new ResponsePlanner();
-  const narrator = new GeminiNarrator();
+  const forceLive = process.argv.includes('--live');
+  const narrator = new GeminiNarrator({
+    forceMockMode: !forceLive,
+    apiKey: forceLive ? process.env.GEMINI_API_KEY : undefined,
+  });
   const claimExtractor = new ResponseClaimExtractor();
   const postValidator = new PostResponseGroundingValidator();
 

@@ -170,7 +170,7 @@ async function main() {
   });
   assert(
     'Validation: Out-of-Range Latitude Rejected',
-    resCoords.success === false && resCoords.error?.includes('latitude'),
+    resCoords.success === false && Boolean(resCoords.error?.includes('latitude')),
     `Safely rejected out of range latitude: "${resCoords.error}"`
   );
 
@@ -181,7 +181,7 @@ async function main() {
   });
   assert(
     'Validation: Invalid Varga Code Rejected',
-    resBadVarga.success === false && resBadVarga.error?.includes('Invalid vargaCode'),
+    resBadVarga.success === false && Boolean(resBadVarga.error?.includes('Invalid vargaCode')),
     `Safely rejected unknown vargaCode: "${resBadVarga.error}"`
   );
 
@@ -189,7 +189,7 @@ async function main() {
   const resUnregistered = AstrologyToolRegistry.executeTool('non_existent_tool', {});
   assert(
     'Validation: Unregistered Tool Rejected',
-    resUnregistered.success === false && resUnregistered.error?.includes('not registered'),
+    resUnregistered.success === false && Boolean(resUnregistered.error?.includes('not registered')),
     `Safely rejected unregistered tool: "${resUnregistered.error}"`
   );
 

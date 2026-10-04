@@ -96,12 +96,17 @@ export class ToolPlanner {
     // A. Minimal Simple Questions
     if (intent === 'general_chart_question' || intent === 'planet_question' || intent === 'house_question') {
       addTool('get_birth_chart', { birthProfile }, [], 10);
+      const vargas = chartLayers.filter(l => l !== 'D1');
+      for (const v of vargas) {
+        addTool('get_divisional_chart', { birthProfile, vargaCode: v }, [], 9);
+      }
       return;
     }
 
     if (intent === 'varga_analysis') {
+      addTool('get_birth_chart', { birthProfile }, [], 10);
       const varga = chartLayers.find(l => l !== 'D1') || 'D9';
-      addTool('get_divisional_chart', { birthProfile, vargaCode: varga }, [], 10);
+      addTool('get_divisional_chart', { birthProfile, vargaCode: varga }, [], 9);
       return;
     }
 
@@ -123,7 +128,8 @@ export class ToolPlanner {
     }
 
     if (intent === 'yoga_analysis') {
-      addTool('get_active_yogas', { birthProfile }, [], 10);
+      addTool('get_birth_chart', { birthProfile }, [], 10);
+      addTool('get_active_yogas', { birthProfile }, [], 9);
       return;
     }
 

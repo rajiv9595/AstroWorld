@@ -22,7 +22,7 @@ export class GeminiToolPlanner {
 
   constructor(config?: GeminiPlannerConfig) {
     const apiKey = config?.apiKey || process.env.GEMINI_API_KEY;
-    this.modelName = config?.modelName || 'gemini-2.5-flash';
+    this.modelName = config?.modelName || 'gemini-3.8-flash';
     if (apiKey) {
       this.ai = new GoogleGenAI({ apiKey });
     }

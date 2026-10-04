@@ -313,7 +313,7 @@ export default function App() {
           onLogout={handleLogout}
           savedChartsCount={userCharts.length}
           onOpenChat={() => {
-            setIsSupportChatOpen(true);
+            handleTabChange('ai');
           }}
         />
       </div>

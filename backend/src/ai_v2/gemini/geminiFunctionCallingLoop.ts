@@ -62,7 +62,7 @@ export class GeminiFunctionCallingLoop {
 
   constructor(config?: GeminiLoopConfig) {
     const apiKey = config?.apiKey || process.env.GEMINI_API_KEY;
-    this.modelName = config?.modelName || 'gemini-2.5-flash';
+    this.modelName = config?.modelName || 'gemini-3.8-flash';
     this.maxRounds = config?.maxRounds ?? 4;
     this.maxToolCallsTotal = config?.maxToolCallsTotal ?? 10;
     this.timeoutMs = config?.timeoutMs ?? 20000;

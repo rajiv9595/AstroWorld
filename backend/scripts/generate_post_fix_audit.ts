@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const benchmarkPath = path.join(__dirname, '../conversation_benchmark_results.json');
-const rawData: BenchmarkResult[] = JSON.parse(fs.readFileSync(benchmarkPath, 'utf8'));
+const rawData: any[] = JSON.parse(fs.readFileSync(benchmarkPath, 'utf8'));
 
 const auditedScenarios = rawData.map(item => {
   const text = item.response;

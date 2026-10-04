@@ -21,7 +21,7 @@ export class QuestionPlanner {
   /**
    * Translates a natural language user query into a validated, structured QuestionPlan.
    */
-  public async plan(rawQuestion: string, followUpContext?: any): Promise<QuestionPlan> {
+  public async plan(rawQuestion: string, followUpContext?: any, contextPack?: any): Promise<QuestionPlan> {
     if (!rawQuestion || typeof rawQuestion !== 'string' || rawQuestion.trim().length === 0) {
       throw new Error('QuestionPlanner: rawQuestion must be a non-empty string.');
     }
@@ -29,13 +29,40 @@ export class QuestionPlanner {
     const normalized = rawQuestion.trim();
     const lower = normalized.toLowerCase();
 
-    // 1. Ambiguity Detection
-    if (this.isAmbiguousQuery(lower)) {
+    // 1. Ambiguity Detection (via context pack or built-in patterns)
+    if (contextPack?.clarificationNeeded) {
+      return {
+        questionId: `q_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        rawQuestion,
+        normalizedQuestion: normalized,
+        intent: 'clarification_needed',
+        domain: contextPack.currentDomain || 'general',
+        planetFocus: [],
+        houseFocus: [],
+        chartLayers: ['D1'],
+        temporalScope: { type: 'current' },
+        targetDatesIso: [],
+        requiredTools: [],
+        priority: 1,
+        ambiguities: [contextPack.clarificationReason || 'Clarification required.'],
+        clarificationRequired: true,
+        clarification: {
+          question: contextPack.clarificationReason || 'Please clarify your inquiry.',
+          reason: contextPack.clarificationReason,
+          suggestedOptions: contextPack.suggestedOptions || ['Career Timing', 'Relationships', 'Wealth & Finance'],
+        },
+        version: 'ai-v2-plan-1',
+        createdAtIso: new Date().toISOString(),
+      };
+    }
+
+    const hasFollowUp = Array.isArray(followUpContext) ? followUpContext.length > 0 : Boolean(followUpContext);
+    if (!hasFollowUp && this.isAmbiguousQuery(lower)) {
       return this.createAmbiguityPlan(normalized, lower);
     }
 
     // 2. Structured Extraction (Deterministic Rule & NLP Mapping)
-    const plan = this.extractPlanDeterministic(normalized, lower, followUpContext);
+    const plan = this.extractPlanDeterministic(normalized, lower, followUpContext, contextPack);
 
     // 3. Schema Validation
     const validation = validateQuestionPlan(plan);
@@ -108,11 +135,26 @@ export class QuestionPlanner {
   /**
    * Extracts structured astrological factors deterministically from query tokens.
    */
-  private extractPlanDeterministic(rawQuestion: string, lower: string, followUpContext?: any): QuestionPlan {
+  private extractPlanDeterministic(
+    rawQuestion: string,
+    lower: string,
+    followUpContext?: any,
+    contextPack?: any
+  ): QuestionPlan {
     let planets = this.extractPlanets(lower);
     let houses = this.extractHouses(lower);
     let chartLayers = this.extractChartLayers(lower);
     let { temporalScope, targetDatesIso } = this.extractTemporalScope(lower);
+
+    // Context inheritance from contextPack
+    if (contextPack) {
+      if (planets.length === 0 && contextPack.resolvedReferents?.resolvedEntity) {
+        planets.push(contextPack.resolvedReferents.resolvedEntity);
+      }
+      if (contextPack.resolvedReferents?.resolvedTemporalScope) {
+        temporalScope = contextPack.resolvedReferents.resolvedTemporalScope;
+      }
+    }
 
     // Parse previous conversation context if available
     let prevText = '';
@@ -142,6 +184,15 @@ export class QuestionPlanner {
     let domain = 'general';
     let intent = 'general_chart_question';
     let event: string | undefined = undefined;
+
+    if (prevText && (lower.startsWith('why') || lower === 'why' || lower === 'why?' || lower.includes('what makes'))) {
+      intent = 'challenge_previous_conclusion';
+      if (prevText.includes('career') || prevText.includes('job') || prevText.includes('promotion') || prevText.includes('work')) {
+        domain = 'career';
+      } else if (prevText.includes('marriage') || prevText.includes('relationship') || prevText.includes('spouse') || prevText.includes('partner')) {
+        domain = 'relationship';
+      }
+    }
 
     // A. Simple Direct Astrological Factor Questions
     if (lower.includes('nakshatra') || lower.includes('tithi') || lower.includes('panchanga')) {
@@ -298,6 +349,20 @@ export class QuestionPlanner {
       intent = 'transit_analysis';
     }
 
+    // Apply contextPack overrides for follow-up turns
+    if (contextPack) {
+      if (contextPack.resolvedReferents?.requestedExplanation) {
+        intent = 'challenge_previous_conclusion';
+      }
+      if (
+        contextPack.currentDomain &&
+        contextPack.currentDomain !== 'general' &&
+        (domain === 'general' || lower.startsWith('why') || lower.includes('what makes') || lower.includes('how so'))
+      ) {
+        domain = contextPack.currentDomain;
+      }
+    }
+
     // Deduplicate chart layers and ensure D1 is included if empty
     const uniqueLayers = Array.from(new Set(chartLayers)) as VargaCode[];
     if (uniqueLayers.length === 0) {
@@ -320,13 +385,14 @@ export class QuestionPlanner {
       priority: 1,
       ambiguities: [],
       clarificationRequired: false,
-      followUpContext: followUpContext
-        ? {
-            isFollowUp: true,
-            parentQuestionId: followUpContext.parentQuestionId,
-            resolvedEntity: followUpContext.resolvedEntity,
-          }
-        : undefined,
+      followUpContext:
+        followUpContext || contextPack?.resolvedReferents?.hasReferents
+          ? {
+              isFollowUp: true,
+              parentQuestionId: followUpContext?.parentQuestionId || contextPack?.resolvedReferents?.referentTurnId,
+              resolvedEntity: followUpContext?.resolvedEntity || contextPack?.resolvedReferents?.resolvedEntity,
+            }
+          : undefined,
       version: 'ai-v2-plan-1',
       createdAtIso: new Date().toISOString(),
     };

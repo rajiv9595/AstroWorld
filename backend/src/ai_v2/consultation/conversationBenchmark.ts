@@ -17,7 +17,7 @@ export type BenchmarkCategory =
   | 'I_EMOTIONAL_UNCERTAINTY'
   | 'J_CONTRADICTION_CORRECTION';
 
-export interface ConversationTurn {
+export interface ConversationBenchmarkMessage {
   role: 'user' | 'model';
   text: string;
 }
@@ -28,7 +28,7 @@ export interface BenchmarkScenario {
   title: string;
   question: string;
   profile: BirthProfile;
-  conversationContext?: ConversationTurn[];
+  conversationContext?: ConversationBenchmarkMessage[];
   expectedIntent?: string;
   expectedDomain?: string;
   expectedConcepts: string[];

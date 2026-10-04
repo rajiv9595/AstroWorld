@@ -58,6 +58,11 @@ export interface ConsultationResult {
   responsePlan: ResponsePlan;
   trace: ConsultationTrace;
   success: boolean;
+  conversationState?: any;
+  contextPack?: any;
+  stateTrace?: any;
+  memoryPack?: any;
+  memoryTrace?: any;
 }
 
 /**
