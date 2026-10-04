@@ -12,7 +12,7 @@
 
 | Parameter | Previous Value | Reconciled Authoritative Value | Verification |
 |---|---|---|---|
-| **Current Release Commit** | `01540c3` (Stale) | `91160e21b65708f4a9b25d5bd04141a58ae1c379` | `git rev-parse HEAD` |
+| **Current Release Commit** | `91160e21` (Phase 10.2.1) | `f830e5e45e8709c982848ebfe68082c3e953ced0` (Phase 10.3) | `git rev-parse HEAD` |
 | **Release Tag** | `v2.0.0-rc1` | `v2.0.0-rc1` | Tagged release candidate |
 | **Build Target** | `production` | `production` | `@astroworld/backend@1.0.0` + Vite frontend bundle |
 | **Manifest Synchronization** | Inconsistent across subfolders | Harmonized in `backend/release_manifest.md` and `release_manifest.md` | Verified parity |
