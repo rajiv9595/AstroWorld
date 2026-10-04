@@ -648,10 +648,23 @@ async function runPhase8BReleaseCandidateSuite() {
     testResults,
   });
   const writeDeliverable = (filename: string, content: string) => {
-    fs.writeFileSync(path.resolve(process.cwd(), filename), content, 'utf-8');
+    const targetPath = path.resolve(process.cwd(), filename);
+    const lockedHistoricalFiles = [
+      'phase8b_production_release_candidate_report.md',
+      'production_runbook.md',
+      'rollback_runbook.md',
+      'disaster_recovery_runbook.md',
+      'release_manifest.md',
+    ];
+    if (lockedHistoricalFiles.includes(filename) && fs.existsSync(targetPath)) {
+      return;
+    }
+    fs.writeFileSync(targetPath, content, 'utf-8');
     const rootPath = path.resolve(process.cwd(), '..', filename);
     if (fs.existsSync(path.resolve(process.cwd(), '..', 'package.json'))) {
-      fs.writeFileSync(rootPath, content, 'utf-8');
+      if (!lockedHistoricalFiles.includes(filename) || !fs.existsSync(rootPath)) {
+        fs.writeFileSync(rootPath, content, 'utf-8');
+      }
     }
   };
 

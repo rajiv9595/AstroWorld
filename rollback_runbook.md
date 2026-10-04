@@ -1,9 +1,16 @@
-# ASTROWORLD AI V2 — ROLLBACK RUNBOOK
+# ASTROWORLD AI V2 — PRODUCTION ROLLBACK RUNBOOK
+
+- **Release Candidate Identifier**: `v2.0.0-rc1`
+- **Git Tag Status**: `NONE` (Release candidate identifier; no Git tag created in repository)
+- **Verified Engineering Baseline**: `b7ef4f8955455c99ea982c4a7577808c5bab5711`
+- **Rollback Authority**: Engineering SRE & Operational Lead
+
+---
 
 ## 1. Quick-Rollback Criteria
 Initiate immediate rollback if any of the following occur during or after deployment:
-- Error rate $ge 1.0%$ across rolling 5-minute window.
-- p95 latency $ge 8000	ext{ms}$.
+- Error rate $\ge 1.0\%$ across rolling 5-minute window.
+- Overall request latency $p95 \ge 8000\text{ms}$.
 - Alert `DATABASE_CONNECTIVITY_FAILURE` or `READINESS_PROBE_FAILURE` triggers.
 - Critical security defect or data integrity mismatch identified.
 
@@ -11,12 +18,12 @@ Initiate immediate rollback if any of the following occur during or after deploy
 
 ## 2. Application Container Rollback
 1. **Re-route Ingress Traffic**:
-   - Immediately switch canary / blue-green traffic weight to 100% on previous stable container revision (e.g., `v2.0.0-rc0` or last stable build).
+   - Immediately switch canary / blue-green traffic weight to 100% on previous stable container revision (e.g., last verified stable production revision).
 2. **Verify Health Probes**:
    - Check `/api/health/live` -> HTTP 200 `{"status": "ok"}`.
    - Check `/api/health/ready` -> HTTP 200 `{"status": "ready"}`.
 3. **Drain Faulty Pods**:
-   - Terminate canary revision instances after inflight requests complete.
+   - Terminate current release candidate instances after in-flight requests complete.
 
 ---
 

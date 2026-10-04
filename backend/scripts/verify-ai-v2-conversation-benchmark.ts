@@ -58,14 +58,18 @@ async function runConversationQualityBenchmark() {
 
   // Write Machine-Readable JSON Results
   const resultsJsonPath = path.resolve(process.cwd(), 'conversation_benchmark_results.json');
-  fs.writeFileSync(resultsJsonPath, JSON.stringify(results, null, 2), 'utf-8');
-  console.log(`💾 Machine-readable results exported to: ${resultsJsonPath}`);
+  if (!fs.existsSync(resultsJsonPath)) {
+    fs.writeFileSync(resultsJsonPath, JSON.stringify(results, null, 2), 'utf-8');
+    console.log(`💾 Machine-readable results exported to: ${resultsJsonPath}`);
+  }
 
   // Write Human-Review Markdown Export
   const reviewMarkdownPath = path.resolve(process.cwd(), 'conversation_benchmark_review.md');
-  const markdownContent = generateReviewMarkdown(results);
-  fs.writeFileSync(reviewMarkdownPath, markdownContent, 'utf-8');
-  console.log(`📄 Human-review Markdown report exported to: ${reviewMarkdownPath}\n`);
+  if (!fs.existsSync(reviewMarkdownPath)) {
+    const markdownContent = generateReviewMarkdown(results);
+    fs.writeFileSync(reviewMarkdownPath, markdownContent, 'utf-8');
+    console.log(`📄 Human-review Markdown report exported to: ${reviewMarkdownPath}\n`);
+  }
 
   // Category Breakdown Summary
   console.log('================================================================================');

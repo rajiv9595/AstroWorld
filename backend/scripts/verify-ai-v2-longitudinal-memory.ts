@@ -463,10 +463,14 @@ async function runPhase5CLongitudinalSuite() {
 
   // Export JSON results
   const jsonPathBackend = path.resolve('longitudinal_memory_results.json');
-  fs.writeFileSync(jsonPathBackend, JSON.stringify(metricsReport, null, 2), 'utf-8');
-  try {
-    fs.writeFileSync(path.resolve('../longitudinal_memory_results.json'), JSON.stringify(metricsReport, null, 2), 'utf-8');
-  } catch {}
+  if (!fs.existsSync(jsonPathBackend)) {
+    fs.writeFileSync(jsonPathBackend, JSON.stringify(metricsReport, null, 2), 'utf-8');
+    try {
+      if (!fs.existsSync(path.resolve('../longitudinal_memory_results.json'))) {
+        fs.writeFileSync(path.resolve('../longitudinal_memory_results.json'), JSON.stringify(metricsReport, null, 2), 'utf-8');
+      }
+    } catch {}
+  }
 
   console.log('\n================================================================================');
   console.log('PHASE 5C LONGITUDINAL BENCHMARK METRICS SUMMARY');

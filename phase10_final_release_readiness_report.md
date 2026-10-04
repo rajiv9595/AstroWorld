@@ -1,15 +1,15 @@
 # ASTROWORLD AI V2 — PHASE 10 FINAL RELEASE READINESS REPORT
-**Generated:** 2026-10-04T14:54:03.385Z  
-**Release Candidate Identifier:** `v2.0.0-rc1`  
-**Historical Evidence Source:** `backend/phase9_1_live_gemini_results.json`  
-**Verified Engineering Baseline:** `b7ef4f8955455c99ea982c4a7577808c5bab5711`  
-**Git Tag Status:** `NONE` (Candidate identifier; no tag created in repository)  
-**Operational Percentile Policy:** `sorted[Math.floor(n * p)]`  
-**Status:** **NEEDS_OPERATIONAL_REVIEW**  
-**Engineering Test Gate:** **PASSED** (33/33 Checks Passed)  
-**Operational SLO Gate:** **NEEDS_OPERATIONAL_REVIEW** (Overall End-to-End Latency SLO Tail Breach)  
-**Stage 1 Rollout Eligibility:** **BLOCKED** ($p95 = 6325\text{ms} > 4000\text{ms}$)  
-**Public Traffic State:** **CLOSED / 0%**  
+- **Generated**: 2026-10-04T15:27:18.784Z
+- **Release Candidate Identifier**: `v2.0.0-rc1`
+- **Historical Evidence Source**: `backend/phase9_1_live_gemini_results.json`
+- **Verified Engineering Baseline**: `b7ef4f8955455c99ea982c4a7577808c5bab5711`
+- **Git Tag Status**: `NONE` (Candidate identifier; no tag created in repository)
+- **Operational Percentile Policy**: `sorted[Math.floor(n * p)]`
+- **Status**: **NEEDS_OPERATIONAL_REVIEW**
+- **Engineering Test Gate**: **PASSED** (33/33 Checks Passed)
+- **Operational SLO Gate**: **NEEDS_OPERATIONAL_REVIEW** (Overall End-to-End Latency SLO Tail Breach)
+- **Stage 1 Rollout Eligibility**: **BLOCKED** ($p95 = 6325\text{ms} > 4000\text{ms}$)
+- **Public Traffic State**: **CLOSED / 0%**
 
 ---
 
@@ -34,16 +34,16 @@
 
 | # | Query Type | Question | Requested Model | Effective Model | Fallback Triggered | Latency (ms) | Grounding Status |
 |---|---|---|---|---|---|---|---|
-| 1 | Moon sign | What is my Moon sign and Nakshatra?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 7075ms | ✅ Verified |
-| 2 | D10 Lagna | What is my D10 Lagna sign?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 3190ms | ✅ Verified |
-| 3 | Jupiter career | How does Jupiter affect my career a... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 3574ms | ✅ Verified |
-| 4 | Jupiter promotion timing | Will upcoming Jupiter transit suppo... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 4281ms | ✅ Verified |
-| 5 | Strongest career period | When is my strongest career timing ... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 6472ms | ✅ Verified |
-| 6 | Why? | Why?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 4802ms | ✅ Verified |
-| 7 | False Gajakesari assumption | Since Jupiter and Moon form Gajakes... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 15873ms | ✅ Verified |
-| 8 | Emotional career setback | I was rejected from my dream job an... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 3630ms | ✅ Verified |
-| 9 | Jupiter vs Saturn contradiction | Your previous answer emphasized Jup... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 6478ms | ✅ Verified |
-| 10 | Ambiguous Jupiter question | What about Jupiter?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 5399ms | ✅ Verified |
+| 1 | Moon sign | What is my Moon sign and Nakshatra?... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 878ms | ✅ Verified |
+| 2 | D10 Lagna | What is my D10 Lagna sign?... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 624ms | ✅ Verified |
+| 3 | Jupiter career | How does Jupiter affect my career a... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 626ms | ✅ Verified |
+| 4 | Jupiter promotion timing | Will upcoming Jupiter transit suppo... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 652ms | ✅ Verified |
+| 5 | Strongest career period | When is my strongest career timing ... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 727ms | ✅ Verified |
+| 6 | Why? | Why?... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 711ms | ✅ Verified |
+| 7 | False Gajakesari assumption | Since Jupiter and Moon form Gajakes... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 1928ms | ✅ Verified |
+| 8 | Emotional career setback | I was rejected from my dream job an... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 618ms | ✅ Verified |
+| 9 | Jupiter vs Saturn contradiction | Your previous answer emphasized Jup... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 644ms | ✅ Verified |
+| 10 | Ambiguous Jupiter question | What about Jupiter?... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 743ms | ✅ Verified |
 
 ---
 

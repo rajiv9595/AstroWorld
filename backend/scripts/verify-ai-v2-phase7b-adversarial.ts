@@ -839,8 +839,10 @@ async function runPhase7BAdversarialSuite() {
 
   // Write phase7b_adversarial_results.json
   const resultsJsonPath = path.resolve(process.cwd(), 'phase7b_adversarial_results.json');
-  fs.writeFileSync(resultsJsonPath, JSON.stringify(adversarialResultsData, null, 2), 'utf-8');
-  console.log(`  📄 Written results artifact: ${resultsJsonPath}`);
+  if (!fs.existsSync(resultsJsonPath)) {
+    fs.writeFileSync(resultsJsonPath, JSON.stringify(adversarialResultsData, null, 2), 'utf-8');
+    console.log(`  📄 Written results artifact: ${resultsJsonPath}`);
+  }
 
   // Write phase7b_adversarial_report.md
   const reportMarkdown = `# ASTROWORLD AI V2 — PHASE 7B ADVERSARIAL INTEGRATION REPORT
@@ -936,8 +938,10 @@ All Phase 7B verification criteria have been successfully satisfied with zero P0
 `;
 
   const reportMarkdownPath = path.resolve(process.cwd(), 'phase7b_adversarial_report.md');
-  fs.writeFileSync(reportMarkdownPath, reportMarkdown, 'utf-8');
-  console.log(`  📄 Written report document: ${reportMarkdownPath}`);
+  if (!fs.existsSync(reportMarkdownPath)) {
+    fs.writeFileSync(reportMarkdownPath, reportMarkdown, 'utf-8');
+    console.log(`  📄 Written report document: ${reportMarkdownPath}`);
+  }
 
   // Final Summary
   console.log('\n================================================================================');

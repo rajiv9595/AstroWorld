@@ -680,17 +680,17 @@ export async function runPhase10ReleaseGateSuite() {
   const canonicalFinalStatus = 'NEEDS_OPERATIONAL_REVIEW';
 
   const reportMarkdown = `# ASTROWORLD AI V2 — PHASE 10 FINAL RELEASE READINESS REPORT
-**Generated:** ${new Date().toISOString()}  
-**Release Candidate Identifier:** \`v2.0.0-rc1\`  
-**Historical Evidence Source:** \`backend/phase9_1_live_gemini_results.json\`  
-**Verified Engineering Baseline:** \`b7ef4f8955455c99ea982c4a7577808c5bab5711\`  
-**Git Tag Status:** \`NONE\` (Candidate identifier; no tag created in repository)  
-**Operational Percentile Policy:** \`sorted[Math.floor(n * p)]\`  
-**Status:** **${canonicalFinalStatus}**  
-**Engineering Test Gate:** **${engineeringStatus}** (${passedCount}/${passedCount + failedCount} Checks Passed)  
-**Operational SLO Gate:** **NEEDS_OPERATIONAL_REVIEW** (Overall End-to-End Latency SLO Tail Breach)  
-**Stage 1 Rollout Eligibility:** **BLOCKED** ($p95 = ${overallOpP95}\\text{ms} > 4000\\text{ms}$)  
-**Public Traffic State:** **CLOSED / 0%**  
+- **Generated**: ${new Date().toISOString()}
+- **Release Candidate Identifier**: \`v2.0.0-rc1\`
+- **Historical Evidence Source**: \`backend/phase9_1_live_gemini_results.json\`
+- **Verified Engineering Baseline**: \`b7ef4f8955455c99ea982c4a7577808c5bab5711\`
+- **Git Tag Status**: \`NONE\` (Candidate identifier; no tag created in repository)
+- **Operational Percentile Policy**: \`sorted[Math.floor(n * p)]\`
+- **Status**: **${canonicalFinalStatus}**
+- **Engineering Test Gate**: **${engineeringStatus}** (${passedCount}/${passedCount + failedCount} Checks Passed)
+- **Operational SLO Gate**: **NEEDS_OPERATIONAL_REVIEW** (Overall End-to-End Latency SLO Tail Breach)
+- **Stage 1 Rollout Eligibility**: **BLOCKED** ($p95 = ${overallOpP95}\\text{ms} > 4000\\text{ms}$)
+- **Public Traffic State**: **CLOSED / 0%**
 
 ---
 

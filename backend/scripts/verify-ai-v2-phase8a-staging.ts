@@ -521,8 +521,10 @@ async function runPhase8AStagingSuite() {
   });
 
   const reportPath = path.resolve(process.cwd(), 'phase8a_staging_deployment_report.md');
-  fs.writeFileSync(reportPath, reportMarkdown, 'utf-8');
-  console.log(`  📄 Written staging report document: ${reportPath}`);
+  if (!fs.existsSync(reportPath)) {
+    fs.writeFileSync(reportPath, reportMarkdown, 'utf-8');
+    console.log(`  📄 Written staging report document: ${reportPath}`);
+  }
 
   console.log('\n================================================================================');
   console.log('PHASE 8A STAGING DEPLOYMENT TEST SUMMARY');
