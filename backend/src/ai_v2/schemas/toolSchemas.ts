@@ -72,6 +72,33 @@ export const ASTROLOGY_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
     },
   },
 
+  get_all_divisional_charts: {
+    name: 'get_all_divisional_charts',
+    description:
+      'Calculates the complete classical Shodashavarga harmonic division matrix (all 16 divisional charts: D1, D2, D3, D4, D7, D9, D10, D12, D16, D20, D24, D27, D30, D40, D45, D60) in a single unified calculation.',
+    parameters: {
+      type: 'object',
+      properties: {
+        birthProfile: {
+          type: 'object',
+          description: 'The native birth details.',
+          properties: {
+            year: { type: 'number' },
+            month: { type: 'number' },
+            day: { type: 'number' },
+            hour: { type: 'number' },
+            minute: { type: 'number' },
+            latitude: { type: 'number' },
+            longitude: { type: 'number' },
+            timezone: { type: 'string' },
+          },
+          required: ['year', 'month', 'day', 'hour', 'minute', 'latitude', 'longitude', 'timezone'],
+        },
+      },
+      required: ['birthProfile'],
+    },
+  },
+
   get_current_dasha: {
     name: 'get_current_dasha',
     description:

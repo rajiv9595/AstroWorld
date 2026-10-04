@@ -7,6 +7,7 @@ import { ASTROLOGY_TOOL_DEFINITIONS, ToolDefinition } from '../schemas/toolSchem
 import {
   executeGetBirthChart,
   executeGetDivisionalChart,
+  executeGetAllDivisionalCharts,
   executeGetCurrentDasha,
   executeGetDashaAt,
   executeGetTransits,
@@ -24,6 +25,7 @@ export class AstrologyToolRegistry {
   private static handlers: Record<string, ToolHandler> = {
     get_birth_chart: executeGetBirthChart,
     get_divisional_chart: executeGetDivisionalChart,
+    get_all_divisional_charts: executeGetAllDivisionalCharts,
     get_current_dasha: executeGetCurrentDasha,
     get_dasha_at: executeGetDashaAt,
     get_transits: executeGetTransits,

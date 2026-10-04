@@ -87,6 +87,9 @@ export class ConsultationOrchestrator {
     primaryModel?: string;
     fallbackModel?: string;
     forcePrimaryFailure?: boolean;
+    primaryTimeoutMs?: number;
+    fallbackTimeoutMs?: number;
+    repairTimeoutMs?: number;
   }) {
     this.planner = new QuestionPlanner();
     this.toolOrchestrator = new ToolExecutionOrchestrator();
@@ -105,6 +108,9 @@ export class ConsultationOrchestrator {
       primaryModel: options?.primaryModel || 'gemini-3.8-flash',
       fallbackModel: options?.fallbackModel || 'gemini-3.1-flash-lite',
       forcePrimaryFailure: options?.forcePrimaryFailure,
+      primaryTimeoutMs: options?.primaryTimeoutMs ?? 8000,
+      fallbackTimeoutMs: options?.fallbackTimeoutMs ?? 6000,
+      repairTimeoutMs: options?.repairTimeoutMs ?? 4000,
     });
     this.stateManager = new ConversationStateManager();
     this.stateResolver = new ConversationStateResolver();
@@ -291,6 +297,29 @@ export class ConsultationOrchestrator {
     // 8. Claim Generation & Grounding Firewall
     const t4 = Date.now();
     const candidateClaims = this.claimGenerator.generateClaims(questionPlan, reasoningPacket, evidencePacket);
+
+    // Inject verified user memories as approved context claims (only user-stated facts/preferences/corrections)
+    if (memoryPack?.selectedMemories && memoryPack.selectedMemories.length > 0) {
+      const allowedMemories = memoryPack.selectedMemories.filter((m: any) =>
+        m.category === 'USER_FACT' || m.category === 'USER_PREFERENCE' || m.category === 'USER_CORRECTION'
+      );
+      for (let i = 0; i < allowedMemories.length; i++) {
+        const mem = allowedMemories[i];
+        candidateClaims.push({
+          claimId: `claim_memory_${i + 1}`,
+          text: `User noted: ${mem.value}`,
+          type: 'user_context',
+          factorType: 'general',
+          strength: 'strong',
+          evidenceIds: [],
+          ruleIds: [],
+          sourceIds: [],
+          relevance: 'high',
+          allowed: true,
+        });
+      }
+    }
+
     const approvedClaimSet = this.firewall.validate(candidateClaims, questionPlan, reasoningPacket, evidencePacket);
     const latencyClaims = Date.now() - t4;
 

@@ -105,8 +105,15 @@ export class ToolPlanner {
 
     if (intent === 'varga_analysis') {
       addTool('get_birth_chart', { birthProfile }, [], 10);
-      const varga = chartLayers.find(l => l !== 'D1') || 'D9';
-      addTool('get_divisional_chart', { birthProfile, vargaCode: varga }, [], 9);
+      if (chartLayers.length > 3 || chartLayers.length >= 16) {
+        addTool('get_all_divisional_charts', { birthProfile }, ['get_birth_chart'], 9);
+      } else {
+        const vargas = chartLayers.filter(l => l !== 'D1');
+        if (vargas.length === 0) vargas.push('D9');
+        for (const v of vargas) {
+          addTool('get_divisional_chart', { birthProfile, vargaCode: v }, ['get_birth_chart'], 9);
+        }
+      }
       return;
     }
 

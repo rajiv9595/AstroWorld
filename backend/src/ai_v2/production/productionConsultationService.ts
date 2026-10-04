@@ -62,11 +62,15 @@ export class ProductionConsultationService {
     this.metrics = deps.metrics || ProductionMetrics.getInstance();
     this.chaosManager = deps.chaosManager || ChaosManager.getInstance();
 
+    const timeoutCfg = this.timeoutManager.getConfig();
     this.orchestrator =
       deps.orchestrator ||
       new ConsultationOrchestrator({
         memoryRepository: this.memoryRepository,
         apiKey: process.env.GEMINI_API_KEY,
+        primaryTimeoutMs: timeoutCfg.geminiRequestMs,
+        fallbackTimeoutMs: timeoutCfg.geminiFallbackRequestMs,
+        repairTimeoutMs: timeoutCfg.geminiRepairRequestMs,
       });
   }
 

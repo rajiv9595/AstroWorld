@@ -78,7 +78,7 @@ export function buildAstroWorldReportDocument(
     chartStyle: 'north-diamond',
     engineVersion: 'AstroWorld v2.4.0 (Parashari Engine)',
     ayanamshaModel: 'Lahiri (Chitrapaksha) 23° 56\' 14"',
-    ephemerisSource: 'Swiss Ephemeris / Moshier Astro Mechanics',
+    ephemerisSource: 'AstroWorld Canonical Ephemeris (astronomy-engine + Analytical Lahiri Ayanamsha)',
     calculationStandards: 'Brihat Parashara Hora Shastra (BPHS)',
   };
 

@@ -67,7 +67,7 @@ export function executeGetBirthChart(args: any): ToolExecutionResult {
         houses: chart.houses,
       },
       provenance: {
-        sourceEngine: 'AstroWorld Canonical Ephemeris (Swiss Ephemeris / Lahiri)',
+        sourceEngine: 'AstroWorld Canonical Ephemeris (astronomy-engine + Analytical Lahiri Ayanamsha)',
         ruleStandard: 'BPHS Ch. 3 (Graha Guna Swarupa)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
@@ -79,7 +79,7 @@ export function executeGetBirthChart(args: any): ToolExecutionResult {
       tool: 'get_birth_chart',
       error: `Calculation error: ${err.message}`,
       provenance: {
-        sourceEngine: 'AstroWorld Canonical Ephemeris',
+        sourceEngine: 'AstroWorld Canonical Ephemeris (astronomy-engine + Analytical Lahiri Ayanamsha)',
         ruleStandard: 'Surya Siddhanta & BPHS',
         calculatedAtIso: new Date().toISOString(),
         verified: false,
@@ -99,7 +99,7 @@ export function executeGetDivisionalChart(args: any): ToolExecutionResult {
       tool: 'get_divisional_chart',
       error: validation.error || 'Invalid birth profile.',
       provenance: {
-        sourceEngine: 'Parashari Shodashavarga Engine',
+        sourceEngine: 'Parashari Shodashavarga Engine (astronomy-engine + Analytical Lahiri Ayanamsha)',
         ruleStandard: 'BPHS Ch. 6',
         calculatedAtIso: new Date().toISOString(),
         verified: false,
@@ -114,7 +114,7 @@ export function executeGetDivisionalChart(args: any): ToolExecutionResult {
       tool: 'get_divisional_chart',
       error: `Invalid vargaCode: "${vargaCode}". Must be one of: ${VALID_VARGA_CODES.join(', ')}`,
       provenance: {
-        sourceEngine: 'Parashari Shodashavarga Engine',
+        sourceEngine: 'Parashari Shodashavarga Engine (astronomy-engine + Analytical Lahiri Ayanamsha)',
         ruleStandard: 'BPHS Ch. 6',
         calculatedAtIso: new Date().toISOString(),
         verified: false,
@@ -138,7 +138,7 @@ export function executeGetDivisionalChart(args: any): ToolExecutionResult {
         planets: targetVarga.planets,
       },
       provenance: {
-        sourceEngine: 'Parashari Shodashavarga Engine',
+        sourceEngine: 'Parashari Shodashavarga Engine (astronomy-engine + Analytical Lahiri Ayanamsha)',
         ruleStandard: `BPHS Ch. 6 (Varga Ganita - ${vargaCode})`,
         calculatedAtIso: new Date().toISOString(),
         verified: true,
@@ -150,7 +150,75 @@ export function executeGetDivisionalChart(args: any): ToolExecutionResult {
       tool: 'get_divisional_chart',
       error: `Varga calculation error: ${err.message}`,
       provenance: {
-        sourceEngine: 'Parashari Shodashavarga Engine',
+        sourceEngine: 'Parashari Shodashavarga Engine (astronomy-engine + Analytical Lahiri Ayanamsha)',
+        ruleStandard: 'BPHS Ch. 6',
+        calculatedAtIso: new Date().toISOString(),
+        verified: false,
+      },
+    };
+  }
+}
+
+/**
+ * 2b. get_all_divisional_charts (Complete Shodashavarga D1 through D60)
+ */
+export function executeGetAllDivisionalCharts(args: any): ToolExecutionResult {
+  const validation = validateBirthProfile(args?.birthProfile);
+  if (!validation.valid || !validation.data) {
+    return {
+      success: false,
+      tool: 'get_all_divisional_charts',
+      error: validation.error || 'Invalid birth profile.',
+      provenance: {
+        sourceEngine: 'Parashari Shodashavarga Engine (astronomy-engine + Analytical Lahiri Ayanamsha)',
+        ruleStandard: 'BPHS Ch. 6 (Shodashavarga Adhyaya)',
+        calculatedAtIso: new Date().toISOString(),
+        verified: false,
+      },
+    };
+  }
+
+  try {
+    const chart = computeCanonicalChart(validation.data);
+    const vargasSummary: Record<string, any> = {};
+    for (const [code, varga] of Object.entries(chart.vargas)) {
+      vargasSummary[code] = {
+        name: varga.name,
+        sanskritName: varga.sanskritName,
+        divisionNumber: varga.divisionNumber,
+        purpose: varga.purpose,
+        ascendantSign: varga.ascendantSign,
+        planets: varga.planets.map(p => ({
+          planet: p.planet,
+          sign: p.vargaSign,
+          houseNumber: p.houseNumber,
+          dignity: p.dignity,
+        })),
+      };
+    }
+
+    return {
+      success: true,
+      tool: 'get_all_divisional_charts',
+      data: {
+        availableVargas: Object.keys(vargasSummary),
+        count: Object.keys(vargasSummary).length,
+        vargas: vargasSummary,
+      },
+      provenance: {
+        sourceEngine: 'Parashari Shodashavarga Engine (astronomy-engine + Analytical Lahiri Ayanamsha)',
+        ruleStandard: 'BPHS Ch. 6 (Complete 16 Divisional Matrix)',
+        calculatedAtIso: new Date().toISOString(),
+        verified: true,
+      },
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      tool: 'get_all_divisional_charts',
+      error: `Complete Shodashavarga calculation error: ${err.message}`,
+      provenance: {
+        sourceEngine: 'Parashari Shodashavarga Engine (astronomy-engine + Analytical Lahiri Ayanamsha)',
         ruleStandard: 'BPHS Ch. 6',
         calculatedAtIso: new Date().toISOString(),
         verified: false,
@@ -318,7 +386,7 @@ export function executeGetTransits(args: any): ToolExecutionResult {
         sadeSati: chart.transits.sadeSati,
       },
       provenance: {
-        sourceEngine: 'Gochara Transit Engine (Swiss Ephemeris)',
+        sourceEngine: 'Gochara Transit Engine (astronomy-engine + Analytical Lahiri Ayanamsha)',
         ruleStandard: 'Phaladeepika Ch. 26 (Gochara Phala)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,

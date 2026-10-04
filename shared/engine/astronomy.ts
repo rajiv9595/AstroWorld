@@ -28,6 +28,7 @@ export function formatDMS(deg: number): string {
  * Calculate standard Lahiri (Chitra Paksha) Ayanamsha in degrees for a given AstroTime.
  * Base value at J2000.0 (JD 2451545.0) = 23° 51' 25.532" = 23.8570922°
  * Precession rate: 5029.0966 arcseconds per Julian century (IAU standard).
+ * High-precision planetary ephemeris computed using astronomy-engine (Don Cross mechanics).
  */
 export function calculateLahiriAyanamsha(time: any): number {
   const t = time.ut / 36525.0; // Julian centuries from J2000.0

@@ -1,6 +1,6 @@
 {
   "phase": "7B",
-  "timestamp": "2026-10-04T10:59:21.294Z",
+  "timestamp": "2026-10-04T12:38:47.174Z",
   "gateStatus": "READY_FOR_PHASE_8",
   "summary": {
     "totalTests": 51,
@@ -34,9 +34,9 @@
     "P3_Cosmetic": 0
   },
   "latencyProfile": {
-    "p50Ms": 89,
-    "p95Ms": 89,
-    "p99Ms": 89
+    "p50Ms": 106,
+    "p95Ms": 107,
+    "p99Ms": 107
   },
   "testResults": [
     {
@@ -342,7 +342,7 @@
     {
       "id": "PERF_P95",
       "category": "Performance",
-      "description": "p95 Latency (89ms) is well within production budget (< 250ms mock / < 3000ms live)",
+      "description": "p95 Latency (107ms) is well within production budget (< 250ms mock / < 3000ms live)",
       "passed": true
     }
   ],

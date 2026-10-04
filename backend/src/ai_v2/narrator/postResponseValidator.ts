@@ -50,8 +50,9 @@ export class PostResponseGroundingValidator {
 
     // 1. Check Extracted Claims
     for (const claim of extractedClaims) {
+      if (!claim) continue;
       // Check Unapproved Planets / Modern Inventions
-      for (const p of claim.planets) {
+      for (const p of claim.planets || []) {
         const lowerP = p.toLowerCase();
         if (FORBIDDEN_ENTITIES.includes(lowerP)) {
           unapprovedEntities.push(p);
@@ -60,14 +61,14 @@ export class PostResponseGroundingValidator {
       }
 
       // Check Unapproved Yogas (e.g. Kaal Sarp when not in approved claims)
-      for (const y of claim.yogas) {
+      for (const y of claim.yogas || []) {
         const lowerY = y.toLowerCase();
         if (lowerY === 'atmakaraka' || lowerY === 'amatyakaraka') continue;
         const isNegated =
-          claim.claimText.toLowerCase().includes('not formed') ||
-          claim.claimText.toLowerCase().includes('not present') ||
-          claim.claimText.toLowerCase().includes('does not form') ||
-          claim.claimText.toLowerCase().includes('is not present');
+          (claim.claimText || '').toLowerCase().includes('not formed') ||
+          (claim.claimText || '').toLowerCase().includes('not present') ||
+          (claim.claimText || '').toLowerCase().includes('does not form') ||
+          (claim.claimText || '').toLowerCase().includes('is not present');
         if (!isNegated && !approvedCombinedText.includes(lowerY)) {
           unapprovedEntities.push(y);
           violations.push(`Unapproved yoga/dosha "${y}" found in generated response.`);
@@ -81,7 +82,7 @@ export class PostResponseGroundingValidator {
       }
 
       // Check Fabricated Dates (Specific Days)
-      for (const d of claim.referencedDates) {
+      for (const d of claim.referencedDates || []) {
         if (d.includes(',') || d.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/i)) {
           const isApprovedDate = Array.from(approvedDates).some(ad => ad.includes(d) || d.includes(ad)) ||
             approvedCombinedText.includes(d.toLowerCase());

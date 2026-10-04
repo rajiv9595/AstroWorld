@@ -239,6 +239,20 @@ export class QuestionPlanner {
       intent = 'dasha_analysis';
       domain = 'timing';
     } else if (
+      lower.includes('all varga') ||
+      lower.includes('all vargas') ||
+      lower.includes('all divisional charts') ||
+      lower.includes('shodashavarga') ||
+      lower.includes('shodasha varga') ||
+      (lower.includes('all') && lower.includes('varga'))
+    ) {
+      intent = 'varga_analysis';
+      domain = 'astrological';
+      chartLayers = [
+        'D1', 'D2', 'D3', 'D4', 'D7', 'D9', 'D10', 'D12',
+        'D16', 'D20', 'D24', 'D27', 'D30', 'D40', 'D45', 'D60'
+      ];
+    } else if (
       (lower.includes('d10') || lower.includes('dashamsha') || lower.includes('dasamsa')) &&
       !lower.includes('career') &&
       !lower.includes('business')
@@ -454,10 +468,119 @@ export class QuestionPlanner {
     return Array.from(new Set(layers));
   }
 
-  private extractTemporalScope(lower: string): { temporalScope: { type: any; startIso?: string; endIso?: string }; targetDatesIso: string[] } {
+  private extractTemporalScope(lower: string): {
+    temporalScope: { type: any; startIso?: string; endIso?: string; dashaLord?: string };
+    targetDatesIso: string[];
+  } {
     const targetDatesIso: string[] = [];
+    const now = new Date();
+    const curYear = now.getUTCFullYear();
 
-    // Check for explicit 4-digit years (e.g. 2026, 2027, 2028)
+    // 1. Explicit multi-year ranges (e.g. "between 2027 and 2030", "2027 to 2030", "2027-2030")
+    const rangeMatch = lower.match(/\b(202[0-9]|203[0-9])\s*(?:to|and|-)\s*(202[0-9]|203[0-9])\b/i);
+    if (rangeMatch) {
+      const startYear = parseInt(rangeMatch[1], 10);
+      const endYear = parseInt(rangeMatch[2], 10);
+      const startIso = new Date(Date.UTC(Math.min(startYear, endYear), 0, 1)).toISOString();
+      const endIso = new Date(Date.UTC(Math.max(startYear, endYear), 11, 31, 23, 59, 59, 999)).toISOString();
+
+      for (let y = Math.min(startYear, endYear); y <= Math.max(startYear, endYear); y++) {
+        targetDatesIso.push(new Date(Date.UTC(y, 5, 15)).toISOString());
+      }
+
+      return {
+        temporalScope: { type: 'specific_date', startIso, endIso },
+        targetDatesIso,
+      };
+    }
+
+    // 2. Relative Expressions Anchored to "From Now" / "Until Month Year"
+    // e.g. "by Dec 2026 from now", "from now until December 2026", "by December 2026"
+    if (
+      (lower.includes('from now') || lower.includes('until') || lower.includes('by')) &&
+      /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(202[0-9]|203[0-9])/i.test(lower)
+    ) {
+      const match = lower.match(/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(202[0-9]|203[0-9])/i);
+      if (match) {
+        const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        const mIdx = monthNames.findIndex(m => match[1].toLowerCase().startsWith(m));
+        const y = parseInt(match[2], 10);
+        // End of that target month
+        const endMonthDate = new Date(Date.UTC(y, mIdx + 1, 0, 23, 59, 59, 999));
+        const startIso = lower.includes('from now') ? now.toISOString() : new Date(Date.UTC(y, mIdx, 1)).toISOString();
+        const endIso = endMonthDate.toISOString();
+        targetDatesIso.push(new Date(Date.UTC(y, mIdx, 15)).toISOString());
+
+        return {
+          temporalScope: { type: 'upcoming', startIso, endIso },
+          targetDatesIso,
+        };
+      }
+    }
+
+    // 3. Next N months (e.g. "next 3 months", "for the next 6 months")
+    const nextMonthsMatch = lower.match(/next\s*(\d+)\s*months?/i);
+    if (nextMonthsMatch) {
+      const count = parseInt(nextMonthsMatch[1], 10);
+      const startIso = now.toISOString();
+      const endIso = new Date(now.getTime() + count * 30 * 24 * 60 * 60 * 1000).toISOString();
+      targetDatesIso.push(new Date(now.getTime() + Math.floor(count / 2) * 30 * 24 * 60 * 60 * 1000).toISOString());
+      return {
+        temporalScope: { type: 'upcoming', startIso, endIso },
+        targetDatesIso,
+      };
+    }
+
+    // 4. "next year"
+    if (lower.includes('next year')) {
+      const nextYear = curYear + 1;
+      const startIso = new Date(Date.UTC(nextYear, 0, 1)).toISOString();
+      const endIso = new Date(Date.UTC(nextYear, 11, 31, 23, 59, 59, 999)).toISOString();
+      targetDatesIso.push(new Date(Date.UTC(nextYear, 5, 15)).toISOString());
+      return {
+        temporalScope: { type: 'upcoming', startIso, endIso },
+        targetDatesIso,
+      };
+    }
+
+    // 5. "last year" / Historical
+    if (lower.includes('last year') || lower.includes('previous year') || lower.includes('past year')) {
+      const pastYear = curYear - 1;
+      const startIso = new Date(Date.UTC(pastYear, 0, 1)).toISOString();
+      const endIso = new Date(Date.UTC(pastYear, 11, 31, 23, 59, 59, 999)).toISOString();
+      targetDatesIso.push(new Date(Date.UTC(pastYear, 5, 15)).toISOString());
+      return {
+        temporalScope: { type: 'historical', startIso, endIso },
+        targetDatesIso,
+      };
+    }
+
+    // 6. Dasha-Relative Expressions
+    // e.g. "during my current ad", "during current antardasha", "before my next ad", "during saturn ad"
+    if (lower.includes('current ad') || lower.includes('current antardasha') || lower.includes('active ad')) {
+      return {
+        temporalScope: { type: 'current_dasha', startIso: now.toISOString() },
+        targetDatesIso: [now.toISOString()],
+      };
+    }
+
+    if (lower.includes('next ad') || lower.includes('next antardasha') || lower.includes('upcoming ad')) {
+      return {
+        temporalScope: { type: 'upcoming_dasha', startIso: now.toISOString() },
+        targetDatesIso: [now.toISOString()],
+      };
+    }
+
+    const specificAdMatch = lower.match(/during\s*(saturn|jupiter|mars|venus|mercury|sun|moon|rahu|ketu)\s*(?:ad|antardasha)/i);
+    if (specificAdMatch) {
+      const planetName = specificAdMatch[1].charAt(0).toUpperCase() + specificAdMatch[1].slice(1).toLowerCase();
+      return {
+        temporalScope: { type: 'specific_dasha', dashaLord: planetName, startIso: now.toISOString() },
+        targetDatesIso: [now.toISOString()],
+      };
+    }
+
+    // 7. Explicit single 4-digit year (e.g. 2026, 2027, 2028)
     const yearMatches = lower.match(/\b(202[0-9]|203[0-9])\b/g);
     if (yearMatches && yearMatches.length > 0) {
       const year = parseInt(yearMatches[0], 10);
@@ -467,26 +590,26 @@ export class QuestionPlanner {
         temporalScope: {
           type: 'specific_date',
           startIso: new Date(Date.UTC(year, 0, 1)).toISOString(),
-          endIso: new Date(Date.UTC(year, 11, 31)).toISOString(),
+          endIso: new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999)).toISOString(),
         },
         targetDatesIso,
       };
     }
 
-    if (lower.includes('upcoming') || lower.includes('next year') || lower.includes('near future') || lower.includes('soon')) {
-      const nextYear = new Date().getFullYear() + 1;
-      const targetDate = new Date(Date.UTC(nextYear, 0, 1)).toISOString();
+    // 8. "right now" / "current" / "today" / "present"
+    if (lower.includes('right now') || lower.includes('today') || lower.includes('current') || lower.includes('now') || lower.includes('present')) {
+      return {
+        temporalScope: { type: 'current', startIso: now.toISOString() },
+        targetDatesIso: [],
+      };
+    }
+
+    if (lower.includes('upcoming') || lower.includes('near future') || lower.includes('soon')) {
+      const targetDate = new Date(Date.UTC(curYear + 1, 0, 1)).toISOString();
       targetDatesIso.push(targetDate);
       return {
         temporalScope: { type: 'upcoming', startIso: targetDate },
         targetDatesIso,
-      };
-    }
-
-    if (lower.includes('today') || lower.includes('current') || lower.includes('now') || lower.includes('present')) {
-      return {
-        temporalScope: { type: 'current' },
-        targetDatesIso: [],
       };
     }
 

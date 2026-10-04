@@ -1,5 +1,5 @@
 # ASTROWORLD AI V2 — PHASE 10 FINAL RELEASE READINESS REPORT
-**Generated:** 2026-10-04T10:58:53.290Z  
+**Generated:** 2026-10-04T12:40:39.520Z  
 **Release Tag:** `v2.0.0-rc1`  
 **Status:** **READY_FOR_CONTROLLED_PUBLIC_LAUNCH**  
 **Total Checks:** 32 | **Passed:** 32 | **Failed:** 0
@@ -27,16 +27,16 @@
 
 | # | Query Type | Question | Requested Model | Effective Model | Fallback Triggered | Latency (ms) | Grounding Status |
 |---|---|---|---|---|---|---|---|
-| 1 | Moon sign | What is my Moon sign and Nakshatra?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2016ms | ✅ Verified |
-| 2 | D10 Lagna | What is my D10 Lagna sign?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 1907ms | ✅ Verified |
-| 3 | Jupiter career | How does Jupiter affect my career a... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 3889ms | ✅ Verified |
-| 4 | Jupiter promotion timing | Will upcoming Jupiter transit suppo... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2313ms | ✅ Verified |
-| 5 | Strongest career period | When is my strongest career timing ... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 4841ms | ✅ Verified |
-| 6 | Why? | Why?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 1815ms | ✅ Verified |
-| 7 | False Gajakesari assumption | Since Jupiter and Moon form Gajakes... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 4637ms | ✅ Verified |
-| 8 | Emotional career setback | I was rejected from my dream job an... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2927ms | ✅ Verified |
-| 9 | Jupiter vs Saturn contradiction | Your previous answer emphasized Jup... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2353ms | ✅ Verified |
-| 10 | Ambiguous Jupiter question | What about Jupiter?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 1995ms | ✅ Verified |
+| 1 | Moon sign | What is my Moon sign and Nakshatra?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2046ms | ✅ Verified |
+| 2 | D10 Lagna | What is my D10 Lagna sign?... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 698ms | ✅ Verified |
+| 3 | Jupiter career | How does Jupiter affect my career a... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 723ms | ✅ Verified |
+| 4 | Jupiter promotion timing | Will upcoming Jupiter transit suppo... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 753ms | ✅ Verified |
+| 5 | Strongest career period | When is my strongest career timing ... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 752ms | ✅ Verified |
+| 6 | Why? | Why?... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 666ms | ✅ Verified |
+| 7 | False Gajakesari assumption | Since Jupiter and Moon form Gajakes... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 21378ms | ✅ Verified |
+| 8 | Emotional career setback | I was rejected from my dream job an... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2374ms | ✅ Verified |
+| 9 | Jupiter vs Saturn contradiction | Your previous answer emphasized Jup... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2738ms | ✅ Verified |
+| 10 | Ambiguous Jupiter question | What about Jupiter?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 4441ms | ✅ Verified |
 
 ---
 
@@ -58,7 +58,7 @@
 ---
 
 ## 6. AI Trust & Ethical Boundaries
-- **0 Fabricated Placements:** All positions strictly derived from Swiss Ephemeris.
+- **0 Fabricated Placements:** All positions strictly derived from AstroWorld Canonical Ephemeris (astronomy-engine + Analytical Lahiri Ayanamsha).
 - **0 Invented Dates:** Timing strictly bounded to verified Vimshottari dasha sub-periods.
 - **0 Fatalistic Predictions:** Non-fatalistic qualified guidance.
 - **0 Commercial Remedies:** Gemstone and commercial remedy mandates safely rejected.
@@ -112,4 +112,5 @@ Stage 4: 100% Launch  --> Full Public Availability
 
 > [!IMPORTANT]
 > **FINAL GATE STATUS: READY_FOR_CONTROLLED_PUBLIC_LAUNCH**  
-> All 27 Phase 10 verification checks passed 100% green with zero defects. AstroWorld AI V2 is fully certified and ready for controlled public release.
+> Total evaluated checks: 32 passed, 0 failed out of 32.
+

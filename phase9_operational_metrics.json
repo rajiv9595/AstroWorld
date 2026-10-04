@@ -2,21 +2,21 @@
   "environment": "production",
   "releaseCandidate": "v2.0.0-rc1",
   "metricsCollectionPeriod": {
-    "start": "2026-10-04T10:59:25.075Z",
-    "end": "2026-10-04T10:59:28.998Z"
+    "start": "2026-10-04T12:38:50.764Z",
+    "end": "2026-10-04T12:38:54.742Z"
   },
   "latencyDistributionMs": {
     "backend": {
-      "p50": 7,
-      "p95": 20
+      "p50": 8,
+      "p95": 22
     },
     "endToEnd": {
-      "p50": 7,
-      "p75": 12,
-      "p90": 17,
-      "p95": 20,
-      "p99": 53,
-      "max": 53
+      "p50": 8,
+      "p75": 13,
+      "p90": 16,
+      "p95": 22,
+      "p99": 60,
+      "max": 60
     }
   },
   "trafficStages": {
@@ -27,7 +27,7 @@
   },
   "concurrencyThroughput": {
     "1": {
-      "durationMs": 16,
+      "durationMs": 17,
       "successRate": 100
     },
     "10": {
@@ -35,7 +35,7 @@
       "successRate": 100
     },
     "25": {
-      "durationMs": 351,
+      "durationMs": 353,
       "successRate": 100
     },
     "50": {
@@ -51,9 +51,9 @@
     "successfulAttacks": 0
   },
   "disasterRecovery": {
-    "timelineStart": "2026-10-04T10:59:27.777Z",
-    "restoreStart": "2026-10-04T10:59:27.777Z",
-    "restoreEnd": "2026-10-04T10:59:27.777Z",
+    "timelineStart": "2026-10-04T12:38:53.518Z",
+    "restoreStart": "2026-10-04T12:38:53.518Z",
+    "restoreEnd": "2026-10-04T12:38:53.518Z",
     "measuredRtoSeconds": 1,
     "configuredRpoMinutes": 5,
     "recordParityPercentage": 100
@@ -61,9 +61,9 @@
   "finalQualityGate": {
     "availability": 100,
     "errorRate": 0,
-    "p50LatencyMs": 7,
-    "p95LatencyMs": 20,
-    "p99LatencyMs": 53,
+    "p50LatencyMs": 8,
+    "p95LatencyMs": 22,
+    "p99LatencyMs": 60,
     "timeoutRate": 0,
     "retryRate": 0,
     "crossUserLeakageCount": 0,

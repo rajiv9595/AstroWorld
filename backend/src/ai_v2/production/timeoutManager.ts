@@ -8,6 +8,8 @@ import { ProductionError } from './productionErrors.ts';
 export interface TimeoutConfig {
   totalConsultationMs: number;
   geminiRequestMs: number;
+  geminiFallbackRequestMs: number;
+  geminiRepairRequestMs: number;
   toolExecutionMs: number;
   memoryLookupMs: number;
   ragLookupMs: number;
@@ -18,6 +20,8 @@ export interface TimeoutConfig {
 export const DEFAULT_TIMEOUT_CONFIG: TimeoutConfig = {
   totalConsultationMs: 15000,
   geminiRequestMs: 8000,
+  geminiFallbackRequestMs: 6000,
+  geminiRepairRequestMs: 4000,
   toolExecutionMs: 3000,
   memoryLookupMs: 1500,
   ragLookupMs: 1500,

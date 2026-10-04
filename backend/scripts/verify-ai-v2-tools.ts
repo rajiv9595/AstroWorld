@@ -49,9 +49,17 @@ async function main() {
   // 1. Tool Registry Discovery
   const toolDefs = AstrologyToolRegistry.getToolDefinitions();
   assert(
-    'Tool Registry: Discover All 10 Tools',
-    toolDefs.length === 10,
+    'Tool Registry: Discover All 11 Tools',
+    toolDefs.length === 11,
     `Registered ${toolDefs.length} tool definitions`
+  );
+
+  // 1b. Test get_all_divisional_charts
+  const resAllVargas = AstrologyToolRegistry.executeTool('get_all_divisional_charts', { birthProfile: GOLDEN_PROFILE });
+  assert(
+    'Tool 1b: get_all_divisional_charts',
+    resAllVargas.success && resAllVargas.data?.count === 16,
+    `Returned ${resAllVargas.data?.count} Shodashavarga charts`
   );
 
   // 2. Test get_birth_chart
