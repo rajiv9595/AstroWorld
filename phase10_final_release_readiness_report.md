@@ -1,8 +1,14 @@
 # ASTROWORLD AI V2 — PHASE 10 FINAL RELEASE READINESS REPORT
-**Generated:** 2026-10-04T14:11:04.766Z  
-**Release Tag:** `v2.0.0-rc1`  
-**Status:** **READY_FOR_CONTROLLED_PUBLIC_LAUNCH**  
-**Total Checks:** 32 | **Passed:** 32 | **Failed:** 0
+**Generated:** 2026-10-04T14:19:22.281Z  
+**Release Candidate Identifier:** `v2.0.0-rc1`  
+**Current HEAD:** `0db51aa2e23ee55c619586d3dfd9e9523bd8759d`  
+**Verified Engineering Baseline:** `b7ef4f8955455c99ea982c4a7577808c5bab5711`  
+**Git Tag Status:** `NONE` (Candidate identifier; no tag created)  
+**Status:** **NEEDS_OPERATIONAL_REVIEW**  
+**Engineering Test Gate:** **PASSED** (32/32 Checks Passed)  
+**Operational SLO Gate:** **NEEDS_OPERATIONAL_REVIEW** (Class B End-to-End Latency SLO Tail Breach)  
+**Stage 1 Rollout Eligibility:** **BLOCKED** ($p95 = 6325\text{ms} > 4000\text{ms}$)  
+**Public Traffic State:** **CLOSED / 0%**  
 
 ---
 
@@ -27,16 +33,16 @@
 
 | # | Query Type | Question | Requested Model | Effective Model | Fallback Triggered | Latency (ms) | Grounding Status |
 |---|---|---|---|---|---|---|---|
-| 1 | Moon sign | What is my Moon sign and Nakshatra?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 1861ms | ✅ Verified |
-| 2 | D10 Lagna | What is my D10 Lagna sign?... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 6440ms | ✅ Verified |
-| 3 | Jupiter career | How does Jupiter affect my career a... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 4539ms | ✅ Verified |
-| 4 | Jupiter promotion timing | Will upcoming Jupiter transit suppo... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2016ms | ✅ Verified |
-| 5 | Strongest career period | When is my strongest career timing ... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 5076ms | ✅ Verified |
-| 6 | Why? | Why?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 6219ms | ✅ Verified |
-| 7 | False Gajakesari assumption | Since Jupiter and Moon form Gajakes... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 15174ms | ✅ Verified |
-| 8 | Emotional career setback | I was rejected from my dream job an... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2742ms | ✅ Verified |
-| 9 | Jupiter vs Saturn contradiction | Your previous answer emphasized Jup... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2347ms | ✅ Verified |
-| 10 | Ambiguous Jupiter question | What about Jupiter?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2023ms | ✅ Verified |
+| 1 | Moon sign | What is my Moon sign and Nakshatra?... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 6538ms | ✅ Verified |
+| 2 | D10 Lagna | What is my D10 Lagna sign?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 5312ms | ✅ Verified |
+| 3 | Jupiter career | How does Jupiter affect my career a... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2506ms | ✅ Verified |
+| 4 | Jupiter promotion timing | Will upcoming Jupiter transit suppo... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 1993ms | ✅ Verified |
+| 5 | Strongest career period | When is my strongest career timing ... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 6336ms | ✅ Verified |
+| 6 | Why? | Why?... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 6544ms | ✅ Verified |
+| 7 | False Gajakesari assumption | Since Jupiter and Moon form Gajakes... | `gemini-3.8-flash` | `AstroWorld Classical Deterministic Narrator` | `true` | 15625ms | ✅ Verified |
+| 8 | Emotional career setback | I was rejected from my dream job an... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2799ms | ✅ Verified |
+| 9 | Jupiter vs Saturn contradiction | Your previous answer emphasized Jup... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2455ms | ✅ Verified |
+| 10 | Ambiguous Jupiter question | What about Jupiter?... | `gemini-3.8-flash` | `gemini-3.1-flash-lite` | `true` | 2134ms | ✅ Verified |
 
 ---
 
@@ -66,16 +72,24 @@
 
 ---
 
-## 7. Operational Latency Profiles
-- **Class A (Computational / Non-Provider Latency):** $p50 = 6\text{ms}$, $p95 = 10\text{ms}$ [Evidence: `REAL_RUNTIME_EVIDENCE` from Phase 9.1 30-query computational timing]
-- **Class B (Live Gemini Provider Latency):** $p50 = 1888\text{ms}$, $p95 = 6325\text{ms}$ [Evidence: `REAL_RUNTIME_EVIDENCE` from Phase 9.1 Live 30-Query Matrix]
-- **Operational Latency SLO Audit:**
-  - Class A SLO ($p95 \le 80\text{ms}$): **MET** ($10\text{ms} \le 80\text{ms}$)
-  - Class B SLO ($p95 \le 6000\text{ms}$): **BREACHED** ($6325\text{ms} > 6000\text{ms}$, variance $+325\text{ms}$ under free-tier quota limits)
-- **Health States Defined:**
-  - `HEALTHY`: Error rate $< 1\%$, $p95 < 4\text{s}$.
-  - `DEGRADED`: Error rate $< 5\%$, $p95 < 6\text{s}$ or fallback active.
-  - `UNAVAILABLE`: Error rate $\ge 5\%$ (Deterministic Failsafe automatically takes over).
+## 7. Operational Latency Profiles (Recomputed Raw Evidence)
+
+### A. Class A (Computational / Non-Provider Latency)
+- **Measured:** $p50 = 6\text{ms}$, $p95 = 10\text{ms}$ [`REAL_RUNTIME_EVIDENCE` from Phase 9.1 30-query computational timing]
+- **SLO Target:** $p95 \le 80\text{ms}$
+- **SLO Status:** **MET**
+
+### B. Class B (Overall AI End-to-End Request Latency — All 30 Production Queries)
+- **Measured:** $p50 = 1328\text{ms}$, $p75 = 2504\text{ms}$, $p90 = 3174\text{ms}$, $p95 = 5195\text{ms}$ (interpolated) / $6325\text{ms}$ (tail peak) [`REAL_RUNTIME_EVIDENCE`]
+- **SLO Target:** $p95 \le 6000\text{ms}$
+- **SLO Status:** **BREACHED** on fallback timeout tail path ($6325\text{ms} > 6000\text{ms}$)
+- **Telemetry Note:** Observed latency includes fallback/model-attempt paths; the available Phase 9.1 dataset does not isolate provider-side latency sufficiently to attribute the full tail to quota.
+
+### C. Successful Live Model Provider Latency ($n = 13$)
+- **Measured:** $p50 = 2404\text{ms}$, $p75 = 2706\text{ms}$, $p90 = 3068\text{ms}$, $p95 = 3371\text{ms}$, $\max = 3807\text{ms}$ [`REAL_RUNTIME_EVIDENCE`]
+
+### D. Fallback / Failsafe Path Latency ($n = 17$)
+- **Measured:** $p50 = 672\text{ms}$, $p75 = 750\text{ms}$, $p90 = 2991\text{ms}$, $p95 = 6325\text{ms}$, $\max = 6327\text{ms}$ [`REAL_RUNTIME_EVIDENCE`]
 
 ---
 
@@ -95,7 +109,7 @@
 
 > [!IMPORTANT]
 > **Controlled Rollout Policy**: Public traffic remains **CLOSED / 0%** until human operational sign-off.  
-> **Stage 1 Rollout Eligibility**: **BLOCKED / NOT_SATISFIED** (Stage 1 requires $p95 < 4000	ext{ms}$; observed Class B $p95 = 6325	ext{ms}$).
+> **Stage 1 Rollout Eligibility**: **BLOCKED / NOT_SATISFIED** (Stage 1 requires $p95 < 4000\text{ms}$; observed Class B End-to-End $p95 = 6325\text{ms}$, which is $+2325\text{ms}$ above threshold).
 
 ```
 Stage 1: 5% Traffic   --> BLOCKED (Requires p95 < 4s; observed p95 = 6.325s)
@@ -107,7 +121,7 @@ Stage 4: 100% Launch  --> Full Public Availability
 ---
 
 ## 11. Known Limitations & Operational Constraints
-- **Provider Quota Limits:** Google GenAI free-tier enforces 20 RPD / 15 RPM; when exhausted, the system automatically and transparently engages the secondary live model or the air-gapped deterministic failsafe.
+- **Provider Quota & Timeout Tail:** Outbound model attempts subject to quota or latency failover engage the secondary live model or the air-gapped deterministic failsafe.
 - **Internet Dependency:** Live Gemini narration requires outbound HTTPS access; offline environments automatically utilize the deterministic classical narrator.
 
 ---
@@ -115,7 +129,10 @@ Stage 4: 100% Launch  --> Full Public Availability
 ## 12. Final Recommendation & Gate Verdict
 
 > [!IMPORTANT]
-> **ENGINEERING TEST GATE: READY_FOR_CONTROLLED_PUBLIC_LAUNCH** (32 passed, 0 failed)  
-> **OPERATIONAL LATENCY SLO: NEEDS_OPERATIONAL_REVIEW / BREACHED** (Class B $p95 = 6325	ext{ms} > 6000	ext{ms}$)  
-> **PUBLIC TRAFFIC: CLOSED / 0%** (Requires explicit human sign-off or quota tier upgrade before controlled rollout)
+> **ENGINEERING TEST GATE: PASSED** (32 passed, 0 failed out of 32)  
+> **OPERATIONAL LATENCY SLO: NEEDS_OPERATIONAL_REVIEW** (Class B End-to-End $p95 = 6325\text{ms} > 6000\text{ms}$)  
+> **STAGE 1 ROLLOUT: BLOCKED** (Requires $p95 < 4000\text{ms}$; observed $6325\text{ms}$)  
+> **PUBLIC TRAFFIC: CLOSED / 0%**  
+> **FINAL DECISION: NOT_READY_FOR_CONTROLLED_PUBLIC_LAUNCH (NEEDS_OPERATIONAL_REVIEW)**
+
 
