@@ -57,6 +57,7 @@ export class GeminiNarrator {
   private lastModelCalls: number = 0;
   private lastRepairAttempts: number = 0;
   private lastTimeoutTriggered: boolean = false;
+  private lastEffectiveModelBudgetMs: number = 8000;
 
   constructor(options?: GeminiNarratorOptions) {
     this.claimExtractor = new ResponseClaimExtractor();
@@ -69,6 +70,7 @@ export class GeminiNarrator {
     if (options?.fallbackTimeoutMs !== undefined) this.fallbackTimeoutMs = options.fallbackTimeoutMs;
     if (options?.repairTimeoutMs !== undefined) this.repairTimeoutMs = options.repairTimeoutMs;
     if (options?.consultationDeadlineMs !== undefined) this.consultationDeadlineMs = options.consultationDeadlineMs;
+    this.lastEffectiveModelBudgetMs = this.primaryTimeoutMs;
 
     const isLiveRequested = !!options?.apiKey || !!options?.aiClient || process.env.FORCE_LIVE_GEMINI === 'true' || process.argv.includes('--live');
     this.forceMockMode = options?.forceMockMode ?? !isLiveRequested;
@@ -112,7 +114,7 @@ export class GeminiNarrator {
       modelCalls: this.lastModelCalls,
       repairAttempts: this.lastRepairAttempts,
       modelUsed: this.lastModelUsed,
-      modelTimeoutBudgetMs: this.primaryTimeoutMs,
+      modelTimeoutBudgetMs: this.lastEffectiveModelBudgetMs,
       timeoutTriggered: this.lastTimeoutTriggered,
     };
   }
@@ -128,6 +130,7 @@ export class GeminiNarrator {
       maxRepairAttempts?: number;
       forcePrimaryFailure?: boolean;
       deadlineMs?: number;
+      parentDeadlineTimestampMs?: number;
     }
   ): Promise<FinalResponse> {
     return this.generateNarrative(plan, reasoningPacket, approvedClaimSet, responsePlan, {
@@ -135,6 +138,7 @@ export class GeminiNarrator {
       maxRepairAttempts: options?.maxRepairAttempts,
       forcePrimaryFailure: options?.forcePrimaryFailure,
       deadlineMs: options?.deadlineMs,
+      parentDeadlineTimestampMs: options?.parentDeadlineTimestampMs,
     });
   }
 
@@ -152,17 +156,20 @@ export class GeminiNarrator {
       maxRepairAttempts?: number;
       forcePrimaryFailure?: boolean;
       deadlineMs?: number;
+      parentDeadlineTimestampMs?: number;
     }
   ): Promise<FinalResponse> {
     const isMock = options?.forceMock ?? this.forceMockMode;
     const maxRepairs = options?.maxRepairAttempts ?? 2;
     const forcePrimaryFail = options?.forcePrimaryFailure ?? this.forcePrimaryFailure;
+    const parentDeadlineTimestampMs = options?.parentDeadlineTimestampMs ?? (options?.deadlineMs ? Date.now() + options.deadlineMs : undefined);
+
     this.lastModelCalls = 0;
     this.lastRepairAttempts = 0;
     this.lastTimeoutTriggered = false;
 
     // Step 1: Generate initial draft (live Gemini or deterministic failsafe)
-    let draftText = await this.generateDraft(plan, responsePlan, approvedClaimSet, isMock, forcePrimaryFail);
+    let draftText = await this.generateDraft(plan, responsePlan, approvedClaimSet, isMock, forcePrimaryFail, parentDeadlineTimestampMs);
 
     // Step 2: Extract claims from generated draft
     let extractedClaims = this.claimExtractor.extractClaims(draftText);
@@ -180,7 +187,8 @@ export class GeminiNarrator {
         plan,
         responsePlan,
         approvedClaimSet,
-        isMock
+        isMock,
+        parentDeadlineTimestampMs
       );
       extractedClaims = this.claimExtractor.extractClaims(draftText);
       validatorStatus = this.validator.validate(extractedClaims, draftText, approvedClaimSet, reasoningPacket, plan);
@@ -224,14 +232,15 @@ export class GeminiNarrator {
   }
 
   /**
-   * Generates conversational draft text.
+   * Generates conversational draft text using true hierarchical child deadline calculation.
    */
   private async generateDraft(
     plan: QuestionPlan,
     responsePlan: ResponsePlan,
     approvedClaimSet: ApprovedClaimSet,
     forceMock?: boolean,
-    forcePrimaryFail?: boolean
+    forcePrimaryFail?: boolean,
+    parentDeadlineTimestampMs?: number
   ): Promise<string> {
     const isMock = forceMock ?? this.forceMockMode;
     this.lastRequestedModel = this.primaryModel;
@@ -247,11 +256,76 @@ export class GeminiNarrator {
 
       // Controlled primary model attempt
       if (!forcePrimaryFail) {
+        const remainingForPrimary = parentDeadlineTimestampMs !== undefined
+          ? parentDeadlineTimestampMs - Date.now()
+          : Infinity;
+
+        if (remainingForPrimary <= 50) {
+          this.lastTimeoutTriggered = true;
+          this.lastFallbackTriggered = true;
+          this.lastFallbackReason = `PARENT_DEADLINE_EXHAUSTED_BEFORE_PRIMARY (${Math.round(remainingForPrimary)}ms remaining)`;
+        } else {
+          const effectivePrimaryBudget = Math.min(this.primaryTimeoutMs, remainingForPrimary);
+          this.lastEffectiveModelBudgetMs = effectivePrimaryBudget;
+
+          try {
+            this.lastModelCalls++;
+            const callStart = Date.now();
+            const callPromise = this.aiClient.models.generateContent({
+              model: this.primaryModel,
+              contents: userPrompt,
+              config: {
+                systemInstruction,
+                temperature: 0.3,
+              },
+            });
+
+            const response: any = await Promise.race([
+              callPromise,
+              new Promise((_, reject) =>
+                setTimeout(() => {
+                  this.lastTimeoutTriggered = true;
+                  reject(new Error(`ModelCallTimeout: ${effectivePrimaryBudget}ms exceeded for ${this.primaryModel}`));
+                }, effectivePrimaryBudget)
+              ),
+            ]);
+
+            if (response.text && response.text.trim().length > 10) {
+              this.lastExecutionMode = 'live_gemini';
+              this.lastEffectiveModel = this.primaryModel;
+              this.lastModelUsed = this.primaryModel;
+              this.lastFallbackTriggered = false;
+              this.lastProviderLatencyMs = Date.now() - callStart;
+              return response.text.trim();
+            }
+          } catch (err: any) {
+            this.lastFallbackTriggered = true;
+            this.lastFallbackReason = err?.message || `Error calling primary model ${this.primaryModel}`;
+            console.warn(`[GeminiNarrator] Primary model ${this.primaryModel} failed: ${this.lastFallbackReason}. Activating fallback to ${this.fallbackModel}.`);
+          }
+        }
+      } else {
+        this.lastFallbackTriggered = true;
+        this.lastFallbackReason = 'CONTROLLED_PRIMARY_FAILURE_SIMULATION';
+      }
+
+      // Fallback model attempt: strictly derives remaining parent budget
+      const remainingForFallback = parentDeadlineTimestampMs !== undefined
+        ? parentDeadlineTimestampMs - Date.now()
+        : Infinity;
+
+      if (remainingForFallback <= 50) {
+        this.lastTimeoutTriggered = true;
+        this.lastFallbackReason = `PARENT_DEADLINE_EXHAUSTED_BEFORE_FALLBACK (${Math.round(remainingForFallback)}ms remaining)`;
+      } else {
+        const effectiveFallbackBudget = Math.min(this.fallbackTimeoutMs, remainingForFallback);
+        this.lastEffectiveModelBudgetMs = effectiveFallbackBudget;
+
         try {
           this.lastModelCalls++;
           const callStart = Date.now();
           const callPromise = this.aiClient.models.generateContent({
-            model: this.primaryModel,
+            model: this.fallbackModel,
             contents: userPrompt,
             config: {
               systemInstruction,
@@ -264,62 +338,22 @@ export class GeminiNarrator {
             new Promise((_, reject) =>
               setTimeout(() => {
                 this.lastTimeoutTriggered = true;
-                reject(new Error(`ModelCallTimeout: ${this.primaryTimeoutMs}ms exceeded for ${this.primaryModel}`));
-              }, this.primaryTimeoutMs)
+                reject(new Error(`ModelCallTimeout: ${effectiveFallbackBudget}ms exceeded for ${this.fallbackModel}`));
+              }, effectiveFallbackBudget)
             ),
           ]);
 
           if (response.text && response.text.trim().length > 10) {
             this.lastExecutionMode = 'live_gemini';
-            this.lastEffectiveModel = this.primaryModel;
-            this.lastModelUsed = this.primaryModel;
-            this.lastFallbackTriggered = false;
+            this.lastEffectiveModel = this.fallbackModel;
+            this.lastModelUsed = this.fallbackModel;
             this.lastProviderLatencyMs = Date.now() - callStart;
             return response.text.trim();
           }
         } catch (err: any) {
-          this.lastFallbackTriggered = true;
-          this.lastFallbackReason = err?.message || `Error calling primary model ${this.primaryModel}`;
-          console.warn(`[GeminiNarrator] Primary model ${this.primaryModel} failed: ${this.lastFallbackReason}. Activating fallback to ${this.fallbackModel}.`);
+          this.lastFallbackReason = `ALL_LIVE_MODELS_UNAVAILABLE: Primary(${this.lastFallbackReason}) -> Fallback(${err?.message || 'unknown error'})`;
+          console.warn(`[GeminiNarrator] Fallback model ${this.fallbackModel} also failed: ${err.message}. Reverting to deterministic failsafe.`);
         }
-      } else {
-        this.lastFallbackTriggered = true;
-        this.lastFallbackReason = 'CONTROLLED_PRIMARY_FAILURE_SIMULATION';
-      }
-
-      // Fallback model attempt
-      try {
-        this.lastModelCalls++;
-        const callStart = Date.now();
-        const callPromise = this.aiClient.models.generateContent({
-          model: this.fallbackModel,
-          contents: userPrompt,
-          config: {
-            systemInstruction,
-            temperature: 0.3,
-          },
-        });
-
-        const response: any = await Promise.race([
-          callPromise,
-          new Promise((_, reject) =>
-            setTimeout(() => {
-              this.lastTimeoutTriggered = true;
-              reject(new Error(`ModelCallTimeout: ${this.fallbackTimeoutMs}ms exceeded for ${this.fallbackModel}`));
-            }, this.fallbackTimeoutMs)
-          ),
-        ]);
-
-        if (response.text && response.text.trim().length > 10) {
-          this.lastExecutionMode = 'live_gemini';
-          this.lastEffectiveModel = this.fallbackModel;
-          this.lastModelUsed = this.fallbackModel;
-          this.lastProviderLatencyMs = Date.now() - callStart;
-          return response.text.trim();
-        }
-      } catch (err: any) {
-        this.lastFallbackReason = `ALL_LIVE_MODELS_UNAVAILABLE: Primary(${this.lastFallbackReason}) -> Fallback(${err?.message || 'unknown error'})`;
-        console.warn(`[GeminiNarrator] Fallback model ${this.fallbackModel} also failed: ${err.message}. Reverting to deterministic failsafe.`);
       }
     }
 
@@ -333,7 +367,7 @@ export class GeminiNarrator {
   }
 
   /**
-   * Repairs draft text by targeting specific detected violations.
+   * Repairs draft text by targeting specific detected violations within remaining parent deadline.
    */
   private async repairDraft(
     originalDraft: string,
@@ -341,11 +375,23 @@ export class GeminiNarrator {
     plan: QuestionPlan,
     responsePlan: ResponsePlan,
     approvedClaimSet: ApprovedClaimSet,
-    effectiveMock?: boolean
+    effectiveMock?: boolean,
+    parentDeadlineTimestampMs?: number
   ): Promise<string> {
     this.lastRepairAttempts++;
     const isMock = effectiveMock ?? this.forceMockMode;
     if (this.aiClient && !isMock) {
+      const remainingForRepair = parentDeadlineTimestampMs !== undefined
+        ? parentDeadlineTimestampMs - Date.now()
+        : Infinity;
+
+      if (remainingForRepair <= 50) {
+        this.lastTimeoutTriggered = true;
+        return this.synthesizeDeterministicNarrative(plan, responsePlan, approvedClaimSet);
+      }
+
+      const effectiveRepairBudget = Math.min(this.repairTimeoutMs, remainingForRepair);
+      this.lastEffectiveModelBudgetMs = effectiveRepairBudget;
       const candidateModels = [this.primaryModel, this.fallbackModel];
       const repairPrompt = `The previous response draft contained grounding violations that must be fixed:
 VIOLATIONS TO CORRECT:
@@ -360,6 +406,11 @@ ${approvedClaimSet.claims.map(c => `- ${c.text}`).join('\n')}
 Rewrite the response removing all unapproved dates, certainty words, or unverified claims.`;
 
       for (const modelName of candidateModels) {
+        const loopRemaining = parentDeadlineTimestampMs !== undefined
+          ? parentDeadlineTimestampMs - Date.now()
+          : Infinity;
+        if (loopRemaining <= 50) break;
+        const currentModelBudget = Math.min(this.repairTimeoutMs, loopRemaining);
         try {
           this.lastModelCalls++;
           const callPromise = this.aiClient.models.generateContent({
@@ -374,7 +425,7 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
           const response: any = await Promise.race([
             callPromise,
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`RepairModelCallTimeout: ${this.repairTimeoutMs}ms exceeded for ${modelName}`)), this.repairTimeoutMs)
+              setTimeout(() => reject(new Error(`RepairModelCallTimeout: ${currentModelBudget}ms exceeded for ${modelName}`)), currentModelBudget)
             ),
           ]);
 

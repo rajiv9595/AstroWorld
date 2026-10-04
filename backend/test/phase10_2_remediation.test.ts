@@ -22,7 +22,7 @@ const PROFILE_A: BirthProfileInput = {
   gender: 'male',
 };
 
-// Profile B: Distinct Native (1985-05-15, Mumbai: Gemini Lagna, Pisces Moon, Revati Nakshatra)
+// Profile B: Distinct Native (1985-05-15, Mumbai: Taurus Lagna, Pisces Moon, Revati Nakshatra)
 const PROFILE_B: BirthProfileInput = {
   name: 'Native B (Distinct Profile)',
   year: 1985,
@@ -36,6 +36,22 @@ const PROFILE_B: BirthProfileInput = {
   timezone: 'Asia/Kolkata',
   gender: 'female',
 };
+
+function createMockAiClient(delayMs: number = 0, shouldFail: boolean = false, responseText: string = 'Valid generated response from Gemini model.') {
+  return {
+    models: {
+      generateContent: async (_params: any) => {
+        if (delayMs > 0) {
+          await new Promise(r => setTimeout(r, delayMs));
+        }
+        if (shouldFail) {
+          throw new Error('Simulated API Failure');
+        }
+        return { text: responseText };
+      },
+    },
+  };
+}
 
 describe('Phase 10.2 Remediation Verification Suite', () => {
 
@@ -123,9 +139,9 @@ describe('Phase 10.2 Remediation Verification Suite', () => {
   });
 
   // ============================================================================
-  // 3. P1 REMEDIATION: Unified Hierarchical Timeout Model
+  // 3. P1 REMEDIATION: Unified Hierarchical Timeout Model (True Deadlines A-F)
   // ============================================================================
-  describe('P1 — Unified Hierarchical Timeout Model', () => {
+  describe('P1 — True Hierarchical Timeout Deadlines (A–F)', () => {
     it('TimeoutManager exposes hierarchical timeout configuration', () => {
       const mgr = new TimeoutManager();
       const cfg = mgr.getConfig();
@@ -136,17 +152,199 @@ describe('Phase 10.2 Remediation Verification Suite', () => {
       expect(cfg.geminiRepairRequestMs).toBe(4000);
     });
 
-    it('GeminiNarrator accepts configured hierarchical timeouts and exposes in telemetry', () => {
+    it('A. Parent deadline leaves enough budget for primary -> gets configured primary budget', async () => {
+      const mockClient = createMockAiClient(10, false, 'The planetary cycles indicate strong leadership momentum in your career.');
       const narrator = new GeminiNarrator({
-        forceMockMode: true,
-        primaryTimeoutMs: 9000,
-        fallbackTimeoutMs: 7000,
-        repairTimeoutMs: 5000,
+        aiClient: mockClient as any,
+        forceMockMode: false,
+        primaryTimeoutMs: 8000,
+        fallbackTimeoutMs: 6000,
+        repairTimeoutMs: 4000,
+      });
+
+      const parentDeadline = Date.now() + 15000; // 15s budget
+      const dummyPlan: any = { questionId: 'q1', rawQuestion: 'Career query', domain: 'career', planetFocus: [] };
+      const dummyReasoning: any = {};
+      const dummyApproved: any = { claims: [] };
+      const dummyResponsePlan: any = { responseType: 'conversational_prose' };
+
+      await narrator.generateNarrative(dummyPlan, dummyReasoning, dummyApproved, dummyResponsePlan, {
+        parentDeadlineTimestampMs: parentDeadline,
       });
 
       const tel = narrator.getLastTelemetry();
-      expect(tel.modelTimeoutBudgetMs).toBe(9000);
+      expect(tel.modelTimeoutBudgetMs).toBe(8000);
       expect(tel.timeoutTriggered).toBe(false);
+      expect(tel.fallbackTriggered).toBe(false);
+      expect(tel.effectiveModel).toBe('gemini-3.8-flash');
+    });
+
+    it('B. Parent deadline leaves only 2s -> primary gets clamped to <= 2s', async () => {
+      const mockClient = createMockAiClient(10, false, 'Career indications show growth through discipline.');
+      const narrator = new GeminiNarrator({
+        aiClient: mockClient as any,
+        forceMockMode: false,
+        primaryTimeoutMs: 8000,
+        fallbackTimeoutMs: 6000,
+        repairTimeoutMs: 4000,
+      });
+
+      const parentDeadline = Date.now() + 2000; // only 2000ms remaining
+      const dummyPlan: any = { questionId: 'q2', rawQuestion: 'Career query', domain: 'career', planetFocus: [] };
+      const dummyReasoning: any = {};
+      const dummyApproved: any = { claims: [] };
+      const dummyResponsePlan: any = { responseType: 'conversational_prose' };
+
+      await narrator.generateNarrative(dummyPlan, dummyReasoning, dummyApproved, dummyResponsePlan, {
+        parentDeadlineTimestampMs: parentDeadline,
+      });
+
+      const tel = narrator.getLastTelemetry();
+      expect(tel.modelTimeoutBudgetMs).toBeLessThanOrEqual(2000);
+      expect(tel.modelTimeoutBudgetMs).toBeGreaterThan(1500);
+      expect(tel.timeoutTriggered).toBe(false);
+    });
+
+    it('C. Primary consumes budget -> fallback receives only remaining parent budget', async () => {
+      // Primary takes 1500ms and fails, leaving remaining parent deadline
+      let callCount = 0;
+      const mockClient = {
+        models: {
+          generateContent: async () => {
+            callCount++;
+            if (callCount === 1) {
+              await new Promise(r => setTimeout(r, 1200));
+              throw new Error('Primary model internal error');
+            }
+            return { text: 'Fallback model answered within remaining parent deadline.' };
+          },
+        },
+      };
+
+      const narrator = new GeminiNarrator({
+        aiClient: mockClient as any,
+        forceMockMode: false,
+        primaryTimeoutMs: 8000,
+        fallbackTimeoutMs: 6000,
+        repairTimeoutMs: 4000,
+      });
+
+      const parentDeadline = Date.now() + 3000; // 3s total budget
+      const dummyPlan: any = { questionId: 'q3', rawQuestion: 'Career query', domain: 'career', planetFocus: [] };
+      const dummyReasoning: any = {};
+      const dummyApproved: any = { claims: [] };
+      const dummyResponsePlan: any = { responseType: 'conversational_prose' };
+
+      await narrator.generateNarrative(dummyPlan, dummyReasoning, dummyApproved, dummyResponsePlan, {
+        parentDeadlineTimestampMs: parentDeadline,
+      });
+
+      const tel = narrator.getLastTelemetry();
+      expect(tel.fallbackTriggered).toBe(true);
+      // Fallback budget derived from remaining parent deadline (~1800ms, strictly <= 2500ms and < 6000ms)
+      expect(tel.modelTimeoutBudgetMs).toBeLessThanOrEqual(2500);
+      expect(tel.effectiveModel).toBe('gemini-3.1-flash-lite');
+    });
+
+    it('D. Parent deadline exhausted -> fallback is not started and deterministic safe response returned', async () => {
+      const mockClient = createMockAiClient(100, false);
+      const narrator = new GeminiNarrator({
+        aiClient: mockClient as any,
+        forceMockMode: false,
+        primaryTimeoutMs: 8000,
+        fallbackTimeoutMs: 6000,
+        repairTimeoutMs: 4000,
+      });
+
+      // Parent deadline already in the past
+      const exhaustedDeadline = Date.now() - 100;
+      const dummyPlan: any = { questionId: 'q4', rawQuestion: 'Career query', domain: 'career', planetFocus: [] };
+      const dummyReasoning: any = {};
+      const dummyApproved: any = { claims: [{ claimId: 'c1', text: 'Jupiter is in 7th house', type: 'factual', strength: 'strong', sourceEvidenceIds: [] }] };
+      const dummyResponsePlan: any = { responseType: 'conversational_prose' };
+
+      const response = await narrator.generateNarrative(dummyPlan, dummyReasoning, dummyApproved, dummyResponsePlan, {
+        parentDeadlineTimestampMs: exhaustedDeadline,
+      });
+
+      const tel = narrator.getLastTelemetry();
+      expect(tel.timeoutTriggered).toBe(true);
+      expect(tel.modelCalls).toBe(0); // Did not initiate redundant child calls
+      expect(tel.fallbackReason).toContain('PARENT_DEADLINE_EXHAUSTED');
+      expect(response.text).toBeDefined();
+      expect(response.verified).toBe(true);
+    });
+
+    it('E. Repair receives only remaining parent budget and respects deadline', async () => {
+      // Simulate draft needing repair by creating response with violation
+      let repairBudgetSeen = 0;
+      const mockClient = {
+        models: {
+          generateContent: async (args: any) => {
+            if (args.model === 'gemini-3.8-flash' && !args.contents.includes('VIOLATIONS TO CORRECT')) {
+              // Return text with unverified claim to trigger repair
+              return { text: 'You are guaranteed to become a CEO on October 14, 2099 at 3:15 PM.' };
+            }
+            // In repair loop
+            return { text: 'Career progression unfolds through steady discipline.' };
+          },
+        },
+      };
+
+      const narrator = new GeminiNarrator({
+        aiClient: mockClient as any,
+        forceMockMode: false,
+        primaryTimeoutMs: 8000,
+        fallbackTimeoutMs: 6000,
+        repairTimeoutMs: 4000,
+      });
+
+      // Provide 2500ms parent deadline
+      const parentDeadline = Date.now() + 2500;
+      const dummyPlan: any = { questionId: 'q5', rawQuestion: 'Career query', domain: 'career', planetFocus: [] };
+      const dummyReasoning: any = {};
+      const dummyApproved: any = { claims: [{ claimId: 'c1', text: 'Career growth requires discipline', type: 'factual', strength: 'strong', sourceEvidenceIds: [] }] };
+      const dummyResponsePlan: any = { responseType: 'conversational_prose' };
+
+      const response = await narrator.generateNarrative(dummyPlan, dummyReasoning, dummyApproved, dummyResponsePlan, {
+        parentDeadlineTimestampMs: parentDeadline,
+      });
+
+      expect(response.text).toBeDefined();
+      const tel = narrator.getLastTelemetry();
+      // Repair budget was clamped to remaining parent budget (<= 2500ms, not full 4000ms)
+      expect(tel.modelTimeoutBudgetMs).toBeLessThanOrEqual(2500);
+    });
+
+    it('F. Total elapsed time never exceeds parent budget by an uncontrolled child timer', async () => {
+      // Hanging AI client (simulates slow / frozen network call)
+      const hangingClient = createMockAiClient(10000, false);
+      const narrator = new GeminiNarrator({
+        aiClient: hangingClient as any,
+        forceMockMode: false,
+        primaryTimeoutMs: 8000,
+        fallbackTimeoutMs: 6000,
+        repairTimeoutMs: 4000,
+      });
+
+      // Total parent deadline is only 300ms
+      const parentBudgetMs = 300;
+      const parentDeadline = Date.now() + parentBudgetMs;
+      const dummyPlan: any = { questionId: 'q6', rawQuestion: 'Career query', domain: 'career', planetFocus: [] };
+      const dummyReasoning: any = {};
+      const dummyApproved: any = { claims: [{ claimId: 'c1', text: 'Disciplined effort builds long-term success', type: 'factual', strength: 'strong', sourceEvidenceIds: [] }] };
+      const dummyResponsePlan: any = { responseType: 'conversational_prose' };
+
+      const start = Date.now();
+      const response = await narrator.generateNarrative(dummyPlan, dummyReasoning, dummyApproved, dummyResponsePlan, {
+        parentDeadlineTimestampMs: parentDeadline,
+      });
+      const elapsed = Date.now() - start;
+
+      // Elapsed time should be bounded by ~300ms parent budget, far less than 8000ms + 6000ms = 14000ms
+      expect(elapsed).toBeLessThan(750);
+      expect(response.verified).toBe(true);
+      expect(narrator.getLastTelemetry().timeoutTriggered).toBe(true);
     });
   });
 

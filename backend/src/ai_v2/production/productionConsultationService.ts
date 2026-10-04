@@ -169,6 +169,7 @@ export class ProductionConsultationService {
                 conversationId,
                 conversationContext: validatedReq!.consultationContext as any,
                 forceMockMode: validatedReq!.executionMode === 'mock' || validatedReq!.executionMode === 'deterministic_ci',
+                parentDeadlineTimestampMs: startTime + totalTimeoutMs,
               }
             );
           },

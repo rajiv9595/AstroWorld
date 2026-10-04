@@ -3,17 +3,17 @@
   "environment": "production-isolated-recovery-zone",
   "disasterScenario": "Primary database cluster failover and cold snapshot restore",
   "timestamps": {
-    "failureDetectedAt": "2026-10-04T12:41:20.161Z",
-    "recoveryInitiatedAt": "2026-10-04T12:41:20.206Z",
-    "databaseRestoreStartedAt": "2026-10-04T12:41:20.272Z",
-    "databaseRestoreCompletedAt": "2026-10-04T12:41:20.357Z",
-    "applicationRestoredAt": "2026-10-04T12:41:20.387Z",
-    "healthCheckPassedAt": "2026-10-04T12:41:20.412Z",
-    "dataVerificationPassedAt": "2026-10-04T12:41:20.432Z"
+    "failureDetectedAt": "2026-10-04T12:57:26.138Z",
+    "recoveryInitiatedAt": "2026-10-04T12:57:26.193Z",
+    "databaseRestoreStartedAt": "2026-10-04T12:57:26.263Z",
+    "databaseRestoreCompletedAt": "2026-10-04T12:57:26.347Z",
+    "applicationRestoredAt": "2026-10-04T12:57:26.377Z",
+    "healthCheckPassedAt": "2026-10-04T12:57:26.402Z",
+    "dataVerificationPassedAt": "2026-10-04T12:57:26.422Z"
   },
   "metrics": {
-    "rtoMilliseconds": 271,
-    "rtoSeconds": 0.27,
+    "rtoMilliseconds": 284,
+    "rtoSeconds": 0.28,
     "rpoMinutes": 5,
     "restoredRecordsParityPercentage": 100,
     "totalRestoredRecords": 6

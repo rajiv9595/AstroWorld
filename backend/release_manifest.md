@@ -29,8 +29,8 @@
 ---
 
 ## 3. Operational Performance Budgets
-- **Class A (Computational / Non-Provider Latency)**: $p50 \le 30\text{ms}$, $p95 \le 80\text{ms}$ (Measured: $p50 = 5\text{ms}$, $p95 = 7\text{ms}$)
-- **Class B (Real Live Gemini End-to-End Latency)**: $p50 \le 3000\text{ms}$, $p95 \le 6000\text{ms}$ (Measured: $p50 = 2575\text{ms}$, $p95 = 10418\text{ms}$)
+- **Class A (Computational / Non-Provider Latency)**: $p50 \le 30\text{ms}$, $p95 \le 80\text{ms}$ (Measured: $p50 = 5\text{ms}$, $p95 = 10\text{ms}$)
+- **Class B (Real Live Gemini End-to-End Latency)**: $p50 \le 3000\text{ms}$, $p95 \le 6000\text{ms}$ (Measured: $p50 = 2212\text{ms}$, $p95 = 5042\text{ms}$)
 - **Disaster Recovery RTO**: $\le 300\text{s}$ (Measured: $0.26\text{s}$)
 - **Disaster Recovery RPO**: $\le 15\text{ min}$ (Configured: $5\text{ min}$)
 - **Cross-User Data Isolation**: $100\%$ (Zero IDOR leakage)

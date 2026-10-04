@@ -57,6 +57,8 @@ export interface ConsultationOptions {
   primaryModel?: string;
   fallbackModel?: string;
   forcePrimaryFailure?: boolean;
+  deadlineMs?: number;
+  parentDeadlineTimestampMs?: number;
 }
 
 export class ConsultationOrchestrator {
@@ -330,6 +332,7 @@ export class ConsultationOrchestrator {
 
     // 10. Conversational Narration, Post-Response Validation & Repair
     const t6 = Date.now();
+    const parentDeadlineTimestampMs = options?.parentDeadlineTimestampMs ?? (options?.deadlineMs ? totalStart + options.deadlineMs : undefined);
     const finalResponse = await this.narrator.narrate(
       questionPlan,
       reasoningPacket,
@@ -338,6 +341,7 @@ export class ConsultationOrchestrator {
       {
         forceMockMode: options?.forceMockMode,
         forcePrimaryFailure: options?.forcePrimaryFailure,
+        parentDeadlineTimestampMs,
       }
     );
     const latencyNarration = Date.now() - t6;
