@@ -187,7 +187,11 @@ export function computeCanonicalChart(
   );
 
   // 10. Strength (Shadbala, Bhava Bala, Avasthas)
-  const strength = calculateStrengthFacts(planets, ascendant.signIndex, profile.hour);
+  const strength = calculateStrengthFacts(
+    planets,
+    ascendant.signIndex,
+    profile.hour + profile.minute / 60 + (profile.second || 0) / 3600,
+  );
 
   // 11. Yogas and Doshas
   const { yogas, doshas } = calculateYogasAndDoshas(planets, ascendant.sign);
