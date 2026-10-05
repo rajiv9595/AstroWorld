@@ -54,6 +54,16 @@ assert(above.specialAmsha === 'Brahma', `D60 above-boundary devata mismatch: ${a
 
 console.log('✅ D60 boundary sensitivity check passed');
 
+// D60 convention split: occupied-sign mapping remains source-sign-plus-part,
+// while the named amsha sequence reverses in even signs.
+const evenD60AtZero = calculateVargaSignIndex('D60', 30);
+const evenD60AtHalf = calculateVargaSignIndex('D60', 30.5);
+assert(evenD60AtZero.signIndex === 1, `D60 even-sign occupied mapping mismatch: ${evenD60AtZero.signIndex}`);
+assert(evenD60AtZero.specialAmsha === 'Indurekha', `D60 even-sign deity reversal mismatch at 0°: ${evenD60AtZero.specialAmsha}`);
+assert(evenD60AtHalf.specialAmsha === 'Bhramana', `D60 even-sign deity reversal mismatch at 0°30': ${evenD60AtHalf.specialAmsha}`);
+
+
+
 // Boundary contract: every Varga uses half-open intervals [start, end),
 // so an exact boundary belongs to the next amsha. Degree-in-varga-sign must
 // reset to 0 at that boundary (within floating-point tolerance).
