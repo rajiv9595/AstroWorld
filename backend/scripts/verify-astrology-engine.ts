@@ -81,6 +81,25 @@ async function main() {
       );
     }
 
+    // Test 4c: Reference-backed D10 golden vector for the benchmark.
+    const d10Expected: Record<string, string> = {
+      Sun: 'Leo',
+      Moon: 'Taurus',
+      Mars: 'Virgo',
+      Mercury: 'Cancer',
+      Jupiter: 'Sagittarius',
+      Venus: 'Gemini',
+      Saturn: 'Gemini',
+    };
+    for (const [planetName, expectedSign] of Object.entries(d10Expected)) {
+      const d10 = canonical.vargas.D10?.find((p: any) => p.name === planetName);
+      assert(
+        `D10 ${planetName}`,
+        Boolean(d10 && d10.sign === expectedSign),
+        `Expected ${expectedSign}, got ${d10?.sign}`
+      );
+    }
+
     // Test 5: Vimshottari Dasha Hierarchy
     assert(
       'Vimshottari Dasha Engine',
