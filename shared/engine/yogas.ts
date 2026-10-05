@@ -3,7 +3,7 @@
  * Data-driven classical evaluation with BPHS provenance citations.
  */
 
-import { SIGN_LORDS } from './constants.ts';
+import { SIGN_LORDS, ZODIAC_SIGNS } from './constants.ts';
 import { DoshaFact, PlanetName, PlanetPosition, YogaFact, ZodiacSign } from './types.ts';
 
 export function calculateYogasAndDoshas(
@@ -159,11 +159,9 @@ export function calculateYogasAndDoshas(
   // A planet must be the lord of the relevant house(s); merely occupying a
   // kendra/trikona is not sufficient to establish this named yoga.
   const getHouseLord = (house: number): PlanetName => {
-    const signIndex = (SIGN_LORDS as any) && 0;
-    // Ascendant sign is represented by house 1; derive each house sign from it.
-    const signs = Object.keys(SIGN_LORDS) as ZodiacSign[];
-    const ascIndex = signs.indexOf(ascendantSign);
-    const houseSign = signs[(ascIndex + house - 1 + 12) % 12];
+    // Ascendant sign is represented by house 1; derive each house sign from the canonical zodiac order.
+    const ascIndex = ZODIAC_SIGNS.indexOf(ascendantSign);
+    const houseSign = ZODIAC_SIGNS[(ascIndex + house - 1 + 12) % 12];
     return SIGN_LORDS[houseSign];
   };
   const lordHouse = (planet: PlanetName) => getPlanet(planet).houseNumber;
