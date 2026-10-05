@@ -137,6 +137,7 @@ export function setAuthSessionCookies(
   accessToken: string,
   refreshToken: string,
   rememberMe = true,
+  existingCsrfToken?: string,
 ): string {
   const refreshMaxAgeSeconds = rememberMe ? 60 * 60 * 24 * 30 : undefined;
   const accessMaxAgeSeconds = rememberMe ? 60 * 60 : undefined;
@@ -151,8 +152,8 @@ export function setAuthSessionCookies(
     maxAgeSeconds: rememberMe ? 60 * 60 * 24 * 30 : undefined,
   });
 
-  // Rotate CSRF token when a new authentication session is established.
-  const csrfToken = createCsrfToken();
+  // Rotate CSRF on initial login; preserve it during silent access-token refresh.
+  const csrfToken = existingCsrfToken || createCsrfToken();
   setCookie(res, AUTH_CSRF_COOKIE, csrfToken, {
     httpOnly: false,
     maxAgeSeconds: rememberMe ? 60 * 60 * 24 * 30 : undefined,
@@ -237,6 +238,7 @@ export async function authenticateRequest(
           data.session.access_token,
           data.session.refresh_token,
           cookies[AUTH_REMEMBER_COOKIE] !== '0',
+          cookies[AUTH_CSRF_COOKIE],
         );
         resolved = { user: data.user };
       }
