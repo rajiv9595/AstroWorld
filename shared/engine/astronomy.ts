@@ -48,43 +48,44 @@ export function localDateTimeToUtcDate(
   second = 0,
   timezone = 'Asia/Kolkata',
 ): Date {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const isoLocal = `${year}-${pad(month)}-${pad(day)}T${pad(hour)}:${pad(minute)}:${pad(second)}`;
-
-  // Probe the requested wall-clock timestamp as if it were UTC, then use
-  // Intl to discover the timezone offset at that historical instant.
-  const probe = new Date(isoLocal + 'Z');
+  const targetWallMs = Date.UTC(year, month - 1, day, hour, minute, second);
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
     year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: 'numeric',
-    second: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
     hour12: false,
   });
 
-  const parts = formatter.formatToParts(probe);
-  const p: Record<string, number> = {};
-  for (const part of parts) {
-    if (part.type !== 'literal') p[part.type] = parseInt(part.value, 10);
+  // Iteratively solve UTC -> requested timezone wall time. A single probe can
+  // cross a DST transition and select the wrong offset; iteration converges
+  // on the offset that actually applies to the target wall-clock instant.
+  let candidateMs = targetWallMs;
+  for (let i = 0; i < 4; i++) {
+    const parts = formatter.formatToParts(new Date(candidateMs));
+    const p: Record<string, number> = {};
+    for (const part of parts) {
+      if (part.type !== 'literal') p[part.type] = parseInt(part.value, 10);
+    }
+
+    const formattedWallMs = Date.UTC(
+      p.year,
+      p.month - 1,
+      p.day,
+      p.hour === 24 ? 0 : p.hour,
+      p.minute,
+      p.second,
+    );
+    const correctionMs = targetWallMs - formattedWallMs;
+    if (correctionMs === 0) return new Date(candidateMs);
+    candidateMs += correctionMs;
   }
 
-  const formattedUtc = Date.UTC(
-    p.year,
-    p.month - 1,
-    p.day,
-    p.hour === 24 ? 0 : p.hour,
-    p.minute,
-    p.second,
-  );
-  const offsetMs = formattedUtc - probe.getTime();
-
-  const wallUtcMs = Date.UTC(year, month - 1, day, hour, minute, second);
-  return new Date(wallUtcMs - offsetMs);
+  return new Date(candidateMs);
 }
-
 export function birthProfileToUtcDate(profile: BirthProfile): Date {
   return localDateTimeToUtcDate(
     profile.year,
