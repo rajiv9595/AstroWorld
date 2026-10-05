@@ -39,17 +39,23 @@ export function calculateLahiriAyanamsha(time: any): number {
 /**
  * Parse local birth profile into UTC Date object safely.
  */
-export function birthProfileToUtcDate(profile: BirthProfile): Date {
+export function localDateTimeToUtcDate(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second = 0,
+  timezone = 'Asia/Kolkata',
+): Date {
   const pad = (n: number) => String(n).padStart(2, '0');
-  const isoLocal = `${profile.year}-${pad(profile.month)}-${pad(profile.day)}T${pad(profile.hour)}:${pad(profile.minute)}:${pad(profile.second || 0)}`;
+  const isoLocal = `${year}-${pad(month)}-${pad(day)}T${pad(hour)}:${pad(minute)}:${pad(second)}`;
 
-  // Create formatted string for target timezone
-  // For Asia/Kolkata (+05:30) or any valid IANA timezone
-  const d = new Date(isoLocal + 'Z'); // parse as UTC first
-  
-  // Use Intl.DateTimeFormat to determine the timezone offset in minutes at that historical moment
+  // Probe the requested wall-clock timestamp as if it were UTC, then use
+  // Intl to discover the timezone offset at that historical instant.
+  const probe = new Date(isoLocal + 'Z');
   const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: profile.timezone || 'Asia/Kolkata',
+    timeZone: timezone,
     year: 'numeric',
     month: 'numeric',
     day: 'numeric',
@@ -59,29 +65,36 @@ export function birthProfileToUtcDate(profile: BirthProfile): Date {
     hour12: false,
   });
 
-  const parts = formatter.formatToParts(d);
+  const parts = formatter.formatToParts(probe);
   const p: Record<string, number> = {};
   for (const part of parts) {
-    if (part.type !== 'literal') {
-      p[part.type] = parseInt(part.value, 10);
-    }
+    if (part.type !== 'literal') p[part.type] = parseInt(part.value, 10);
   }
 
-  // Calculate timezone offset difference
-  const formattedUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour === 24 ? 0 : p.hour, p.minute, p.second);
-  const offsetMs = formattedUtc - d.getTime();
+  const formattedUtc = Date.UTC(
+    p.year,
+    p.month - 1,
+    p.day,
+    p.hour === 24 ? 0 : p.hour,
+    p.minute,
+    p.second,
+  );
+  const offsetMs = formattedUtc - probe.getTime();
 
-  // The local wall clock time in ms:
-  const wallUtcMs = Date.UTC(
+  const wallUtcMs = Date.UTC(year, month - 1, day, hour, minute, second);
+  return new Date(wallUtcMs - offsetMs);
+}
+
+export function birthProfileToUtcDate(profile: BirthProfile): Date {
+  return localDateTimeToUtcDate(
     profile.year,
-    profile.month - 1,
+    profile.month,
     profile.day,
     profile.hour,
     profile.minute,
-    profile.second || 0
+    profile.second || 0,
+    profile.timezone || 'Asia/Kolkata',
   );
-
-  return new Date(wallUtcMs - offsetMs);
 }
 
 export function getNakshatraAndPada(siderealLongitude: number): {
