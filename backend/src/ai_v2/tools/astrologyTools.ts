@@ -506,6 +506,7 @@ export function executeGetPlanetaryStrength(args: any): ToolExecutionResult {
         shadbala: chart.strength.shadbala,
         bhavaBala: chart.strength.bhavaBala,
         avasthas: chart.strength.avasthas,
+        methodology: chart.strength.methodology,
       },
       provenance: {
         sourceEngine: 'Shadbala Six-Fold Strength Engine',
