@@ -217,6 +217,32 @@ try {
 }
 expect('Vimshottari rejects an evaluation date before birth', preBirthRejected, true);
 
+const firstMd = dashaAtBirth.mahadashas[0].period;
+const justBeforeBoundary = new Date(Date.parse(firstMd.endDateIso) - 1);
+const atBoundary = new Date(firstMd.endDateIso);
+const beforeBoundary = calculateVimshottariDasha(257.8637656115666, dashaBirth, justBeforeBoundary);
+const boundaryDasha = calculateVimshottariDasha(257.8637656115666, dashaBirth, atBoundary);
+expect('Vimshottari is active immediately before the MD boundary', beforeBoundary.currentHierarchy.mahadasha.lord, firstMd.lord);
+expect('Vimshottari advances at the exact MD boundary', boundaryDasha.currentHierarchy.mahadasha.lord, dashaAtBirth.mahadashas[1].period.lord);
+
+const retrogradeObservations: Record<string, { retrograde: boolean; direct: boolean }> = {};
+const retrogradePlanets = ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn'] as const;
+for (const planet of retrogradePlanets) {
+  retrogradeObservations[planet] = { retrograde: false, direct: false };
+}
+for (let month = 0; month < 24; month++) {
+  const sample = new Date(Date.UTC(2024 + Math.floor(month / 12), month % 12, 15, 12, 0, 0));
+  for (const p of astronomyEngineEphemerisProvider.getPlanetaryPositions(sample)) {
+    if (p.name in retrogradeObservations) {
+      if ((p.longitudeSpeed ?? 0) < 0) retrogradeObservations[p.name].retrograde = true;
+      if ((p.longitudeSpeed ?? 0) > 0) retrogradeObservations[p.name].direct = true;
+    }
+  }
+}
+for (const planet of retrogradePlanets) {
+  expect(`${planet} retrograde state is date-dependent`, [retrogradeObservations[planet].retrograde, retrogradeObservations[planet].direct], [true, true]);
+}
+
 // Weighted confluence guard: raw existence of a layer must remain neutral unless
 // classified, relevant evidence actually supports the user's domain.
 const confluenceEngine = new ConfluenceEngine();
