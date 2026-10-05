@@ -8,6 +8,7 @@ import {
   computeCanonicalChart,
   TEST_BENCHMARK_PROFILE,
   BirthProfile,
+  ZODIAC_SIGNS,
   getLiveDailyPanchanga,
 } from '../../shared/index.ts';
 
@@ -61,6 +62,25 @@ async function main() {
       Boolean(canonical.vargas && canonical.vargas.D9 && canonical.vargas.D10 && canonical.vargas.D60),
       `Successfully generated D1, D9 Navamsha, D10 Dashamsha, D60 Shashtiamsha`
     );
+
+    // Test 4b: Reference-backed D9 golden vector for the benchmark.
+    const d9Expected: Record<string, string> = {
+      Sun: 'Aries',
+      Moon: 'Virgo',
+      Mars: 'Leo',
+      Mercury: 'Scorpio',
+      Jupiter: 'Cancer',
+      Venus: 'Aquarius',
+      Saturn: 'Libra',
+    };
+    for (const [planetName, expectedSign] of Object.entries(d9Expected)) {
+      const d9 = canonical.vargas.D9?.find((p: any) => p.name === planetName);
+      assert(
+        `D9 ${planetName}`,
+        Boolean(d9 && d9.sign === expectedSign),
+        `Expected ${expectedSign}, got ${d9?.sign}`
+      );
+    }
 
     // Test 5: Vimshottari Dasha Hierarchy
     assert(
