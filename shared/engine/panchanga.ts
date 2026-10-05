@@ -558,7 +558,8 @@ export function calculateComprehensiveDailyPanchanga(
     timezone,
   );
   const sunRiseResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, +1, startOfDayUtc, 1);
-  const sunSetResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, -1, startOfDayUtc, 1);
+  const localMiddayUtc = new Date(startOfDayUtc.getTime() + 12 * 3600 * 1000);
+  const sunSetResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, -1, localMiddayUtc, 1);
 
   const nextDayUtc = new Date(startOfDayUtc.getTime() + 24 * 3600 * 1000);
   const nextSunRiseResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, +1, nextDayUtc, 1);
@@ -569,7 +570,7 @@ export function calculateComprehensiveDailyPanchanga(
 
   // Moonrise & Moonset
   const moonRiseResult = Astronomy.SearchRiseSet(Astronomy.Body.Moon, observer, +1, startOfDayUtc, 1);
-  const moonSetResult = Astronomy.SearchRiseSet(Astronomy.Body.Moon, observer, -1, startOfDayUtc, 1);
+  const moonSetResult = Astronomy.SearchRiseSet(Astronomy.Body.Moon, observer, -1, localMiddayUtc, 1);
   const moonriseStr = moonRiseResult ? formatLocalTime(moonRiseResult.date, timezone) : 'No Moonrise';
   const moonsetStr = moonSetResult ? formatLocalTime(moonSetResult.date, timezone) : 'No Moonset';
 
