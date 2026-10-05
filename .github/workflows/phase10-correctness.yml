@@ -36,5 +36,8 @@ jobs:
       - name: Phase 10 calculation truth
         run: npm --workspace=@astroworld/backend run test:phase10:calculation-truth
 
+      - name: Phase 10 classical source integrity
+        run: npm --workspace=@astroworld/backend run test:phase10:source-integrity
+
       - name: Phase 9 + precision regression
         run: npm --workspace=@astroworld/backend run test:phase9:all
