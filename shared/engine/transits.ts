@@ -120,12 +120,21 @@ export function classifySadeSati(
   return { active: false, phase: 'NONE' };
 }
 
+function validateTemporalSearchDate(dateUtc: Date, label: string): void {
+  if (!(dateUtc instanceof Date) || Number.isNaN(dateUtc.getTime())) {
+    throw new Error(`${label} requires a valid UTC Date.`);
+  }
+}
+
 function calculateSiderealSunLongitude(
   date: Date,
   provider: SiderealEphemerisProvider,
 ): number {
+  validateTemporalSearchDate(date, 'Sidereal solar ingress search');
   const sun = provider.getPlanetaryPositions(date).find((p) => p.name === 'Sun');
-  if (!sun) throw new Error('Ephemeris provider returned no Sun position.');
+  if (!sun || !Number.isFinite(sun.siderealLongitude)) {
+    throw new Error('Ephemeris provider returned no finite Sun position.');
+  }
   return normalizeDegrees(sun.siderealLongitude);
 }
 
@@ -141,17 +150,44 @@ export function findNextSiderealSolarIngress(
   timestampUtc: Date;
   targetSignIndex: number;
 } {
+  validateTemporalSearchDate(startDateUtc, 'Sidereal solar ingress search');
+
   const startLon = calculateSiderealSunLongitude(startDateUtc, provider);
   const currentSign = Math.floor(startLon / 30);
   const targetSignIndex = (currentSign + 1) % 12;
-  const targetLon = (targetSignIndex * 30);
+  const targetLon = targetSignIndex * 30;
   const targetDelta = (targetLon - startLon + 360) % 360;
 
-  const forwardDelta = (lon: number) => (lon - startLon + 360) % 360;
-  let hi = new Date(startDateUtc.getTime() + Math.max(2, targetDelta / 0.75) * 86400000);
-  let guard = 0;
-  while (forwardDelta(calculateSiderealSunLongitude(hi, provider)) < targetDelta && guard++ < 12) {
+  if (!(targetDelta > 0 && targetDelta <= 30)) {
+    throw new Error(
+      `Unable to determine the next sidereal solar ingress from longitude ${startLon}°.`,
+    );
+  }
+
+  const forwardDelta = (lon: number) => {
+    if (!Number.isFinite(lon)) {
+      throw new Error('Ephemeris provider returned a non-finite Sun longitude during ingress search.');
+    }
+    return (normalizeDegrees(lon) - startLon + 360) % 360;
+  };
+
+  let hi = new Date(
+    startDateUtc.getTime() + Math.max(2, targetDelta / 0.75) * 86400000,
+  );
+  let bracketed = false;
+
+  for (let guard = 0; guard < 12; guard++) {
+    if (forwardDelta(calculateSiderealSunLongitude(hi, provider)) >= targetDelta) {
+      bracketed = true;
+      break;
+    }
     hi = new Date(hi.getTime() + 7 * 86400000);
+  }
+
+  if (!bracketed) {
+    throw new Error(
+      `Unable to bracket sidereal solar ingress within ${12 * 7} additional days.`,
+    );
   }
 
   let lo = startDateUtc;
@@ -162,8 +198,13 @@ export function findNextSiderealSolarIngress(
     else lo = mid;
   }
 
+  const timestampUtc = new Date((lo.getTime() + hi.getTime()) / 2);
+  if (timestampUtc.getTime() <= startDateUtc.getTime()) {
+    throw new Error('Sidereal solar ingress search did not return a strictly future event.');
+  }
+
   return {
-    timestampUtc: new Date((lo.getTime() + hi.getTime()) / 2),
+    timestampUtc,
     targetSignIndex,
   };
 }
