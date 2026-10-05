@@ -437,24 +437,34 @@ function moonSiderealLongitudeAt(
   return normalizeDegrees(moon.siderealLongitude);
 }
 
-function findNakshatraTransition(
+export function findSiderealMoonNakshatraTransition(
   date: Date,
   direction: -1 | 1,
   provider: SiderealEphemerisProvider = astronomyEngineEphemerisProvider,
 ): Date {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    throw new Error('Sidereal Moon Nakshatra transition search requires a valid UTC Date.');
+  }
+
   const span = 360 / 27;
-  const currentIndex = Math.min(26, Math.floor(moonSiderealLongitudeAt(date, provider) / span));
+  const currentLongitude = moonSiderealLongitudeAt(date, provider);
+  const currentIndex = Math.min(26, Math.floor(currentLongitude / span));
+
   let edge = date;
   let sample = date;
+
   for (let i = 0; i < 16; i++) {
     sample = new Date(sample.getTime() + direction * 6 * 3600 * 1000);
     const idx = Math.min(26, Math.floor(moonSiderealLongitudeAt(sample, provider) / span));
+
     if (idx !== currentIndex) {
       let lo = direction < 0 ? sample : edge;
       let hi = direction < 0 ? edge : sample;
+
       for (let j = 0; j < 45; j++) {
         const mid = new Date((lo.getTime() + hi.getTime()) / 2);
         const idxMid = Math.min(26, Math.floor(moonSiderealLongitudeAt(mid, provider) / span));
+
         if (idxMid === currentIndex) {
           if (direction < 0) hi = mid;
           else lo = mid;
@@ -463,11 +473,21 @@ function findNakshatraTransition(
           else hi = mid;
         }
       }
-      return new Date((lo.getTime() + hi.getTime()) / 2);
+
+      const transition = new Date((lo.getTime() + hi.getTime()) / 2);
+      if (direction < 0 && transition.getTime() >= date.getTime()) {
+        throw new Error('Sidereal Moon Nakshatra search did not return a strictly earlier event.');
+      }
+      if (direction > 0 && transition.getTime() <= date.getTime()) {
+        throw new Error('Sidereal Moon Nakshatra search did not return a strictly future event.');
+      }
+      return transition;
     }
+
     edge = sample;
   }
-  throw new Error('Unable to bracket Moon nakshatra transition within 4 days');
+
+  throw new Error('Unable to bracket Moon Nakshatra transition within 4 days.');
 }
 
 function getAmritaWindowForNakshatra(nakIndex: number, start: Date, end: Date): { start: Date; end: Date } {
@@ -738,8 +758,8 @@ export function calculateComprehensiveDailyPanchanga(
   for (let i = 0; i < 4 && cursor.getTime() < nextDayUtc.getTime(); i++) {
     const span = 360 / 27;
     const nakIndex = Math.min(26, Math.floor(moonSiderealLongitudeAt(cursor, ephemerisProvider) / span));
-    const starStart = findNakshatraTransition(cursor, -1, ephemerisProvider);
-    const starEnd = findNakshatraTransition(cursor, 1, ephemerisProvider);
+    const starStart = findSiderealMoonNakshatraTransition(cursor, -1, ephemerisProvider);
+    const starEnd = findSiderealMoonNakshatraTransition(cursor, 1, ephemerisProvider);
     const amrita = getAmritaWindowForNakshatra(nakIndex, starStart, starEnd);
     if (amrita.end.getTime() > startOfDayUtc.getTime() && amrita.start.getTime() < nextDayUtc.getTime()) {
       amritaWindows.push({
