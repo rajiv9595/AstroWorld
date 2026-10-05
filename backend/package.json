@@ -38,8 +38,9 @@
     "test:transit-reference": "tsx scripts/verify-transit-reference.ts",
     "test:transit-boundaries": "tsx scripts/verify-transit-boundaries.ts",
     "test:panchanga-benchmark": "tsx scripts/verify-panchanga-benchmark.ts",
-    "test:precision": "npm run test:astronomy-reference && npm run test:varga-golden && npm run test:vimshottari-reference && npm run test:vimshottari-boundaries && npm run test:transit-reference && npm run test:transit-boundaries && npm run test:panchanga-benchmark && npm run test:ashtakavarga-golden",
-    "test:ashtakavarga-golden": "tsx scripts/verify-ashtakavarga-golden.ts"
+    "test:precision": "npm run test:astronomy-reference && npm run test:varga-golden && npm run test:vimshottari-reference && npm run test:vimshottari-boundaries && npm run test:transit-reference && npm run test:transit-boundaries && npm run test:panchanga-benchmark && npm run test:ashtakavarga-golden && npm run test:jaimini-golden",
+    "test:ashtakavarga-golden": "tsx scripts/verify-ashtakavarga-golden.ts",
+    "test:jaimini-golden": "tsx scripts/verify-jaimini-golden.ts"
   },
   "dependencies": {
     "@astroworld/shared": "*",
