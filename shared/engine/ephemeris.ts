@@ -9,7 +9,6 @@
 // @ts-ignore astronomy-engine has cjs/esm export
 import * as Astronomy from 'astronomy-engine';
 import {
-  birthProfileToUtcDate,
   calculateAscendant,
   calculateLahiriAyanamsha,
   calculatePlanetaryPositions,
