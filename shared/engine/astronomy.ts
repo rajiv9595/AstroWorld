@@ -98,6 +98,32 @@ export function birthProfileToUtcDate(profile: BirthProfile): Date {
   );
 }
 
+/**
+ * Resolve an equal-width angular partition using half-open [start, end)
+ * semantics while compensating for tiny floating-point errors at exact
+ * mathematical boundaries.
+ */
+function calculateEqualAngularPart(
+  value: number,
+  span: number,
+  count: number,
+): { part: number; offset: number } {
+  const quotient = value / span;
+  const nearestInteger = Math.round(quotient);
+  const boundaryTolerance = 1e-10;
+  const isExactBoundary = Math.abs(quotient - nearestInteger) < boundaryTolerance;
+
+  const part = Math.min(
+    count - 1,
+    isExactBoundary ? nearestInteger : Math.floor(quotient),
+  );
+
+  return {
+    part,
+    offset: isExactBoundary ? 0 : value - part * span,
+  };
+}
+
 export function getNakshatraAndPada(siderealLongitude: number): {
   nakshatra: string;
   nakshatraNumber: number;
@@ -107,15 +133,28 @@ export function getNakshatraAndPada(siderealLongitude: number): {
 } {
   const norm = normalizeDegrees(siderealLongitude);
   const nakSpan = 360 / 27; // 13.333333°
-  const index = Math.min(26, Math.floor(norm / nakSpan));
+  const {
+    part: index,
+    offset: degInNak,
+  } = calculateEqualAngularPart(norm, nakSpan, 27);
   const nak = NAKSHATRAS[index];
-  // Use the exact mathematical nakshatra start rather than the rounded
-  // display constants in NAKSHATRAS. This makes boundary behavior deterministic.
-  const exactNakStart = index * nakSpan;
-  const degInNak = norm - exactNakStart;
+
   const padaSpan = nakSpan / 4; // 3.333333°
-  const pada = Math.min(4, Math.floor(degInNak / padaSpan) + 1);
-  const completedPercent = Math.min(100, Math.max(0, (degInNak / nakSpan) * 100));
+  const {
+    part: padaPart,
+    offset: degInPada,
+  } = calculateEqualAngularPart(degInNak, padaSpan, 4);
+  const pada = padaPart + 1;
+  const completedPercent = Math.min(
+    100,
+    Math.max(0, (degInNak / nakSpan) * 100),
+  );
+
+  // Keep the local pada offset explicit so exact pada boundaries remain
+  // deterministic even when JavaScript cannot represent the decimal span
+  // exactly. It is intentionally not used to alter the percentage, which is
+  // defined from the exact nakshatra position.
+  void degInPada;
 
   return {
     nakshatra: nak.name,
