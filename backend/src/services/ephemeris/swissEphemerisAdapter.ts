@@ -67,12 +67,18 @@ export async function createSwissEphemerisSnapshot(
 
   const jd = swiss.dateToJulianDay(dateUtc);
   const flags = buildFlags(swiss);
-  // Match AstroWorld's independent Swiss oracle: Lahiri sidereal
-  // ayanamsha reported without nutation.
+  // Report the mean/precessional Lahiri offset without nutation.
+  // Swiss's traditional sidereal-house transformation intentionally uses
+  // the standard (nutated) Lahiri ayanamsha together with the tropical
+  // apparent Ascendant returned by calculateHouses().
   const ayanamsha = swiss.getAyanamsaExUt(
     jd,
     swiss.CalculationFlag.SwissEphemeris |
       swiss.CalculationFlag.NoNutation,
+  );
+  const houseAyanamsha = swiss.getAyanamsaExUt(
+    jd,
+    swiss.CalculationFlag.SwissEphemeris,
   );
 
   const planets: SiderealPlanetaryPosition[] = [];
@@ -123,7 +129,9 @@ export async function createSwissEphemerisSnapshot(
       name: 'Lahiri',
       degrees: ayanamsha,
     },
-    ascendantSiderealLongitude: normalizeDegrees(houses.ascendant - ayanamsha),
+    ascendantSiderealLongitude: normalizeDegrees(
+      houses.ascendant - houseAyanamsha,
+    ),
     planets,
     calculationDateUtc: dateUtc.toISOString(),
   };
