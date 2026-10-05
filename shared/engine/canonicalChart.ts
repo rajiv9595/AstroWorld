@@ -27,6 +27,7 @@ import {
   HouseInfo,
   PanchangaFacts,
   PlanetName,
+  PlanetPosition,
 } from './types.ts';
 import type { SiderealEphemerisSnapshot } from './ephemeris.ts';
 import { generateAllShodashavargas } from './vargas.ts';
