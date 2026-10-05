@@ -73,8 +73,12 @@ export class RulePrerequisiteMatcher {
           const hasVargaEvidence = evidence.facts.some(f => f.category === 'varga' && f.entity.includes(varga)) ||
             evidence.toolResults.some(r => r.toolName === 'get_divisional_chart' && r.success && r.data?.vargaCode === varga);
 
+          const matchingVargaFacts = evidence.facts.filter(
+            f => f.category === 'varga' && f.entity.toLowerCase().includes(varga.toLowerCase()),
+          );
           if (hasVargaEvidence) {
             satisfiedPrerequisites.push(`Verified ${varga} divisional chart computed`);
+            matchedEvidenceIds.push(...matchingVargaFacts.map(f => f.id));
           } else {
             missingPrerequisites.push(`Required divisional chart ${varga} was not computed in EvidencePacket`);
           }
@@ -104,6 +108,7 @@ export class RulePrerequisiteMatcher {
         evidence.toolResults.some(r => r.toolName === 'get_transits' && r.success);
       if (hasTransits) {
         satisfiedPrerequisites.push('Verified Gochara planetary transits available');
+        matchedEvidenceIds.push(...evidence.facts.filter(f => f.category === 'transit').map(f => f.id));
       } else {
         missingPrerequisites.push('Gochara transit positions not computed in EvidencePacket');
       }
@@ -115,6 +120,7 @@ export class RulePrerequisiteMatcher {
         evidence.toolResults.some(r => (r.toolName === 'get_current_dasha' || r.toolName === 'get_dasha_at') && r.success);
       if (hasDasha) {
         satisfiedPrerequisites.push('Verified Vimshottari Dasha hierarchy available');
+        matchedEvidenceIds.push(...evidence.facts.filter(f => f.category === 'dasha').map(f => f.id));
       } else {
         missingPrerequisites.push('Vimshottari Dasha timeline not computed in EvidencePacket');
       }
@@ -124,13 +130,13 @@ export class RulePrerequisiteMatcher {
     const isApplied = missingPrerequisites.length === 0;
     const isPartiallySatisfied = satisfiedPrerequisites.length > 0 && missingPrerequisites.length > 0;
 
-    if (isApplied && matchedEvidenceIds.length === 0 && evidence.facts.length > 0) {
-      const houseMatches = evidence.facts.filter(f => meta.houseSubjects?.includes(f.house || 0));
-      if (houseMatches.length > 0) {
-        matchedEvidenceIds.push(...houseMatches.map(f => f.id));
-      } else {
-        matchedEvidenceIds.push(evidence.facts[0].id);
-      }
+    // Never manufacture evidence lineage. If a rule has no concrete
+    // prerequisites, it may remain an applied general principle, but it must
+    // carry an empty evidenceIds array rather than falsely pointing at an
+    // unrelated first fact.
+    if (isApplied && matchedEvidenceIds.length === 0 && meta.houseSubjects?.length) {
+      const houseMatches = evidence.facts.filter(f => meta.houseSubjects.includes(f.house || 0));
+      matchedEvidenceIds.push(...houseMatches.map(f => f.id));
     }
 
     return {
