@@ -68,6 +68,36 @@ export const VARGA_METADATA_LIST: VargaMetadata[] = [
 /**
  * Compute the resulting Zodiac sign index (0-11) for any varga from sidereal longitude.
  */
+/**
+ * Equal-width Varga boundary helper.
+ *
+ * Treats boundaries as half-open [start, end) while compensating
+ * for tiny floating-point representation errors at exact boundaries.
+ */
+function calculateEqualVargaPart(
+  degreeInSign: number,
+  span: number,
+  divisions: number,
+): { part: number; degreeInVargaSign: number } {
+  const quotient = degreeInSign / span;
+  const nearestInteger = Math.round(quotient);
+  const boundaryTolerance = 1e-10;
+
+  const isExactBoundary =
+    Math.abs(quotient - nearestInteger) < boundaryTolerance;
+
+  const part = Math.min(
+    divisions - 1,
+    isExactBoundary ? nearestInteger : Math.floor(quotient),
+  );
+
+  const degreeInVargaSign = isExactBoundary
+    ? 0
+    : (degreeInSign - part * span) * divisions;
+
+  return { part, degreeInVargaSign };
+}
+
 export function calculateVargaSignIndex(vargaCode: VargaCode, siderealLongitude: number): {
   signIndex: number;
   degreeInVargaSign: number;
@@ -124,10 +154,16 @@ export function calculateVargaSignIndex(vargaCode: VargaCode, siderealLongitude:
       // Odd signs: Start from source sign
       // Even signs: Start from 7th from source sign
       const span = 30.0 / 7.0;
-      const part = Math.min(6, Math.floor(degInSign / span));
-      const startSign = isOddSign ? sourceSignIndex : (sourceSignIndex + 6) % 12;
+      const { part, degreeInVargaSign } = calculateEqualVargaPart(
+        degInSign,
+        span,
+        7,
+      );
+      const startSign = isOddSign
+        ? sourceSignIndex
+        : (sourceSignIndex + 6) % 12;
       const targetSignIndex = (startSign + part) % 12;
-      return { signIndex: targetSignIndex, degreeInVargaSign: (degInSign % span) * 7 };
+      return { signIndex: targetSignIndex, degreeInVargaSign };
     }
 
     case 'D9': {
