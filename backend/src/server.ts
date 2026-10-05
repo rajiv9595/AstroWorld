@@ -35,6 +35,15 @@ const allowedOrigins = new Set([
 
 // Production Security Headers & CORS Middleware
 app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const unsafeMethod = !['GET', 'HEAD', 'OPTIONS'].includes(req.method.toUpperCase());
+
+  // CORS controls browser reads; Origin enforcement also blocks cross-site
+  // state-changing requests that could otherwise ride cookie credentials.
+  if (origin && unsafeMethod && !allowedOrigins.has(origin)) {
+    res.status(403).json({ success: false, error: 'Origin not allowed.' });
+    return;
+  }
   res.header('X-Content-Type-Options', 'nosniff');
   res.header('X-Frame-Options', 'SAMEORIGIN');
   res.header('X-XSS-Protection', '1; mode=block');
