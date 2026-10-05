@@ -46,9 +46,7 @@ export function calculateTimingSignals(
       `Pratyantardasha Lord: ${activePd.pratyantarLord}`,
     ],
     evidenceIds: [
-      `DASHA_MD_${activeMd.lord}`,
-      `DASHA_AD_${activeAd.subLord}`,
-      `DASHA_PD_${activePd.pratyantarLord}`,
+      `EVID_DASHA_ACTIVE_${activeMd.lord}_${activeAd.subLord}`,
     ],
     summary: `The native is progressing through the ${activeMd.lord} Mahadasha and ${activeAd.subLord} Antardasha window (${new Date(activeAd.startDateIso).toLocaleDateString()} to ${new Date(activeAd.endDateIso).toLocaleDateString()}). The themes governed by these planetary lords are highlighted during this temporal phase.`,
   });
@@ -77,8 +75,8 @@ export function calculateTimingSignals(
       `Transit Saturn in house ${transitSaturn.natalLagnaHouse} commanding structure`,
     ],
     evidenceIds: [
-      'TRANSIT_JUPITER_H' + transitJupiter.natalLagnaHouse,
-      'ASHTAKAVARGA_SAV_' + transitJupiter.sign,
+      'EVID_TRANSIT_JUPITER',
+      'EVID_ASHTAKAVARGA_SAV',
     ],
     summary: `Professional timing indicates an active window governed by ${activeMd.lord} and ${activeAd.subLord}. With Jupiter energizing house ${transitJupiter.natalLagnaHouse} supported by ${jupSav} Ashtakavarga bindus, execution opportunities align over this bounded window.`,
   });
@@ -118,7 +116,10 @@ export function calculateTimingSignals(
       `Active Antardasha: ${activeAd.subLord}`,
       `Venus natal dignity and house 7 connection`,
     ],
-    evidenceIds: ['D1_VENUS_STATUS', 'DASHA_REL_WINDOW'],
+    evidenceIds: [
+      'EVID_PLANET_VENUS_D1',
+      `EVID_DASHA_ACTIVE_${activeMd.lord}_${activeAd.subLord}`,
+    ],
     summary: `Relational themes develop across the ongoing ${activeAd.subLord} antardasha window. Classical principles indicate collaborative bonds and reciprocal agreements evolve steadily within this period.`,
   });
 
@@ -130,7 +131,7 @@ export function calculateTimingSignals(
     precision: 'UNKNOWN',
     confluenceBasis: 'UNRESOLVED',
     activeFactors: ['Insufficient sub-period alignment beyond current 3-tier hierarchy'],
-    evidenceIds: ['LIMITATION_NO_FABRICATED_DATES'],
+    evidenceIds: ['EVID_LIMITATION_NO_FABRICATED_DATES'],
     summary: 'Classical Vedic astrology does not assign deterministic calendar dates to speculative long-term events without multi-system confluence (Dasha + Gochara + Ashtakavarga). Classified as UNKNOWN to prevent unfounded claims.',
   });
 
