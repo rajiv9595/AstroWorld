@@ -27,6 +27,7 @@ import {
 function getParashariAspects(
   transitPlanet: PlanetName,
   transitSignIdx: number,
+  transitLongitude: number,
   natalPlanets: PlanetPosition[]
 ): TransitPlanet['aspectsToNatal'] {
   const aspects: TransitPlanet['aspectsToNatal'] = [];
@@ -80,7 +81,12 @@ function getParashariAspects(
     }
 
     // Optional Western aspects with strict degree orb labeling
-    const degDiff = Math.abs(transitSignIdx * 30 - np.siderealLongitude);
+    const degDiff = Math.abs(
+      // Western overlay uses the actual transit longitude, not the start of its sign.
+      // The previous implementation compared sign boundaries (e.g. 90°) against the
+      // natal longitude, which could mislabel aspects by the transit planet's degree.
+      transitLongitude - np.siderealLongitude
+    );
     const circularDegDiff = Math.min(degDiff, 360 - degDiff);
 
     const westernConfigs = [
