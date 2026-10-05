@@ -48,7 +48,8 @@
     "test:solar-ingress-contract": "tsx scripts/verify-solar-ingress-contract.ts",
     "test:timing-lineage": "tsx scripts/verify-timing-lineage.ts",
     "test:yoga-dosha-benchmark": "tsx scripts/verify-yoga-dosha-benchmark.ts",
-    "test:precision:all": "npm run test:precision && npm run test:swiss-adapter"
+    "test:precision:all": "npm run test:precision && npm run test:swiss-adapter && npm run test:ephemeris-runtime",
+    "test:ephemeris-runtime": "tsx scripts/verify-ephemeris-provider-runtime.ts"
   },
   "dependencies": {
     "@astroworld/shared": "*",
