@@ -67,9 +67,12 @@ export async function createSwissEphemerisSnapshot(
 
   const jd = swiss.dateToJulianDay(dateUtc);
   const flags = buildFlags(swiss);
+  // Match AstroWorld's independent Swiss oracle: Lahiri sidereal
+  // ayanamsha reported without nutation.
   const ayanamsha = swiss.getAyanamsaExUt(
     jd,
-    swiss.CalculationFlag.SwissEphemeris,
+    swiss.CalculationFlag.SwissEphemeris |
+      swiss.CalculationFlag.NoNutation,
   );
 
   const planets: SiderealPlanetaryPosition[] = [];
