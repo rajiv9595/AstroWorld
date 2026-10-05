@@ -12,6 +12,8 @@ import { calculateVimshottariDasha } from '../../shared/engine/dasha.ts';
 import { ConfluenceEngine } from '../src/ai_v2/reasoning/confluenceEngine.ts';
 import { RulePrerequisiteMatcher } from '../src/ai_v2/reasoning/ruleMatcher.ts';
 import { ClassicalRAGRetriever } from '../src/ai_v2/rag/retriever.ts';
+import { calculateComprehensiveDailyPanchanga } from '../../shared/engine/panchanga.ts';
+import { astronomyEngineEphemerisProvider } from '../../shared/engine/ephemeris.ts';
 import type { PlanetName, PlanetPosition, ZodiacSign } from '../../shared/engine/types.ts';
 
 type Check = { name: string; pass: boolean; detail: string };
@@ -316,6 +318,26 @@ const unverifiedRetriever = new ClassicalRAGRetriever({
   }] as any,
 });
 expect('Unverified classical records are excluded from RAG', unverifiedRetriever.retrieve('Jupiter education').results.length, 0);
+
+// Horizon no-event semantics: a polar day/night must not become synthetic 06:00/18:00.
+const noHorizonProvider = {
+  ...astronomyEngineEphemerisProvider,
+  getHorizonEvent: () => null,
+};
+const polarPanchanga = calculateComprehensiveDailyPanchanga(
+  new Date('2024-12-21T12:00:00.000Z'),
+  78.2232,
+  15.6469,
+  'Arctic/Longyearbyen',
+  'Longyearbyen, Svalbard',
+  noHorizonProvider,
+);
+expect('Polar Panchanga preserves missing sunrise explicitly', polarPanchanga.solarLunar.sunrise, 'No Sunrise');
+expect('Polar Panchanga preserves missing sunset explicitly', polarPanchanga.solarLunar.sunset, 'No Sunset');
+expect('Polar Panchanga does not fabricate a daytime duration', polarPanchanga.solarLunar.dayDuration, 'Unavailable');
+expect('Polar Panchanga omits synthetic day Choghadiya', polarPanchanga.choghadiyaDay.length, 0);
+expect('Polar Panchanga marks Abhijit unavailable', polarPanchanga.muhurats.abhijit.status, 'Unavailable');
+expect('Polar Panchanga marks Rahu Kaal unavailable', polarPanchanga.muhurats.rahuKaal.status, 'Unavailable');
 
 let passed = 0;
 for (const c of checks) {
