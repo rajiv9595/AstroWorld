@@ -20,7 +20,7 @@ const checks: Array<[string, boolean, string]> = [
   ],
   [
     'Readiness exposes database configuration',
-    health.includes('isSupabaseConfigured') && health.includes('databaseConfigured'),
+    health.includes('isSupabaseConfigured') && health.includes('databaseConfigured') && health.includes('corsConfigured'),
     'Database configuration must affect readiness.',
   ],
   [
