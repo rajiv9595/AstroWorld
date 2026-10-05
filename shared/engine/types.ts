@@ -293,7 +293,9 @@ export interface JaiminiFacts {
   charaKarakas: CharaKaraka[];
   atmakaraka: PlanetName;
   karakaScheme?: 'seven_karaka' | 'eight_karaka';
+  /** Backward-compatible field: D1 Rashi sign occupied by the Atmakaraka. */
   karakamsaSign: ZodiacSign;
+  /** Standard Karakamsa: D9/Navamsha sign occupied by the Atmakaraka. */
   karakamsaNavamshaSign: ZodiacSign;
   arudhaLagna: {
     sign: ZodiacSign;
