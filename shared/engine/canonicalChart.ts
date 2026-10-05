@@ -32,7 +32,7 @@ import {
   PlanetName,
   PlanetPosition,
 } from './types.ts';
-import type { SiderealEphemerisSnapshot } from './ephemeris.ts';
+import type { SiderealEphemerisProvider, SiderealEphemerisSnapshot } from './ephemeris.ts';
 import { generateAllShodashavargas } from './vargas.ts';
 import { calculateYogasAndDoshas } from './yogas.ts';
 
@@ -239,6 +239,7 @@ export function computeCanonicalChart(
   profile: BirthProfile = GOLDEN_BENCHMARK_PROFILE,
   evaluationDateUtc: Date = new Date(),
   ephemerisSnapshot?: SiderealEphemerisSnapshot,
+  ephemerisProvider?: SiderealEphemerisProvider,
 ): AIInterpretationContext {
   // 1. Precise astronomical time conversion
   const birthUtcDate = birthProfileToUtcDate(profile);
@@ -276,14 +277,21 @@ export function computeCanonicalChart(
   const vargas = generateAllShodashavargas(ascendant.siderealLongitude, planets);
 
   // 8. Panchanga
-  const panchanga = calculatePanchanga(planets, birthUtcDate, ayanamsha);
+  const panchanga = calculatePanchanga(
+    planets,
+    birthUtcDate,
+    ayanamsha,
+    undefined,
+    ephemerisProvider,
+  );
 
   // 9. Vimshottari Dasha
   const moon = planets.find((p) => p.name === 'Moon')!;
   const dasha = calculateVimshottariDasha(
     moon.siderealLongitude,
     birthUtcDate,
-    evaluationDateUtc
+    evaluationDateUtc,
+    ephemerisProvider,
   );
 
   // 10. Strength (Shadbala, Bhava Bala, Avasthas)
