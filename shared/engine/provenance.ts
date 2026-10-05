@@ -128,6 +128,18 @@ export function buildEvidencePool(
     });
   }
 
+  if (transits.solarIngress) {
+    pool.push({
+      evidenceId: `EVID_TRANSIT_SUN_INGRESS_${transits.solarIngress.targetSign.toUpperCase()}`,
+      category: 'TRANSIT',
+      sourceSystem: 'Gochara Transit Engine',
+      ruleReference: 'Sidereal solar longitude boundary search',
+      factPath: 'transits.solarIngress',
+      factValue: `Next sidereal solar ingress into ${transits.solarIngress.targetSign} at ${transits.solarIngress.timestampUtc}`,
+      description: `The next sidereal solar ingress into ${transits.solarIngress.targetSign} is computed by a forward bracket and bisection on the 30° sidereal boundary.`,
+    });
+  }
+
   // 8. Jaimini
   pool.push({
     evidenceId: 'EVID_JAIMINI_ATMAKARAKA',
