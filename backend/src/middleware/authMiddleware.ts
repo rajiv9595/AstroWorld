@@ -156,3 +156,24 @@ export function getAuthenticatedUser(req: Request): AuthenticatedUserContext {
   }
   return user;
 }
+
+export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+  try {
+    const user = getAuthenticatedUser(req);
+    if (user.role !== 'admin') {
+      res.status(403).json({
+        success: false,
+        errorCode: 'AUTHORIZATION_ERROR',
+        userMessage: 'You do not have permission to access this resource.',
+      });
+      return;
+    }
+    next();
+  } catch {
+    res.status(401).json({
+      success: false,
+      errorCode: 'AUTHENTICATION_ERROR',
+      userMessage: 'Authentication required. Please sign in to continue.',
+    });
+  }
+}
