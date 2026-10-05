@@ -173,11 +173,15 @@ export function calculateVargaSignIndex(vargaCode: VargaCode, siderealLongitude:
       // Air signs (Gemini 2, Libra 6, Aqu 10): Start Libra (6)
       // Water signs (Cancer 3, Scorpio 7, Pis 11): Start Cancer (3)
       const span = 30.0 / 9.0;
-      const part = Math.min(8, Math.floor(degInSign / span));
+      const { part, degreeInVargaSign } = calculateEqualVargaPart(
+        degInSign,
+        span,
+        9,
+      );
       const elementStarts = [0, 9, 6, 3];
       const startSign = elementStarts[sourceSignIndex % 4];
       const targetSignIndex = (startSign + part) % 12;
-      return { signIndex: targetSignIndex, degreeInVargaSign: (degInSign % span) * 9 };
+      return { signIndex: targetSignIndex, degreeInVargaSign };
     }
 
     case 'D10': {
