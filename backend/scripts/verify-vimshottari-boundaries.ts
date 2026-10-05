@@ -61,4 +61,13 @@ for (const md of dasha.mahadashas) {
 }
 
 console.log('✅ All 27 nakshatra and 108 pada boundary checks passed');
+
+const farFuture = new Date('2126-08-17T00:02:00+05:30');
+const farFutureDasha = calculateVimshottariDasha(moon, birth, farFuture);
+assert(
+  farFutureDasha.mahadashas.length >= 18 &&
+    farFutureDasha.mahadashas.some(p => p.period.activeNow),
+  'Vimshottari 120-year cycle continuation failed',
+);
+
 console.log('✅ Vimshottari MD/AD/PD continuity checks passed');
