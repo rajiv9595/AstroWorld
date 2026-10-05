@@ -292,6 +292,7 @@ export interface CharaKaraka {
 export interface JaiminiFacts {
   charaKarakas: CharaKaraka[];
   atmakaraka: PlanetName;
+  karakaScheme?: 'seven_karaka' | 'eight_karaka';
   karakamsaSign: ZodiacSign;
   karakamsaNavamshaSign: ZodiacSign;
   arudhaLagna: {
