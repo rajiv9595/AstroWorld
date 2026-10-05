@@ -1,11 +1,15 @@
 /**
  * ASTROWORLD — Server-trusted authentication middleware.
  *
- * Browser sessions use HttpOnly cookies; API clients may also send a Bearer token.
- * The user id used by protected routes is ALWAYS derived from a verified Supabase
- * access token. Client-supplied userId fields/headers are never trusted.
+ * Browser sessions use HttpOnly access/refresh cookies. Protected unsafe
+ * requests also require a CSRF token issued by the backend and echoed in the
+ * X-CSRF-Token header. API clients may alternatively use a Bearer access token.
+ *
+ * The authenticated user id is ALWAYS derived from a verified Supabase token.
+ * Client-supplied userId fields/headers are never trusted.
  */
 
+import crypto from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
 import { supabase } from '../services/supabaseService.ts';
 
@@ -25,14 +29,26 @@ declare global {
 
 export const AUTH_ACCESS_COOKIE = 'aw_access_token';
 export const AUTH_REFRESH_COOKIE = 'aw_refresh_token';
+export const AUTH_CSRF_COOKIE = 'aw_csrf_token';
 
-function parseCookies(header: string | undefined): Record<string, string> {
+function isProduction(): boolean {
+  return process.env.NODE_ENV === 'production';
+}
+
+function cookieSameSite(): 'Lax' | 'None' {
+  // Vercel/Render-style deployments are cross-site. Secure+None is required
+  // there; local development stays Lax for convenience.
+  return isProduction() ? 'None' : 'Lax';
+}
+
+export function parseCookies(header: string | undefined): Record<string, string> {
   if (!header) return {};
 
   const cookies: Record<string, string> = {};
   for (const part of header.split(';')) {
     const index = part.indexOf('=');
     if (index <= 0) continue;
+
     const key = decodeURIComponent(part.slice(0, index).trim());
     const value = decodeURIComponent(part.slice(index + 1).trim());
     cookies[key] = value;
@@ -50,35 +66,118 @@ function getRequestAccessToken(req: Request): string | undefined {
   return parseCookies(req.headers.cookie)[AUTH_ACCESS_COOKIE];
 }
 
-function setAuthCookie(
+function setCookie(
   res: Response,
   name: string,
   value: string,
-  options: { maxAgeSeconds?: number } = {},
+  options: {
+    httpOnly?: boolean;
+    maxAgeSeconds?: number;
+  } = {},
 ): void {
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  const maxAge = options.maxAgeSeconds ? ` Max-Age=${Math.max(1, Math.floor(options.maxAgeSeconds))}` : '';
-  const encoded = encodeURIComponent(value);
-  res.append('Set-Cookie', `${name}=${encoded}; Path=/; HttpOnly; SameSite=Lax${secure};${maxAge}`);
+  const secure = isProduction() ? '; Secure' : '';
+  const sameSite = cookieSameSite();
+  const httpOnly = options.httpOnly === false ? '' : '; HttpOnly';
+  const maxAge = options.maxAgeSeconds
+    ? '; Max-Age=' + Math.max(1, Math.floor(options.maxAgeSeconds))
+    : '';
+
+  res.append(
+    'Set-Cookie',
+    name +
+      '=' +
+      encodeURIComponent(value) +
+      '; Path=/' +
+      httpOnly +
+      '; SameSite=' +
+      sameSite +
+      secure +
+      maxAge,
+  );
+}
+
+function clearCookie(res: Response, name: string, httpOnly = true): void {
+  const secure = isProduction() ? '; Secure' : '';
+  const httpOnlyPart = httpOnly ? '; HttpOnly' : '';
+  res.append(
+    'Set-Cookie',
+    name +
+      '=; Path=/' +
+      httpOnlyPart +
+      '; SameSite=' +
+      cookieSameSite() +
+      secure +
+      '; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+  );
+}
+
+export function createCsrfToken(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+export function ensureCsrfCookie(req: Request, res: Response): string {
+  const existing = parseCookies(req.headers.cookie)[AUTH_CSRF_COOKIE];
+  if (existing && existing.length >= 32) return existing;
+
+  const token = createCsrfToken();
+  setCookie(res, AUTH_CSRF_COOKIE, token, {
+    httpOnly: false,
+    maxAgeSeconds: 60 * 60 * 24 * 30,
+  });
+  return token;
 }
 
 export function setAuthSessionCookies(
+  req: Request,
   res: Response,
   accessToken: string,
   refreshToken: string,
   rememberMe = true,
-): void {
+): string {
   const refreshMaxAgeSeconds = rememberMe ? 60 * 60 * 24 * 30 : undefined;
   const accessMaxAgeSeconds = rememberMe ? 60 * 60 : undefined;
-  setAuthCookie(res, AUTH_ACCESS_COOKIE, accessToken, { maxAgeSeconds: accessMaxAgeSeconds });
-  setAuthCookie(res, AUTH_REFRESH_COOKIE, refreshToken, { maxAgeSeconds: refreshMaxAgeSeconds });
+
+  setCookie(res, AUTH_ACCESS_COOKIE, accessToken, {
+    maxAgeSeconds: accessMaxAgeSeconds,
+  });
+  setCookie(res, AUTH_REFRESH_COOKIE, refreshToken, {
+    maxAgeSeconds: refreshMaxAgeSeconds,
+  });
+
+  // Rotate CSRF token when a new authentication session is established.
+  const csrfToken = createCsrfToken();
+  setCookie(res, AUTH_CSRF_COOKIE, csrfToken, {
+    httpOnly: false,
+    maxAgeSeconds: rememberMe ? 60 * 60 * 24 * 30 : undefined,
+  });
+
+  void req;
+  return csrfToken;
 }
 
 export function clearAuthSessionCookies(res: Response): void {
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  const expiry = ' Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
-  res.append('Set-Cookie', `${AUTH_ACCESS_COOKIE}=; Path=/; HttpOnly; SameSite=Lax${secure};${expiry}`);
-  res.append('Set-Cookie', `${AUTH_REFRESH_COOKIE}=; Path=/; HttpOnly; SameSite=Lax${secure};${expiry}`);
+  clearCookie(res, AUTH_ACCESS_COOKIE, true);
+  clearCookie(res, AUTH_REFRESH_COOKIE, true);
+  clearCookie(res, AUTH_CSRF_COOKIE, false);
+}
+
+function requireCsrfForUnsafeRequest(req: Request): boolean {
+  return !['GET', 'HEAD', 'OPTIONS'].includes(req.method.toUpperCase());
+}
+
+function csrfIsValid(req: Request): boolean {
+  if (!requireCsrfForUnsafeRequest(req)) return true;
+
+  const cookies = parseCookies(req.headers.cookie);
+  const cookieToken = cookies[AUTH_CSRF_COOKIE];
+  const headerToken = req.headers['x-csrf-token'];
+
+  return Boolean(
+    cookieToken &&
+      typeof headerToken === 'string' &&
+      headerToken.length >= 32 &&
+      crypto.timingSafeEqual(Buffer.from(cookieToken), Buffer.from(headerToken)),
+  );
 }
 
 async function resolveUserFromToken(accessToken: string): Promise<{
@@ -95,6 +194,15 @@ export async function authenticateRequest(
   next: NextFunction,
 ): Promise<void> {
   try {
+    if (!csrfIsValid(req)) {
+      res.status(403).json({
+        success: false,
+        errorCode: 'AUTHORIZATION_ERROR',
+        userMessage: 'The security token for this request is missing or invalid. Please refresh the page and try again.',
+      });
+      return;
+    }
+
     const accessToken = getRequestAccessToken(req);
     const cookies = parseCookies(req.headers.cookie);
 
@@ -115,7 +223,13 @@ export async function authenticateRequest(
       });
 
       if (!error && data.session?.access_token && data.session.refresh_token && data.user) {
-        setAuthSessionCookies(res, data.session.access_token, data.session.refresh_token, true);
+        setAuthSessionCookies(
+          req,
+          res,
+          data.session.access_token,
+          data.session.refresh_token,
+          true,
+        );
         resolved = { user: data.user };
       }
     }
