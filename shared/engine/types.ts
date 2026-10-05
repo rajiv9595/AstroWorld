@@ -251,6 +251,10 @@ export interface StrengthFacts {
   shadbala: ShadbalaFactor[];
   bhavaBala: BhavaBalaItem[];
   avasthas: PlanetaryAvasthas[];
+  methodology?: {
+    shadbala: 'classical_full' | 'classical_partial' | 'approximate';
+    notes: string[];
+  };
 }
 
 export interface YogaFact {
