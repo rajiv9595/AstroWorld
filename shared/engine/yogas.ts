@@ -4,7 +4,7 @@
  */
 
 import { SIGN_LORDS, ZODIAC_SIGNS } from './constants.ts';
-import { hasParashariSambandha } from './aspects.ts';
+import { hasParashariAspect, hasParashariSambandha } from './aspects.ts';
 import { DoshaFact, PlanetName, PlanetPosition, YogaFact, ZodiacSign } from './types.ts';
 
 export function calculateYogasAndDoshas(
@@ -304,13 +304,11 @@ export function calculateYogasAndDoshas(
   const mitigating: string[] = [];
   if (mars.sign === 'Aries') mitigating.push('Mars is in its own sign (Aries), substantially neutralizing adverse fire.');
   // Aspect cancellations
-  const diffJupMars = (mars.houseNumber - jupiter.houseNumber + 12) % 12;
-  const isJupAspectingMars = diffJupMars === 6 || diffJupMars === 4 || diffJupMars === 8;
-  if (isJupAspectingMars) mitigating.push('Jupiter aspects Mars, providing cooling benefic protection.');
+  const isJupAspectingMars = hasParashariAspect(jupiter, mars);
+  if (isJupAspectingMars) mitigating.push('Jupiter has a classical full Parashari aspect on Mars; this is recorded as a mitigation factor, not a cancellation.');
 
-  const diffSatMars = (mars.houseNumber - saturn.houseNumber + 12) % 12;
-  const isSatAspectingMars = diffSatMars === 6 || diffSatMars === 2 || diffSatMars === 9;
-  if (isSatAspectingMars) mitigating.push('Saturn balances marital impulse with patience and discipline.');
+  const isSatAspectingMars = hasParashariAspect(saturn, mars);
+  if (isSatAspectingMars) mitigating.push('Saturn has a classical full Parashari aspect on Mars; this is recorded as a moderation factor, not a cancellation.');
 
   doshas.push({
     id: 'kuja_dosha',
@@ -340,9 +338,10 @@ export function calculateYogasAndDoshas(
   // A school-dependent Kala Sarpa test must accept either orientation of the
   // Rahu-Ketu half-axis; the previous one-direction test produced false
   // negatives when all seven grahas occupied the opposite half.
+  const nodesAreOpposite = ((ketuSignIdx - rahuSignIdx + 12) % 12) === 6;
   const allWithinFirstHalf = rahuDistances.every((diff) => diff <= 6);
   const allWithinSecondHalf = rahuDistances.every((diff) => diff >= 6);
-  const allOneSide = allWithinFirstHalf || allWithinSecondHalf;
+  const allOneSide = nodesAreOpposite && (allWithinFirstHalf || allWithinSecondHalf);
 
   doshas.push({
     id: 'kala_sarpa',
