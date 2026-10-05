@@ -66,10 +66,32 @@ export async function computeCanonicalChartWithConfiguredEphemeris(
 ) {
   const provider = getConfiguredEphemerisProvider();
   const birthUtcDate = birthProfileToUtcDate(profile);
-  const snapshot = await provider.getSnapshot(birthUtcDate, {
-    latitude: profile.latitude,
-    longitude: profile.longitude,
-  });
+  let snapshot;
+  try {
+    snapshot = await provider.getSnapshot(birthUtcDate, {
+      latitude: profile.latitude,
+      longitude: profile.longitude,
+    });
+  } catch (error: any) {
+    throw new Error(
+      `Ephemeris provider "${provider.source}" failed: ${error?.message || String(error)}`,
+    );
+  }
 
+  if (snapshot.source !== provider.source) {
+    throw new Error(
+      `Ephemeris provider mismatch: selected "${provider.source}" but received "${snapshot.source}".`,
+    );
+  }
+  if (snapshot.planets.length !== 9) {
+    throw new Error(
+      `Ephemeris provider "${provider.source}" returned ${snapshot.planets.length} planetary entries; expected 9.`,
+    );
+  }
+  if (snapshot.calculationDateUtc !== birthUtcDate.toISOString()) {
+    throw new Error(
+      `Ephemeris provider "${provider.source}" returned a snapshot for ${snapshot.calculationDateUtc} instead of ${birthUtcDate.toISOString()}.`,
+    );
+  }
   return computeCanonicalChart(profile, evaluationDateUtc, snapshot);
 }
