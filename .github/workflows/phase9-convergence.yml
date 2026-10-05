@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - astroworld/production-convergence-phase9-security
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
