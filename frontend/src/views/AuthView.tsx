@@ -93,8 +93,10 @@ export const AuthView: React.FC<AuthViewProps> = ({
     }
 
     // 3. Password Length Check
-    if (!password || password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters long.');
+    if (!password || (mode === 'signup' && password.length < 8)) {
+      setErrorMessage(mode === 'signup'
+        ? 'Password must be at least 8 characters long.'
+        : 'Please enter your password.');
       return;
     }
 
