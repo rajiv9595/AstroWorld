@@ -163,64 +163,33 @@ export function calculatePlanetaryPositions(
 ): PlanetPosition[] {
   const t = time.ut / 36525.0;
 
-  // 1. Tropical ecliptic positions
-  const sunPos = Astronomy.SunPosition(time);
-  const moonVec = Astronomy.GeoVector('Moon' as any, time, true);
-  const moonPos = Astronomy.Ecliptic(moonVec);
+  // Tropical ecliptic positions. Retrograde status is derived from the actual
+  // apparent geocentric longitude trend, not from a fixed mean-speed constant.
+  const tropicalLongitude = (body: any, atTime: any): number =>
+    Astronomy.Ecliptic(Astronomy.GeoVector(body, atTime, true)).elon;
 
-  const bodies: { name: PlanetName; tropLon: number; speed: number }[] = [
-    {
-      name: 'Sun',
-      tropLon: sunPos.elon,
-      speed: 0.9856, // approx mean speed in deg/day
-    },
-    {
-      name: 'Moon',
-      tropLon: moonPos.elon,
-      speed: 13.176,
-    },
-    {
-      name: 'Mars',
-      tropLon: Astronomy.Ecliptic(Astronomy.GeoVector('Mars' as any, time, true)).elon,
-      speed: 0.524,
-    },
-    {
-      name: 'Mercury',
-      tropLon: Astronomy.Ecliptic(Astronomy.GeoVector('Mercury' as any, time, true)).elon,
-      speed: 1.383,
-    },
-    {
-      name: 'Jupiter',
-      tropLon: Astronomy.Ecliptic(Astronomy.GeoVector('Jupiter' as any, time, true)).elon,
-      speed: 0.083,
-    },
-    {
-      name: 'Venus',
-      tropLon: Astronomy.Ecliptic(Astronomy.GeoVector('Venus' as any, time, true)).elon,
-      speed: 1.2,
-    },
-    {
-      name: 'Saturn',
-      tropLon: Astronomy.Ecliptic(Astronomy.GeoVector('Saturn' as any, time, true)).elon,
-      speed: 0.033,
-    },
+  const sunPos = Astronomy.SunPosition(time);
+  const bodies: { name: PlanetName; tropLon: number; body?: any }[] = [
+    { name: 'Sun', tropLon: sunPos.elon },
+    { name: 'Moon', tropLon: tropicalLongitude('Moon' as any, time), body: 'Moon' as any },
+    { name: 'Mars', tropLon: tropicalLongitude('Mars' as any, time), body: 'Mars' as any },
+    { name: 'Mercury', tropLon: tropicalLongitude('Mercury' as any, time), body: 'Mercury' as any },
+    { name: 'Jupiter', tropLon: tropicalLongitude('Jupiter' as any, time), body: 'Jupiter' as any },
+    { name: 'Venus', tropLon: tropicalLongitude('Venus' as any, time), body: 'Venus' as any },
+    { name: 'Saturn', tropLon: tropicalLongitude('Saturn' as any, time), body: 'Saturn' as any },
   ];
 
-  // Mean Lunar Node (Rahu) using authoritative IAU/Brown formula
-  // Omega = 125.04452 - 1934.136261 * T + 0.0020708 * T^2
+  // Mean Lunar Node (Rahu) using the established mean-node formula.
   const omegaTrop = normalizeDegrees(125.04452 - 1934.136261 * t + 0.0020708 * t * t);
-  bodies.push({
-    name: 'Rahu',
-    tropLon: omegaTrop,
-    speed: -0.05295, // mean retrograde motion
-  });
-  bodies.push({
-    name: 'Ketu',
-    tropLon: normalizeDegrees(omegaTrop + 180.0),
-    speed: -0.05295,
-  });
+  bodies.push({ name: 'Rahu', tropLon: omegaTrop });
+  bodies.push({ name: 'Ketu', tropLon: normalizeDegrees(omegaTrop + 180.0) });
 
   const sunSidLon = normalizeDegrees(sunPos.elon - ayanamsha);
+  const dayStep = 0.01; // ~14.4 minutes; sufficient to identify apparent retrograde direction.
+  const angularDelta = (a: number, b: number): number => {
+    const raw = normalizeDegrees(a - b);
+    return raw > 180 ? raw - 360 : raw;
+  };
 
   return bodies.map((b) => {
     const sidLon = normalizeDegrees(b.tropLon - ayanamsha);
@@ -228,10 +197,17 @@ export function calculatePlanetaryPositions(
     const sign = ZODIAC_SIGNS[signIndex];
     const degreeInSign = sidLon % 30;
 
-    // Whole Sign house from Ascendant (1 to 12)
-    const houseNumber = ((signIndex - ascendantSignIndex + 12) % 12) + 1;
+    let speed: number;
+    if (b.body) {
+      const prevLon = tropicalLongitude(b.body, time.AddDays(-dayStep));
+      const nextLon = tropicalLongitude(b.body, time.AddDays(dayStep));
+      speed = angularDelta(nextLon, prevLon) / (2 * dayStep);
+    } else if (b.name === 'Rahu' || b.name === 'Ketu') {
+      speed = -0.05295;
+    } else {
+      speed = 0.9856;
+    }
 
-    // Combustion check: within classical degrees of Sun
     let combust = false;
     if (b.name !== 'Sun' && b.name !== 'Rahu' && b.name !== 'Ketu') {
       const diff = Math.min(
@@ -241,14 +217,12 @@ export function calculatePlanetaryPositions(
       const combustionOrbs: Record<string, number> = {
         Moon: 12.0,
         Mars: 17.0,
-        Mercury: 14.0, // 12 if retrograde
+        Mercury: 14.0,
         Jupiter: 11.0,
-        Venus: 10.0, // 8 if retrograde
+        Venus: 10.0,
         Saturn: 15.0,
       };
-      if (diff <= (combustionOrbs[b.name] || 10.0)) {
-        combust = true;
-      }
+      if (diff <= (combustionOrbs[b.name] || 10.0)) combust = true;
     }
 
     const nakInfo = getNakshatraAndPada(sidLon);
@@ -263,18 +237,18 @@ export function calculatePlanetaryPositions(
       signIndex,
       degreeInSign,
       formattedDegree: formatDMS(degreeInSign),
-      houseNumber,
+      houseNumber: ((signIndex - ascendantSignIndex + 12) % 12) + 1,
       nakshatra: nakInfo.nakshatra,
       nakshatraNumber: nakInfo.nakshatraNumber,
       nakshatraLord: nakInfo.nakshatraLord,
       pada: nakInfo.pada,
-      speed: b.speed,
-      retrograde: b.speed < 0,
+      speed,
+      retrograde: speed < 0,
       combust,
-      dignity: 'NEUTRAL', // populated by dignity module
+      dignity: 'NEUTRAL',
       dignityScore: 0,
       signLord,
-      naturalRelationshipToLord: 'NEUTRAL', // populated by dignity module
+      naturalRelationshipToLord: 'NEUTRAL',
     };
   });
 }
