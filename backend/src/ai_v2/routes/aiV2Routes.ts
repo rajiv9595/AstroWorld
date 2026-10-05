@@ -1,46 +1,71 @@
 /**
  * ASTROWORLD — AI V2 API Routes
- * Exposes Question Planning and Deterministic Evidence Orchestration endpoints.
+ * All consultation, memory, and conversation data is bound to the verified
+ * Supabase identity attached by authMiddleware.
  */
 
 import { Router, Request, Response } from 'express';
 import { QuestionPlanner } from '../planner/questionPlanner.ts';
 import { ToolExecutionOrchestrator } from '../orchestrator/toolOrchestrator.ts';
 import { validateBirthProfile } from '../schemas/birthProfile.ts';
-import { ConsultationOrchestrator } from '../consultation/consultationOrchestrator.ts';
 import { ProductionConsultationService } from '../production/productionConsultationService.ts';
 import { ProductionError } from '../production/productionErrors.ts';
+import { authenticateRequest, getAuthenticatedUser, requireAdmin } from '../../../middleware/authMiddleware.ts';
+import { UserMemoryService } from '../memory/userMemoryService.ts';
 
 export const aiV2Router = Router();
 
 const questionPlanner = new QuestionPlanner();
 const toolOrchestrator = new ToolExecutionOrchestrator();
 export const productionConsultationService = new ProductionConsultationService();
+const userMemoryService = new UserMemoryService();
 
-/**
- * GET /api/ai-v2/metrics
- * Returns current observability metrics snapshot (latencies, counts, error rates)
- */
-aiV2Router.get('/metrics', (_req: Request, res: Response) => {
+function getIpAddress(req: Request): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string' && forwarded.trim()) {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.ip || '0.0.0.0';
+}
+
+aiV2Router.get('/status', (_req: Request, res: Response) => {
+  res.json({
+    system: 'AstroWorld AI V2',
+    status: 'operational',
+    phase: 'production-convergence',
+    capabilities: [
+      'question_understanding',
+      'deterministic_astrology_tools',
+      'classical_knowledge_retrieval',
+      'evidence_grounded_reasoning',
+      'claim_grounding',
+      'conversational_narration',
+      'conversation_state',
+      'persistent_memory',
+    ],
+  });
+});
+
+// Everything below this point requires a verified authenticated session.
+aiV2Router.use(authenticateRequest);
+
+aiV2Router.get('/metrics', requireAdmin, (_req: Request, res: Response) => {
   res.json({ success: true, metrics: productionConsultationService.getMetrics().getSnapshot() });
 });
 
-/**
- * POST /api/ai-v2/v1/consult
- * Hardened canonical production consultation API
- */
 aiV2Router.post('/v1/consult', async (req: Request, res: Response) => {
   try {
-    const userId = getRequestUserId(req);
-    const idempotencyKey = (req.headers['idempotency-key'] as string) || req.body?.idempotencyKey;
-    const ipAddress = req.ip || (req.headers['x-forwarded-for'] as string) || '127.0.0.1';
+    const authenticatedUser = getAuthenticatedUser(req);
+    const idempotencyKey =
+      (req.headers['idempotency-key'] as string) ||
+      (typeof req.body?.idempotencyKey === 'string' ? req.body.idempotencyKey : undefined);
 
     const response = await productionConsultationService.consult({
       authenticatedUser: {
-        userId,
-        ipAddress,
-        email: req.body?.userEmail,
-        role: req.body?.userRole || 'user',
+        userId: authenticatedUser.userId,
+        email: authenticatedUser.email,
+        role: authenticatedUser.role,
+        ipAddress: getIpAddress(req),
       },
       conversationId: req.body?.conversationId,
       userMessage: req.body?.userMessage || req.body?.message || req.body?.question,
@@ -58,175 +83,120 @@ aiV2Router.post('/v1/consult', async (req: Request, res: Response) => {
     }
 
     res.status(200).json(response);
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err instanceof ProductionError) {
       if (err.retryAfterSeconds) {
         res.setHeader('Retry-After', String(err.retryAfterSeconds));
       }
-      res.status(err.statusCode).json(err.toClientResponse(`req_${Date.now()}`));
-    } else {
-      res.status(500).json({
-        success: false,
-        errorCode: 'INTERNAL_ERROR',
-        statusCode: 500,
-        userMessage: 'An unexpected internal error occurred during the consultation.',
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
-});
-
-/**
- * GET /api/ai-v2/status
- * Phase 2B Status Endpoint
- */
-aiV2Router.get('/status', (_req: Request, res: Response) => {
-  res.json({
-    system: 'AstroWorld AI V2',
-    status: 'operational',
-    phase: '2B',
-    capabilities: [
-      'question_understanding',
-      'tool_planning',
-      'dependency_resolution',
-      'deterministic_tool_orchestration',
-      'provenance_tracking',
-    ],
-  });
-});
-
-/**
- * POST /api/ai-v2/plan
- * Translates a user question into a validated QuestionPlan.
- */
-aiV2Router.post('/plan', async (req: Request, res: Response) => {
-  try {
-    const { question, followUpContext } = req.body;
-    if (!question || typeof question !== 'string') {
-      res.status(400).json({ error: 'Question must be a non-empty string.' });
+      res.status(err.statusCode).json(err.toClientResponse('req_' + Date.now()));
       return;
     }
 
-    const plan = await questionPlanner.plan(question, followUpContext);
-    res.json({ success: true, plan });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Failed to generate question plan.' });
+    console.error('[AI V2] canonical consult failure:', err);
+    res.status(500).json({
+      success: false,
+      errorCode: 'INTERNAL_ERROR',
+      statusCode: 500,
+      userMessage: 'An unexpected internal error occurred during the consultation.',
+      timestamp: new Date().toISOString(),
+    });
   }
 });
 
-/**
- * POST /api/ai-v2/orchestrate
- * Translates a question and executes the required deterministic tools, returning an EvidencePacket.
- */
+aiV2Router.post('/plan', async (req: Request, res: Response) => {
+  try {
+    const question = req.body?.question;
+    if (!question || typeof question !== 'string') {
+      res.status(400).json({ success: false, error: 'Question must be a non-empty string.' });
+      return;
+    }
+
+    const plan = await questionPlanner.plan(question, req.body?.followUpContext);
+    res.json({ success: true, plan });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to generate question plan.' });
+  }
+});
+
 aiV2Router.post('/orchestrate', async (req: Request, res: Response) => {
   try {
-    const { question, birthProfile, followUpContext } = req.body;
+    const { question, birthProfile, followUpContext } = req.body || {};
 
     if (!question || typeof question !== 'string') {
-      res.status(400).json({ error: 'Question must be a non-empty string.' });
+      res.status(400).json({ success: false, error: 'Question must be a non-empty string.' });
       return;
     }
 
     const birthValidation = validateBirthProfile(birthProfile);
-    if (!birthValidation.valid) {
-      res.status(400).json({ error: birthValidation.error });
+    if (!birthValidation.valid || !birthValidation.data) {
+      res.status(400).json({ success: false, error: birthValidation.error });
       return;
     }
 
     const plan = await questionPlanner.plan(question, followUpContext);
-    const evidencePacket = await toolOrchestrator.orchestrate(plan, birthProfile);
+    const evidencePacket = await toolOrchestrator.orchestrate(plan, birthValidation.data);
 
     res.json({ success: true, evidencePacket });
   } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Failed to orchestrate astrological tools.' });
+    res.status(500).json({ success: false, error: err.message || 'Failed to orchestrate astrological tools.' });
   }
 });
 
-const consultationOrchestrator = new ConsultationOrchestrator({
-  apiKey: process.env.GEMINI_API_KEY,
-});
-
-/**
- * POST /api/ai-v2/consult
- * Full end-to-end consultation endpoint composing QuestionPlan -> Tools -> Evidence -> RAG -> Reasoner -> Claims -> Narrator -> FinalResponse
- */
 aiV2Router.post('/consult', async (req: Request, res: Response) => {
   try {
-    const { question, birthProfile, conversationContext, forceMockMode } = req.body;
-
-    if (!question || typeof question !== 'string') {
-      res.status(400).json({ error: 'Question must be a non-empty string.' });
-      return;
-    }
-
-    const birthValidation = validateBirthProfile(birthProfile);
-    if (!birthValidation.valid) {
-      res.status(400).json({ error: birthValidation.error });
-      return;
-    }
-
-    const result = await consultationOrchestrator.consult(question, birthProfile, {
-      conversationContext,
-      forceMockMode,
+    const authenticatedUser = getAuthenticatedUser(req);
+    const response = await productionConsultationService.consult({
+      authenticatedUser: {
+        userId: authenticatedUser.userId,
+        email: authenticatedUser.email,
+        role: authenticatedUser.role,
+        ipAddress: getIpAddress(req),
+      },
+      conversationId: req.body?.conversationId,
+      userMessage: req.body?.question || req.body?.userMessage || req.body?.message,
+      birthProfile: req.body?.birthProfile,
+      consultationContext: req.body?.conversationContext || req.body?.consultationContext,
+      executionMode: req.body?.forceMockMode ? 'mock' : 'production',
     });
 
-    res.json({ success: true, result });
+    res.json({ success: true, result: response });
   } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Failed to complete consultation pipeline.' });
+    if (err instanceof ProductionError) {
+      res.status(err.statusCode).json(err.toClientResponse('req_' + Date.now()));
+      return;
+    }
+    res.status(500).json({ success: false, error: 'Failed to complete consultation pipeline.' });
   }
 });
 
-import { UserMemoryService } from '../memory/userMemoryService.ts';
-const userMemoryService = new UserMemoryService();
-
-// Helper to extract authenticated user ID
-function getRequestUserId(req: Request): string {
-  const headerId = req.headers['x-user-id'] as string;
-  const queryId = req.query.userId as string;
-  const bodyId = req.body?.userId as string;
-  return headerId || queryId || bodyId || 'default_user';
-}
-
-/**
- * GET /api/ai-v2/memory
- * List active memories for the authenticated user
- */
 aiV2Router.get('/memory', async (req: Request, res: Response) => {
   try {
-    const userId = getRequestUserId(req);
-    const domain = req.query.domain as string | undefined;
+    const { userId } = getAuthenticatedUser(req);
+    const domain = typeof req.query.domain === 'string' ? req.query.domain : undefined;
     const memories = await userMemoryService.listMemories(userId, { domain });
-    res.json({ success: true, userId, memories });
+    res.json({ success: true, memories });
   } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Failed to list memories' });
+    res.status(500).json({ success: false, error: err.message || 'Failed to list memories' });
   }
 });
 
-/**
- * GET /api/ai-v2/memory/summary
- * Returns user-visible formatted explanation of stored memories
- */
 aiV2Router.get('/memory/summary', async (req: Request, res: Response) => {
   try {
-    const userId = getRequestUserId(req);
+    const { userId } = getAuthenticatedUser(req);
     const summary = await userMemoryService.formatUserVisibleSummary(userId);
-    res.json({ success: true, userId, summary });
+    res.json({ success: true, summary });
   } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Failed to get memory summary' });
+    res.status(500).json({ success: false, error: err.message || 'Failed to get memory summary' });
   }
 });
 
-/**
- * POST /api/ai-v2/memory
- * Create a new persistent memory record
- */
 aiV2Router.post('/memory', async (req: Request, res: Response) => {
   try {
-    const userId = getRequestUserId(req);
-    const { category, key, value, sensitivity, tags, expiresAt } = req.body;
+    const { userId } = getAuthenticatedUser(req);
+    const { category, key, value, sensitivity, tags, expiresAt } = req.body || {};
 
     if (!category || !key || !value) {
-      res.status(400).json({ error: 'category, key, and value are required fields.' });
+      res.status(400).json({ success: false, error: 'category, key, and value are required fields.' });
       return;
     }
 
@@ -237,150 +207,124 @@ aiV2Router.post('/memory', async (req: Request, res: Response) => {
       value,
       sourceType: 'user_explicit',
       sensitivity: sensitivity || 'normal',
-      tags: tags || [],
+      tags: Array.isArray(tags) ? tags : [],
       expiresAt,
     });
 
     if (!result.success) {
-      res.status(400).json({ error: result.error });
+      res.status(400).json({ success: false, error: result.error });
       return;
     }
 
-    res.json({ success: true, memory: result.memory });
+    res.status(201).json({ success: true, memory: result.memory });
   } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Failed to create memory' });
+    res.status(500).json({ success: false, error: err.message || 'Failed to create memory' });
   }
 });
 
-/**
- * GET /api/ai-v2/memory/:id
- * Retrieve a specific memory record by ID
- */
 aiV2Router.get('/memory/:id', async (req: Request, res: Response) => {
   try {
-    const userId = getRequestUserId(req);
+    const { userId } = getAuthenticatedUser(req);
     const memory = await userMemoryService.getMemory(userId, req.params.id);
     if (!memory) {
-      res.status(404).json({ error: 'Memory record not found' });
+      res.status(404).json({ success: false, error: 'Memory record not found' });
       return;
     }
     res.json({ success: true, memory });
   } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Failed to get memory' });
+    res.status(500).json({ success: false, error: err.message || 'Failed to get memory' });
   }
 });
 
-/**
- * DELETE /api/ai-v2/memory/:id
- * Delete a specific memory record
- */
 aiV2Router.delete('/memory/:id', async (req: Request, res: Response) => {
   try {
-    const userId = getRequestUserId(req);
+    const { userId } = getAuthenticatedUser(req);
     const deleted = await userMemoryService.deleteMemory(userId, req.params.id);
     if (!deleted) {
-      res.status(404).json({ error: 'Memory record not found to delete' });
+      res.status(404).json({ success: false, error: 'Memory record not found' });
       return;
     }
     res.json({ success: true, message: 'Memory successfully deleted' });
   } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Failed to delete memory' });
+    res.status(500).json({ success: false, error: err.message || 'Failed to delete memory' });
   }
 });
 
-/**
- * DELETE /api/ai-v2/memory
- * Clear all memories for the authenticated user
- */
 aiV2Router.delete('/memory', async (req: Request, res: Response) => {
   try {
-    const userId = getRequestUserId(req);
+    const { userId } = getAuthenticatedUser(req);
     const count = await userMemoryService.clearUserMemory(userId);
     res.json({ success: true, clearedCount: count, message: 'All memories successfully cleared' });
   } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Failed to clear memories' });
+    res.status(500).json({ success: false, error: err.message || 'Failed to clear memories' });
   }
 });
 
-/**
- * GET /api/ai-v2/conversations
- * Returns summaries of active consultations
- */
 aiV2Router.get('/conversations', (req: Request, res: Response) => {
   try {
+    const { userId } = getAuthenticatedUser(req);
     const stateManager = productionConsultationService.getStateManager();
-    const sessions = (stateManager as any).sessions as Map<string, { state: any; turns: any[] }>;
-    const summaries: Array<{
-      conversationId: string;
-      title: string;
-      domain: string;
-      lastActivityIso: string;
-      turnCount: number;
-      preview: string;
-    }> = [];
+    const summaries = productionConsultationService.listOwnedConversationIds(userId)
+      .map((conversationId) => {
+        const state = stateManager.getState(conversationId);
+        const turns = stateManager.getTurns(conversationId);
+        if (!state) return null;
 
-    if (sessions) {
-      for (const [id, session] of sessions.entries()) {
-        const lastTurn = session.turns[session.turns.length - 1];
-        const title = session.state?.currentTopic || (lastTurn ? lastTurn.question : 'Astrological Consultation');
-        const preview = lastTurn ? lastTurn.answer.slice(0, 120) + (lastTurn.answer.length > 120 ? '...' : '') : 'Fresh consultation';
-        summaries.push({
-          conversationId: id,
-          title,
-          domain: session.state?.currentDomain || 'general',
-          lastActivityIso: session.state?.updatedAtIso || new Date().toISOString(),
-          turnCount: session.turns.length,
-          preview,
-        });
-      }
-    }
+        const lastTurn = turns[turns.length - 1];
+        return {
+          conversationId,
+          title: state.currentTopic || 'Astrological Consultation',
+          domain: state.currentDomain || 'general',
+          lastActivityIso: state.updatedAtIso,
+          turnCount: turns.length,
+          preview: lastTurn?.answerSummary?.mainConclusion?.slice(0, 120) || 'Fresh consultation',
+        };
+      })
+      .filter(Boolean);
 
     res.json({ success: true, conversations: summaries });
   } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Failed to list conversations' });
+    res.status(500).json({ success: false, error: err.message || 'Failed to list conversations' });
   }
 });
 
-/**
- * GET /api/ai-v2/conversations/:id
- * Retrieve turns for a specific conversation
- */
 aiV2Router.get('/conversations/:id', (req: Request, res: Response) => {
   try {
-    const stateManager = productionConsultationService.getStateManager();
-    const state = stateManager.getState(req.params.id);
-    const turns = stateManager.getTurns(req.params.id);
+    const { userId } = getAuthenticatedUser(req);
+    const conversationId = req.params.id;
 
-    if (!state && turns.length === 0) {
-      res.status(404).json({ error: 'Conversation not found' });
+    if (!productionConsultationService.isConversationOwnedBy(conversationId, userId)) {
+      res.status(404).json({ success: false, error: 'Conversation not found' });
       return;
     }
 
-    res.json({
-      success: true,
-      conversationId: req.params.id,
-      state,
-      turns,
-    });
+    const stateManager = productionConsultationService.getStateManager();
+    const state = stateManager.getState(conversationId);
+    const turns = stateManager.getTurns(conversationId);
+
+    if (!state) {
+      res.status(404).json({ success: false, error: 'Conversation not found' });
+      return;
+    }
+
+    res.json({ success: true, conversationId, state, turns });
   } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Failed to get conversation' });
+    res.status(500).json({ success: false, error: err.message || 'Failed to get conversation' });
   }
 });
 
-/**
- * DELETE /api/ai-v2/conversations/:id
- * Clear/delete a specific conversation
- */
 aiV2Router.delete('/conversations/:id', (req: Request, res: Response) => {
   try {
-    const stateManager = productionConsultationService.getStateManager();
-    const sessions = (stateManager as any).sessions as Map<string, any>;
-    if (sessions) {
-      sessions.delete(req.params.id);
+    const { userId } = getAuthenticatedUser(req);
+    const deleted = productionConsultationService.deleteOwnedConversation(req.params.id, userId);
+
+    if (!deleted) {
+      res.status(404).json({ success: false, error: 'Conversation not found' });
+      return;
     }
+
     res.json({ success: true, message: 'Conversation deleted' });
   } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Failed to delete conversation' });
+    res.status(500).json({ success: false, error: err.message || 'Failed to delete conversation' });
   }
 });
-
