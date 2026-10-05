@@ -250,11 +250,15 @@ export function calculateVargaSignIndex(vargaCode: VargaCode, siderealLongitude:
       // Air: Start Libra (6)
       // Water: Start Capricorn (9)
       const span = 30.0 / 27.0;
-      const part = Math.min(26, Math.floor(degInSign / span));
+      const { part, degreeInVargaSign } = calculateEqualVargaPart(
+        degInSign,
+        span,
+        27,
+      );
       const elementStarts = [0, 3, 6, 9];
       const startSign = elementStarts[sourceSignIndex % 4];
       const targetSignIndex = (startSign + part) % 12;
-      return { signIndex: targetSignIndex, degreeInVargaSign: (degInSign % span) * 27 };
+      return { signIndex: targetSignIndex, degreeInVargaSign };
     }
 
     case 'D30': {
