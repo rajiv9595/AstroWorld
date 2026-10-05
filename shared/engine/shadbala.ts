@@ -11,6 +11,7 @@ import {
   ZODIAC_SIGNS,
 } from './constants.ts';
 import { calculateVargaSignIndex } from './vargas.ts';
+import { hasParashariAspect } from './aspects.ts';
 import {
   BhavaBalaItem,
   PlanetName,
@@ -223,13 +224,7 @@ function calculateDrikBala(planet: PlanetPosition, planets: PlanetPosition[]): n
 
   for (const source of planets) {
     if (source.name === planet.name || !CLASSICAL_SHADBALA_BODIES.includes(source.name)) continue;
-    const diff = (planet.houseNumber - source.houseNumber + 12) % 12;
-    const aspects =
-      diff === 6 ||
-      (source.name === 'Mars' && (diff === 3 || diff === 7)) ||
-      (source.name === 'Jupiter' && (diff === 4 || diff === 8)) ||
-      (source.name === 'Saturn' && (diff === 2 || diff === 9));
-    if (!aspects) continue;
+    if (!hasParashariAspect(source, planet)) continue;
 
     const benefic =
       ['Jupiter', 'Venus', 'Mercury'].includes(source.name) ||
