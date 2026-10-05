@@ -3,6 +3,7 @@
  * Strict evidence-based confluence and timing semantics (EXACT vs EVENT_WINDOW vs UNKNOWN).
  */
 
+import { ZODIAC_SIGNS } from './constants.ts';
 import {
   AshtakavargaFacts,
   PlanetPosition,
@@ -54,7 +55,10 @@ export function calculateTimingSignals(
 
   // 2. Career & Professional Trajectory (Event Window)
   // Check if 10th house or 10th lord is activated by Dasha or Transit Jupiter/Saturn
-  const jupSav = ashtakavargaFacts.sav[transitJupiter.natalLagnaHouse - 1] || 28;
+  const transitJupiterSignIndex = ZODIAC_SIGNS.indexOf(transitJupiter.sign);
+  const jupSav = transitJupiterSignIndex >= 0
+    ? ashtakavargaFacts.sav[transitJupiterSignIndex]
+    : 28;
   const careerConfluence =
     ['Sun', 'Mercury', 'Jupiter', 'Saturn'].includes(activeMd.lord) ||
     ['Sun', 'Mercury', 'Jupiter', 'Saturn'].includes(activeAd.subLord || '');
@@ -79,21 +83,23 @@ export function calculateTimingSignals(
     summary: `Professional timing indicates an active window governed by ${activeMd.lord} and ${activeAd.subLord}. With Jupiter energizing house ${transitJupiter.natalLagnaHouse} supported by ${jupSav} Ashtakavarga bindus, execution opportunities align over this bounded window.`,
   });
 
-  // 3. Exact Solar Transit Conjunction / Ingress (EXACT Timing Precision)
-  signals.push({
-    id: 'TIMING_EXACT_SOLAR_INGRESS',
-    title: `Canonical Exact Astronomical Ingress: Sun in ${transitSun.sign}`,
-    domain: 'GENERAL',
-    precision: 'EXACT',
-    exactTimestampUtc: transitFacts.queryDateIso,
-    confluenceBasis: 'DIRECT',
-    activeFactors: [
-      `Transit Sun exact longitude: ${transitSun.formattedDegree} in ${transitSun.sign}`,
-      `Transit Sun in house ${transitSun.natalLagnaHouse} relative to Lagna`,
-    ],
-    evidenceIds: ['EPHEMERIS_EXACT_SUN_' + transitSun.sign],
-    summary: `At the exact evaluated moment (${transitFacts.queryDateIso}), the Sun occupies ${transitSun.formattedDegree} in sidereal ${transitSun.sign}, delivering immediate solar vitality to natal house ${transitSun.natalLagnaHouse}.`,
-  });
+  // 3. Exact Solar Ingress (EXACT Timing Precision)
+  if (transitFacts.solarIngress) {
+    signals.push({
+      id: 'TIMING_EXACT_SOLAR_INGRESS',
+      title: `Next Sidereal Solar Ingress: Sun enters ${transitFacts.solarIngress.targetSign}`,
+      domain: 'GENERAL',
+      precision: 'EXACT',
+      exactTimestampUtc: transitFacts.solarIngress.timestampUtc,
+      confluenceBasis: 'DIRECT',
+      activeFactors: [
+        `Current Transit Sun: ${transitSun.formattedDegree} in ${transitSun.sign}`,
+        `Next sidereal sign boundary: ${transitFacts.solarIngress.targetSign}`,
+      ],
+      evidenceIds: ['EVID_TRANSIT_SUN_INGRESS_' + transitFacts.solarIngress.targetSign.toUpperCase()],
+      summary: `The next sidereal solar ingress into ${transitFacts.solarIngress.targetSign} is calculated at ${transitFacts.solarIngress.timestampUtc}.`,
+    });
+  }
 
   // 4. Relationships & Partnership Window
   const venOrJupActive =
