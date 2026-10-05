@@ -20,6 +20,7 @@ import {
   VimshottariDashaFacts,
   YogaFact,
 } from './types.ts';
+import type { SiderealEphemerisSnapshot } from './ephemeris.ts';
 
 export function buildEvidencePool(
   ascendant: AscendantInfo,
@@ -34,10 +35,22 @@ export function buildEvidencePool(
   jaimini: JaiminiFacts,
   ashtakavarga: AshtakavargaFacts,
   transits: TransitFacts,
-  timingSignals: TimingSignal[]
+  timingSignals: TimingSignal[],
+  ephemerisSnapshot?: SiderealEphemerisSnapshot,
 ): EvidenceRecord[] {
   const pool: EvidenceRecord[] = [];
 
+  if (ephemerisSnapshot) {
+    pool.push({
+      evidenceId: 'EVID_EPHEMERIS_PROVIDER',
+      category: 'ASTRONOMY',
+      sourceSystem: ephemerisSnapshot.model,
+      ruleReference: 'Runtime ephemeris provider contract',
+      factPath: 'ephemeris',
+      factValue: ephemerisSnapshot.source + ' / ' + ephemerisSnapshot.ayanamsha.name + ' ' + ephemerisSnapshot.ayanamsha.degrees.toFixed(9) + '°',
+      description: 'Natal astronomical positions were supplied by the ' + ephemerisSnapshot.source + ' provider for ' + ephemerisSnapshot.calculationDateUtc + '.',
+    });
+  }
   // 1. Ascendant
   pool.push({
     evidenceId: 'EVID_LAGNA_POSITION',

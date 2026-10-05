@@ -380,6 +380,8 @@ export interface TimingSignal {
 
 export interface AIInterpretationContext {
   schemaVersion: '1.0';
+  /** Astronomical provider snapshot used for the natal calculation when available. */
+  ephemeris?: import('./ephemeris.ts').SiderealEphemerisSnapshot;
   generatedAtIso: string;
   birthProfile: BirthProfile;
   ascendant: AscendantInfo;
