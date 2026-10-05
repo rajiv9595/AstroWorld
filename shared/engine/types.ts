@@ -337,6 +337,10 @@ export interface TransitPlanet {
 export interface TransitFacts {
   queryDateIso: string;
   planets: TransitPlanet[];
+  solarIngress?: {
+    timestampUtc: string;
+    targetSign: ZodiacSign;
+  };
   sadeSati: {
     active: boolean;
     phase: 'RISING' | 'PEAK' | 'SETTING' | 'NONE';
