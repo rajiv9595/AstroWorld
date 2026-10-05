@@ -17,7 +17,7 @@ const cases = [
   { saturn: 0, moon: 0, active: true, phase: 'PEAK' as const },
   { saturn: 1, moon: 0, active: true, phase: 'SETTING' as const },
   { saturn: 2, moon: 0, active: false, phase: 'NONE' as const },
-  { saturn: 5, moon: 8, active: true, phase: 'RISING' as const },
+  { saturn: 7, moon: 8, active: true, phase: 'RISING' as const },
 ];
 
 for (const c of cases) {
