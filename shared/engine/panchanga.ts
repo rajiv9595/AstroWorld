@@ -307,8 +307,9 @@ export function calculatePanchanga(
       local.year, local.month, local.day, 0, 0, 0, timezone,
     );
     const observerSite = new Astronomy.Observer(observer.latitude, observer.longitude, 0);
+    const localMiddayUtc = new Date(localMidnightUtc.getTime() + 12 * 3600 * 1000);
     const rise = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observerSite, +1, localMidnightUtc, 1);
-    const set = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observerSite, -1, localMidnightUtc, 1);
+    const set = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observerSite, -1, localMiddayUtc, 1);
     sunriseUtc = rise ? rise.date.toISOString() : '';
     sunsetUtc = set ? set.date.toISOString() : '';
   }
