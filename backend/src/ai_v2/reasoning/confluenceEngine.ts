@@ -22,6 +22,7 @@ export class ConfluenceEngine {
     plan: QuestionPlan,
     evidence: EvidencePacket,
     primaryFactors: ClassifiedFactor[],
+    supportingFactors: ClassifiedFactor[],
     restrictingFactors: ClassifiedFactor[]
   ): ConfluenceResult {
     const layers: ConfluenceItem[] = [];
@@ -29,8 +30,11 @@ export class ConfluenceEngine {
     // 1. D1 Natal Chart Layer
     const d1Facts = evidence.facts.filter(f => f.category === 'natal');
     if (d1Facts.length > 0) {
-      const isRestricting = restrictingFactors.some(f => f.sourceTool === 'get_birth_chart' || f.sourceTool === 'get_planetary_positions');
-      const isSupportive = primaryFactors.some(f => (f.sourceTool === 'get_birth_chart' || f.sourceTool === 'get_planetary_positions') && f.role === 'primary') || d1Facts.length >= 3;
+      const natalSources = new Set(['get_birth_chart', 'get_planetary_positions']);
+      const isRestricting = restrictingFactors.some(f => natalSources.has(f.sourceTool));
+      const isSupportive = [...primaryFactors, ...supportingFactors].some(
+        f => natalSources.has(f.sourceTool) && (f.role === 'primary' || f.role === 'supporting' || f.role === 'background')
+      );
       layers.push({
         layer: 'D1',
         factorDescription: `Natal D1 chart foundations: ${d1Facts.slice(0, 3).map(f => `${f.entity} in ${f.sign}`).join(', ')}`,
@@ -43,11 +47,15 @@ export class ConfluenceEngine {
     const vargaFacts = evidence.facts.filter(f => f.category === 'varga');
     if (vargaFacts.length > 0) {
       const targetVarga = plan.chartLayers.find(l => l !== 'D1') || 'D10';
-      const isSupportive = vargaFacts.some(f => f.dignity === 'EXALTED' || f.dignity === 'OWN_SIGN' || f.dignity === 'FRIENDLY') || vargaFacts.length > 0;
+      const vargaEvidenceIds = new Set(vargaFacts.map(f => f.id));
+      const isRestricting = restrictingFactors.some(f => vargaEvidenceIds.has(f.evidenceId));
+      const isSupportive = [...primaryFactors, ...supportingFactors].some(
+        f => vargaEvidenceIds.has(f.evidenceId) && (f.role === 'primary' || f.role === 'supporting')
+      );
       layers.push({
         layer: 'Varga',
         factorDescription: `${targetVarga} Divisional Chart placements: ${vargaFacts.slice(0, 2).map(f => f.value).join(', ')}`,
-        alignment: isSupportive ? 'supportive' : 'neutral',
+        alignment: isRestricting ? 'restricting' : isSupportive ? 'supportive' : 'neutral',
         evidenceId: vargaFacts[0].id,
       });
     }
@@ -55,11 +63,16 @@ export class ConfluenceEngine {
     // 3. Vimshottari Dasha Layer
     const dashaFacts = evidence.facts.filter(f => f.category === 'dasha');
     if (dashaFacts.length > 0) {
+      const dashaEvidenceIds = new Set(dashaFacts.map(f => f.id));
+      const isRestricting = restrictingFactors.some(f => dashaEvidenceIds.has(f.evidenceId));
+      const isSupportive = [...primaryFactors, ...supportingFactors].some(
+        f => dashaEvidenceIds.has(f.evidenceId) && (f.role === 'primary' || f.role === 'supporting')
+      );
       const dashaStr = String(dashaFacts[0].value || '');
       layers.push({
         layer: 'Dasha',
         factorDescription: `Vimshottari Dasha period: ${dashaStr}`,
-        alignment: 'supportive',
+        alignment: isRestricting ? 'restricting' : isSupportive ? 'supportive' : 'neutral',
         evidenceId: dashaFacts[0].id,
       });
     }
@@ -67,12 +80,16 @@ export class ConfluenceEngine {
     // 4. Gochara Transit Layer
     const transitFacts = evidence.facts.filter(f => f.category === 'transit');
     if (transitFacts.length > 0) {
-      const jupTransit = transitFacts.find(f => f.entity.toLowerCase().includes('jupiter'));
-      const isSupportive = Boolean(jupTransit) || transitFacts.length > 0;
+      const transitEvidenceIds = new Set(transitFacts.map(f => f.id));
+      const isRestricting = restrictingFactors.some(f => transitEvidenceIds.has(f.evidenceId));
+      const isSupportive = [...primaryFactors, ...supportingFactors].some(
+        f => transitEvidenceIds.has(f.evidenceId) && (f.role === 'primary' || f.role === 'supporting')
+      );
+      const jupTransit = transitFacts.find(f => f.entity.trim().toLowerCase() === 'jupiter');
       layers.push({
         layer: 'Transit',
         factorDescription: `Gochara planetary transit: ${jupTransit?.value || transitFacts[0].value}`,
-        alignment: isSupportive ? 'supportive' : 'neutral',
+        alignment: isRestricting ? 'restricting' : isSupportive ? 'supportive' : 'neutral',
         evidenceId: (jupTransit || transitFacts[0]).id,
       });
     }
@@ -91,18 +108,23 @@ export class ConfluenceEngine {
     // Calculate Converging Alignment
     const supportiveCount = layers.filter(l => l.alignment === 'supportive').length;
     const restrictingCount = layers.filter(l => l.alignment === 'restricting').length;
+    const neutralCount = layers.filter(l => l.alignment === 'neutral').length;
 
-    let confluenceStrength: InterpretationStrength = 'weak';
-    if (supportiveCount >= 3) {
+    let confluenceStrength: InterpretationStrength = 'inconclusive';
+    if (supportiveCount >= 3 && restrictingCount === 0) {
       confluenceStrength = 'strong';
-    } else if (supportiveCount >= 2) {
+    } else if (supportiveCount >= 2 && restrictingCount === 0) {
       confluenceStrength = 'moderate';
+    } else if (supportiveCount >= 1 || restrictingCount >= 1) {
+      confluenceStrength = 'weak';
     }
 
-    const hasConfluence = supportiveCount >= 2;
+    const hasConfluence = supportiveCount >= 2 && supportiveCount > restrictingCount;
     const confluenceSummary = hasConfluence
-      ? `Multi-layer confluence confirmed across ${supportiveCount} independent astrological layers (${layers.map(l => l.layer).join(', ')}).`
-      : `Single-layer or partial astrological alignment observed.`;
+      ? `Multi-layer supportive alignment is present across ${supportiveCount} evidence-backed astrological layers.`
+      : neutralCount === layers.length
+        ? 'No evidence-backed multi-layer alignment was established.'
+        : 'Single-layer, mixed, or partial astrological alignment observed.';
 
     return {
       hasConfluence,
