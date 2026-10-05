@@ -128,6 +128,16 @@ export function buildEvidencePool(
     });
   }
 
+  pool.push({
+    evidenceId: 'EVID_LIMITATION_NO_FABRICATED_DATES',
+    category: 'TRANSIT',
+    sourceSystem: 'AstroWorld Safety/Provenance Layer',
+    ruleReference: 'No unsupported deterministic event dates',
+    factPath: 'timingSignals.unknown',
+    factValue: 'UNKNOWN',
+    description: 'Long-horizon speculative event dates remain unknown unless independently supported by sufficient Dasha, transit, and other evidence-backed confluence.',
+  });
+
   if (transits.solarIngress) {
     pool.push({
       evidenceId: `EVID_TRANSIT_SUN_INGRESS_${transits.solarIngress.targetSign.toUpperCase()}`,
