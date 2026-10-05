@@ -6,6 +6,7 @@
  */
 
 import { BirthProfile } from '../engine/types.ts';
+import { authWriteHeaders } from '../lib/supabase.ts';
 
 export interface SavedKundliRecord {
   id: string;
@@ -34,7 +35,7 @@ export const fetchUserCharts = async (_legacyUserId?: string): Promise<SavedKund
     const res = await fetch('/api/user/charts', {
       method: 'GET',
       credentials: 'include',
-      headers: { Accept: 'application/json' },
+      headers: authWriteHeaders({ Accept: 'application/json' }),
     });
 
     const data = await parseResponse(res);
