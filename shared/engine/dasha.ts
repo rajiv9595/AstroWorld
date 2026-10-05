@@ -11,6 +11,25 @@ const DAYS_PER_YEAR = 365.25;
 const MS_PER_DAY = 86400000;
 const MS_PER_YEAR = DAYS_PER_YEAR * MS_PER_DAY;
 
+function validateDashaInputs(
+  moonSiderealLon: number,
+  birthDateUtc: Date,
+  evaluationDateUtc: Date,
+): void {
+  if (!Number.isFinite(moonSiderealLon) || moonSiderealLon < 0 || moonSiderealLon >= 360) {
+    throw new Error('Vimshottari Dasha requires Moon sidereal longitude in [0, 360).');
+  }
+  if (!(birthDateUtc instanceof Date) || Number.isNaN(birthDateUtc.getTime())) {
+    throw new Error('Vimshottari Dasha requires a valid UTC birth date.');
+  }
+  if (!(evaluationDateUtc instanceof Date) || Number.isNaN(evaluationDateUtc.getTime())) {
+    throw new Error('Vimshottari Dasha requires a valid UTC evaluation date.');
+  }
+  if (evaluationDateUtc.getTime() < birthDateUtc.getTime()) {
+    throw new Error('Vimshottari Dasha evaluation date cannot precede the birth date.');
+  }
+}
+
 /**
  * Generate sub-lord sequence starting from parent lord.
  */
@@ -27,6 +46,7 @@ export function calculateVimshottariDasha(
   birthDateUtc: Date,
   evaluationDateUtc: Date = new Date()
 ): VimshottariDashaFacts {
+  validateDashaInputs(moonSiderealLon, birthDateUtc, evaluationDateUtc);
   const nakInfo = getNakshatraAndPada(moonSiderealLon);
   const startLord = nakInfo.nakshatraLord;
   const fullDurYears = VIMSHOTTARI_DURATIONS[startLord];
