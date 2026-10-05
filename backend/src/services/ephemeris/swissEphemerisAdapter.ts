@@ -49,7 +49,8 @@ function buildFlags(swiss: SwissModule): number {
   return (
     swiss.CalculationFlag.SwissEphemeris |
     swiss.CalculationFlag.Speed |
-    swiss.CalculationFlag.Sidereal
+    swiss.CalculationFlag.Sidereal |
+    swiss.CalculationFlag.NoNutation
   );
 }
 
@@ -127,6 +128,12 @@ export async function createSwissEphemerisSnapshot(
 
 export async function closeSwissEphemeris(): Promise<void> {
   if (!swissModulePromise) return;
-  const swiss = await swissModulePromise;
-  swiss.close();
+  try {
+    const swiss = await swissModulePromise;
+    swiss.close();
+  } catch {
+    // Optional dependency may legitimately be absent during non-Swiss runs.
+  } finally {
+    swissModulePromise = null;
+  }
 }
