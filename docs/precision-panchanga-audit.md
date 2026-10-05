@@ -70,7 +70,7 @@ Using the exact Swiss-Lahiri longitudes at the birth instant:
 - Priti Yoga
 - Bava Karana
 
-The external Panchanga comparison agrees on Wednesday, Shukla Dwadashi, Purva Ashadha and Priti, but some sources report a different Moon longitude/pada because they use a different astronomical substrate or calculation convention. AstroWorld keeps the Swiss-Lahiri astronomical basis explicit rather than forcing every Panchanga source to match.
+The external Panchanga comparison agrees on the major date identity (Wednesday, Shukla Dwadashi, Purva Ashadha and Priti), while some sources report a different Moon longitude/pada because they use a different astronomical substrate or calendar convention. AstroWorld keeps the Swiss-Lahiri astronomical basis explicit rather than forcing every Panchanga source to match. The Swiss mean-node oracle is also kept separate from AstroWorld's compact analytical node polynomial; local checks showed the production node model differs from Swiss mean node by roughly 0–18 arcsec in the sampled epochs, so D60 boundary-sensitive node cases should be treated with additional caution.
 
 ## Ashtakavarga audit
 The published Parashari contributor matrix was independently reconstructed outside the TypeScript implementation.
@@ -118,6 +118,7 @@ D60 separates occupied-sign mapping from the named amsha sequence: occupied sign
 - AI confluence treated the existence of Varga/transit data as automatically supportive.
 - AI confidence relied too heavily on raw factor counts.
 - Shadbala was previously a coarse placeholder rather than a classical component calculation.
+- One internal Shadbala golden value for Mercury Kala Bala was initially mis-entered at 105.77; independent reconstruction corrected it to 105.94.
 
 ## Verification suites
 npm run test:precision
