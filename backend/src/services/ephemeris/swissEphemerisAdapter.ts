@@ -103,7 +103,7 @@ export async function createSwissEphemerisSnapshot(
   const meanNode = swiss.calculatePosition(
     jd,
     swiss.LunarPoint.MeanNode,
-    flags,
+    nodeFlags,
   );
   const rahuLongitude = normalizeDegrees(meanNode.longitude);
 
