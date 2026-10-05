@@ -4,6 +4,7 @@
  */
 
 export * from './engine/types.ts';
+export * from './engine/aspects.ts';
 export * from './engine/ephemeris.ts';
 export * from './engine/constants.ts';
 export * from './engine/astronomy.ts';
