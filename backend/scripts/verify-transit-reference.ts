@@ -22,8 +22,8 @@ const reference: Record<string, Record<string, Ref>> = {
     Jupiter: { lon: 116.06542625970775, retrograde: false },
     Venus: { lon: 194.20404138355914, retrograde: true },
     Saturn: { lon: 347.0334114876482, retrograde: true },
-    Rahu: { lon: 303.267749991745, retrograde: true },
-    Ketu: { lon: 123.267749991745, retrograde: true },
+    Rahu: { lon: 303.27253152198676, retrograde: true },
+    Ketu: { lon: 123.27253152198676, retrograde: true },
   },
   '2027-06-03T00:00:00.000Z': {
     Sun: { lon: 47.98815096167152, retrograde: false },
@@ -33,8 +33,8 @@ const reference: Record<string, Record<string, Ref>> = {
     Jupiter: { lon: 116.43980890410813, retrograde: false },
     Venus: { lon: 29.02908645856207, retrograde: false },
     Saturn: { lon: 0.0031733488839549295, retrograde: false },
-    Rahu: { lon: 290.497050311677, retrograde: true },
-    Ketu: { lon: 110.497050311677, retrograde: true },
+    Rahu: { lon: 290.502112033935, retrograde: true },
+    Ketu: { lon: 110.50211203393502, retrograde: true },
   },
 };
 
