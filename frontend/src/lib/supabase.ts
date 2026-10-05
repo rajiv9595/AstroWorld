@@ -124,7 +124,6 @@ export const signOutFromSupabase = async (): Promise<void> => {
     });
   } finally {
     localStorage.removeItem('astroworld_user');
-    localStorage.removeItem('astroworld_supabase_auth_token');
   }
 };
 
