@@ -1,8 +1,10 @@
 /**
  * ASTROWORLD — Independent Astronomical Reference Verification
  *
- * Reference vectors were generated independently with Swiss Ephemeris 2.10.03,
- * Lahiri sidereal mode, mean lunar node, and whole-sign ascendant.
+ * Planetary reference vectors were generated independently with Swiss Ephemeris 2.10.03,
+ * Lahiri sidereal mode using non-nutated ecliptic longitudes. Rahu/Ketu references use the
+ * Swiss Ephemeris mean lunar node; the production node model is an analytical polynomial
+ * and therefore uses a wider tolerance.
  *
  * This script is intentionally an oracle test, not a production dependency.
  * It verifies the existing Astronomy Engine + analytical Lahiri implementation
@@ -26,6 +28,7 @@ type ReferenceVector = {
   ayanamshaDeg: number;
   ascendantDeg: number;
   positionsDeg: Record<string, number>;
+  nodePositionsDeg: { Rahu: number; Ketu: number };
 };
 
 const REFERENCE: ReferenceVector[] = [
@@ -39,8 +42,9 @@ const REFERENCE: ReferenceVector[] = [
     positionsDeg: {
       Sun: 317.2754094214595, Moon: 307.1603230214832, Mars: 307.4088322112195,
       Mercury: 332.647599557872, Jupiter: 227.27610565027965, Venus: 355.7531823713323,
-      Saturn: 250.98677727502135, Rahu: 233.5815434612041, Ketu: 53.58154346120409,
+      Saturn: 250.98677727502135,
     },
+    nodePositionsDeg: { Rahu: 233.58653516349506, Ketu: 53.58653516349506 },
   },
   {
     label: 'Anaparthy — 2000-01-01 00:00 UTC',
@@ -52,8 +56,9 @@ const REFERENCE: ReferenceVector[] = [
     positionsDeg: {
       Sun: 256.0060121369246, Moon: 193.44016305684002, Mars: 303.7222767659089,
       Mercury: 247.25860135926806, Jupiter: 1.37986875141131, Venus: 217.10821741787453,
-      Saturn: 16.552636092487752, Rahu: 101.21391957635842, Ketu: 281.2139195763584,
+      Saturn: 16.552636092487752,
     },
+    nodePositionsDeg: { Rahu: 101.21004983806004, Ketu: 281.21004983806004 },
   },
   {
     label: 'Anaparthy — 2024-02-29 00:00 UTC (leap day)',
@@ -65,8 +70,9 @@ const REFERENCE: ReferenceVector[] = [
     positionsDeg: {
       Sun: 315.6922904539581, Moon: 184.23275098950916, Mars: 287.9495844981665,
       Mercury: 316.2460069721165, Jupiter: 16.951180472099413, Venus: 291.0618677721009,
-      Saturn: 315.5977076400617, Rahu: 353.5595218635826, Ketu: 173.55952186358263,
+      Saturn: 315.5977076400617,
     },
+    nodePositionsDeg: { Rahu: 353.5582948704579, Ketu: 173.5582948704579 },
   },
   {
     label: 'Anaparthy — 2030-07-01 12:00 UTC',
@@ -78,8 +84,9 @@ const REFERENCE: ReferenceVector[] = [
     positionsDeg: {
       Sun: 75.43011121160335, Moon: 82.14200260283613, Mars: 65.6181615921832,
       Mercury: 83.98909338207324, Jupiter: 203.75230971273257, Venus: 46.44232830134532,
-      Saturn: 39.41900537771398, Rahu: 230.90957323623547, Ketu: 50.909573236235474,
+      Saturn: 39.41900537771398,
     },
+    nodePositionsDeg: { Rahu: 230.91437167191663, Ketu: 50.91437167191663 },
   },
 ];
 
@@ -107,7 +114,7 @@ function assertClose(
 
 async function main() {
   console.log('🌌 AstroWorld independent astronomical reference verification');
-  console.log('Reference: Swiss Ephemeris 2.10.03, Lahiri / Chitrapaksha, mean lunar node');
+  console.log('Reference: Swiss Ephemeris 2.10.03, Lahiri / Chitrapaksha, non-nutated planets; Swiss mean node for Rahu/Ketu');
 
   for (const ref of REFERENCE) {
     const astroTime = new Astronomy.AstroTime(new Date(ref.utcDate));
@@ -132,6 +139,12 @@ async function main() {
       const planet = planets.find((p) => p.name === name);
       if (!planet) throw new Error(`Missing planet: ${name}`);
       assertClose(`${ref.label} — ${name}`, planet.siderealLongitude, expected, 120);
+    }
+
+    for (const [name, expected] of Object.entries(ref.nodePositionsDeg)) {
+      const planet = planets.find((p) => p.name === name);
+      if (!planet) throw new Error(`Missing node: ${name}`);
+      assertClose(`${ref.label} — ${name}`, planet.siderealLongitude, expected, 30);
     }
 
     console.log(`✅ ${ref.label}: complete vector passed`);
