@@ -810,7 +810,7 @@ export function calculateComprehensiveDailyPanchanga(
       meaning: props.meaning,
       isActive,
     };
-  });
+  }) : [];
 
   const nightChoghadiyaNames = NIGHT_CHOGHADIYA_ORDER[dayOfWeek];
   const choghadiyaNight = hasSolarDay ? nightChoghadiyaNames.map((name, idx) => {
