@@ -21,6 +21,17 @@ const __dirname = path.dirname(__filename);
 
 export const app = express();
 const PORT = Number(process.env.PORT) || 3000;
+app.set('trust proxy', 1);
+
+const configuredOrigins = (process.env.CORS_ORIGINS || process.env.PUBLIC_WEB_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const allowedOrigins = new Set([
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  ...configuredOrigins,
+]);
 
 // Production Security Headers & CORS Middleware
 app.use((req, res, next) => {
@@ -33,17 +44,29 @@ app.use((req, res, next) => {
     res.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
 
-  res.header('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.has(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Vary', 'Origin');
+  } else if (origin && req.method === 'OPTIONS') {
+    res.status(403).json({ success: false, error: 'Origin not allowed.' });
+    return;
+  }
+
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, X-Idempotency-Key');
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, Content-Length, X-Requested-With, X-Idempotency-Key'
+  );
   if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
+    res.sendStatus(204);
   } else {
     next();
   }
 });
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '1mb' }));
 
 // Mount Modular API Routers
 app.use('/api/auth', authRouter);
