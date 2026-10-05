@@ -137,7 +137,7 @@ async function main(): Promise<void> {
   let passed = 0;
   let failed = 0;
   let maxSwissDelta = 0;
-  let maxAstronomyDelta = 0;
+  let maxAstronomyBoundaryError = 0;
 
   function pass(name: string, detail: string): void {
     passed++;
@@ -168,17 +168,25 @@ async function main(): Promise<void> {
         const astronomyActual = findNextSiderealSolarIngress(start, astronomyEngineEphemerisProvider);
         assertFutureOrPrevious(astronomyActual.timestampUtc, start, 1, vector.label + ' Astronomy Engine');
 
-        const astronomyDelta = absSeconds(astronomyActual.timestampUtc, expected);
-        if (astronomyDelta > 60) throw new Error('Astronomy Engine delta ' + astronomyDelta.toFixed(3) + 's exceeds 60s');
-        maxAstronomyDelta = Math.max(maxAstronomyDelta, astronomyDelta);
-
         const boundaryLon = astronomyEngineEphemerisProvider.getPlanetaryPositions(astronomyActual.timestampUtc)
           .find((p) => p.name === 'Sun')?.siderealLongitude;
-        if (boundaryLon === undefined || circularDistanceDegrees(boundaryLon, vector.expectedBoundaryDeg) > 0.01) {
-          throw new Error('Astronomy Engine Sun longitude is not on the expected ingress boundary.');
+        if (boundaryLon === undefined) {
+          throw new Error('Astronomy Engine returned no Sun longitude at the ingress event.');
         }
+        const boundaryError = circularDistanceDegrees(boundaryLon, vector.expectedBoundaryDeg);
+        if (boundaryError > 0.00001) {
+          throw new Error(
+            'Astronomy Engine Sun longitude boundary residual ' +
+            boundaryError.toFixed(9) + '° exceeds 0.00001°.',
+          );
+        }
+        maxAstronomyBoundaryError = Math.max(maxAstronomyBoundaryError, boundaryError);
 
-        pass(vector.label + ' Astronomy Engine', 'Δ ' + astronomyDelta.toFixed(3) + 's; boundary ' + boundaryLon.toFixed(9) + '°');
+        pass(
+          vector.label + ' Astronomy Engine',
+          'strict future event; boundary ' + boundaryLon.toFixed(9) +
+          '°; residual ' + boundaryError.toFixed(9) + '°',
+        );
       } catch (error) {
         fail(vector.label, error instanceof Error ? error.message : String(error));
       }
@@ -204,16 +212,21 @@ async function main(): Promise<void> {
         );
         assertFutureOrPrevious(astronomyActual, start, 1, vector.label + ' Astronomy Engine');
 
-        const astronomyDelta = absSeconds(astronomyActual, expected);
-        if (astronomyDelta > 60) throw new Error('Astronomy Engine delta ' + astronomyDelta.toFixed(3) + 's exceeds 60s');
-        maxAstronomyDelta = Math.max(maxAstronomyDelta, astronomyDelta);
-
         const boundaryLon = getMoonLongitudeAt(astronomyActual, astronomyEngineEphemerisProvider);
-        if (circularDistanceDegrees(boundaryLon, vector.expectedBoundaryDeg) > 0.02) {
-          throw new Error('Astronomy Engine Moon longitude is not on the expected Nakshatra boundary.');
+        const boundaryError = circularDistanceDegrees(boundaryLon, vector.expectedBoundaryDeg);
+        if (boundaryError > 0.00001) {
+          throw new Error(
+            'Astronomy Engine Moon longitude boundary residual ' +
+            boundaryError.toFixed(9) + '° exceeds 0.00001°.',
+          );
         }
+        maxAstronomyBoundaryError = Math.max(maxAstronomyBoundaryError, boundaryError);
 
-        pass(vector.label + ' Astronomy Engine', 'Δ ' + astronomyDelta.toFixed(3) + 's; boundary ' + boundaryLon.toFixed(9) + '°');
+        pass(
+          vector.label + ' Astronomy Engine',
+          'strict future event; boundary ' + boundaryLon.toFixed(9) +
+          '°; residual ' + boundaryError.toFixed(9) + '°',
+        );
       } catch (error) {
         fail(vector.label, error instanceof Error ? error.message : String(error));
       }
