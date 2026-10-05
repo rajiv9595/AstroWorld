@@ -180,11 +180,11 @@ export interface ComprehensiveDailyPanchanga {
   };
   muhurats: {
     amritKaalWindows: Array<{ start: string; end: string }>;
-    abhijit: { start: string; end: string; status: 'Highly Auspicious' | 'Avoid'; description: string };
-    brahma: { start: string; end: string; status: 'Highly Auspicious'; description: string };
-    amritKaal: { start: string; end: string; status: 'Auspicious'; description: string };
+    abhijit: { start: string; end: string; status: 'Highly Auspicious' | 'Avoid' | 'Unavailable'; description: string };
+    brahma: { start: string; end: string; status: 'Highly Auspicious' | 'Unavailable'; description: string };
+    amritKaal: { start: string; end: string; status: 'Auspicious' | 'Unavailable'; description: string };
     vijaya: { start: string; end: string; status: 'Auspicious'; description: string };
-    rahuKaal: { start: string; end: string; status: 'Inauspicious'; description: string };
+    rahuKaal: { start: string; end: string; status: 'Inauspicious' | 'Unavailable'; description: string };
     yamaganda: { start: string; end: string; status: 'Inauspicious'; description: string };
     gulika: { start: string; end: string; status: 'Inauspicious'; description: string };
     durMuhurat: { start: string; end: string; status: 'Inauspicious'; description: string };
@@ -674,9 +674,10 @@ export function calculateComprehensiveDailyPanchanga(
   const sunRiseDate = isSameLocalCalendarDay(sunRiseCandidate) ? sunRiseCandidate : null;
   const sunSetDate = isSameLocalCalendarDay(sunSetCandidate) ? sunSetCandidate : null;
 
-  const sunriseDate = sunRiseDate || new Date(startOfDayUtc.getTime() + 6 * 3600 * 1000);
-  const sunsetDate = sunSetDate || new Date(startOfDayUtc.getTime() + 18 * 3600 * 1000);
-  const nextSunriseDate = nextSunRiseDate || new Date(sunriseDate.getTime() + 24 * 3600 * 1000);
+  const hasSolarDay = Boolean(sunRiseDate && sunSetDate);
+  const sunriseDate = sunRiseDate ?? startOfDayUtc;
+  const sunsetDate = sunSetDate ?? startOfDayUtc;
+  const nextSunriseDate = nextSunRiseDate ?? new Date(sunriseDate.getTime() + 24 * 3600 * 1000);
 
   // Moonrise & Moonset
   const moonRiseCandidate = ephemerisProvider.getHorizonEvent(
@@ -697,8 +698,8 @@ export function calculateComprehensiveDailyPanchanga(
   const moonsetStr = moonSetDate ? formatLocalTime(moonSetDate, timezone) : 'No Moonset';
 
   // Durations
-  const dayMs = Math.max(1000, sunsetDate.getTime() - sunriseDate.getTime());
-  const nightMs = Math.max(1000, nextSunriseDate.getTime() - sunsetDate.getTime());
+  const dayMs = hasSolarDay ? Math.max(1000, sunsetDate.getTime() - sunriseDate.getTime()) : 0;
+  const nightMs = hasSolarDay ? Math.max(1000, nextSunriseDate.getTime() - sunsetDate.getTime()) : 0;
 
   const dayHrs = Math.floor(dayMs / (3600 * 1000));
   const dayMins = Math.floor((dayMs % (3600 * 1000)) / (60 * 1000));
@@ -724,6 +725,7 @@ export function calculateComprehensiveDailyPanchanga(
   const guliPortions = [7, 6, 5, 4, 3, 2, 1];
 
   const getWindow = (portionIdx: number) => {
+    if (!hasSolarDay) return { start: 'Unavailable', end: 'Unavailable' };
     const start = new Date(sunriseDate.getTime() + (portionIdx - 1) * dayPartMs);
     const end = new Date(sunriseDate.getTime() + portionIdx * dayPartMs);
     return {
@@ -738,17 +740,17 @@ export function calculateComprehensiveDailyPanchanga(
 
   // Abhijit Muhurat: 8th Muhurat of the day (daytime / 15 * 7 to 8)
   const muhurat15Ms = dayMs / 15;
-  const abhijitStart = new Date(sunriseDate.getTime() + 7 * muhurat15Ms);
-  const abhijitEnd = new Date(sunriseDate.getTime() + 8 * muhurat15Ms);
-  const isAbhijitAuspicious = dayOfWeek !== 3; // Common panchanga convention: avoided on Wednesday
+  const abhijitStart = hasSolarDay ? new Date(sunriseDate.getTime() + 7 * muhurat15Ms) : null;
+  const abhijitEnd = hasSolarDay ? new Date(sunriseDate.getTime() + 8 * muhurat15Ms) : null;
+  const isAbhijitAuspicious = hasSolarDay && dayOfWeek !== 3; // Common panchanga convention: avoided on Wednesday
 
   // Brahma Muhurat: 2 Muhurats before sunrise (96 min to 48 min before sunrise)
-  const brahmaStart = new Date(sunriseDate.getTime() - 96 * 60 * 1000);
-  const brahmaEnd = new Date(sunriseDate.getTime() - 48 * 60 * 1000);
+  const brahmaStart = hasSolarDay ? new Date(sunriseDate.getTime() - 96 * 60 * 1000) : null;
+  const brahmaEnd = hasSolarDay ? new Date(sunriseDate.getTime() - 48 * 60 * 1000) : null;
 
   // Vijaya Muhurat: 11th Muhurat of the day (10 to 11 of 15)
-  const vijayaStart = new Date(sunriseDate.getTime() + 10 * muhurat15Ms);
-  const vijayaEnd = new Date(sunriseDate.getTime() + 11 * muhurat15Ms);
+  const vijayaStart = hasSolarDay ? new Date(sunriseDate.getTime() + 10 * muhurat15Ms) : null;
+  const vijayaEnd = hasSolarDay ? new Date(sunriseDate.getTime() + 11 * muhurat15Ms) : null;
 
   // Amrit Kaal is nakshatra-based, not a fixed daytime muhurta.
   // Collect every Amrita window whose actual Moon-star interval touches this
@@ -784,14 +786,16 @@ export function calculateComprehensiveDailyPanchanga(
     6: [1, 2],    // Saturday
   };
   const durSlot = durMuhuratSlots[dayOfWeek][0];
-  const durMuhuratStart = new Date(sunriseDate.getTime() + (durSlot - 1) * muhurat15Ms);
-  const durMuhuratEnd = new Date(durMuhuratStart.getTime() + muhurat15Ms);
+  const durMuhuratStart = hasSolarDay ? new Date(sunriseDate.getTime() + (durSlot - 1) * muhurat15Ms) : null;
+  const durMuhuratEnd = hasSolarDay && durMuhuratStart
+    ? new Date(durMuhuratStart.getTime() + muhurat15Ms)
+    : null;
 
   // Choghadiya Day & Night
   const nowMs = date.getTime();
 
   const dayChoghadiyaNames = DAY_CHOGHADIYA_ORDER[dayOfWeek];
-  const choghadiyaDay = dayChoghadiyaNames.map((name, idx) => {
+  const choghadiyaDay = hasSolarDay ? dayChoghadiyaNames.map((name, idx) => {
     const sDate = new Date(sunriseDate.getTime() + idx * dayPartMs);
     const eDate = new Date(sunriseDate.getTime() + (idx + 1) * dayPartMs);
     const props = CHOGHADIYA_PROPERTIES[name];
@@ -809,7 +813,7 @@ export function calculateComprehensiveDailyPanchanga(
   });
 
   const nightChoghadiyaNames = NIGHT_CHOGHADIYA_ORDER[dayOfWeek];
-  const choghadiyaNight = nightChoghadiyaNames.map((name, idx) => {
+  const choghadiyaNight = hasSolarDay ? nightChoghadiyaNames.map((name, idx) => {
     const sDate = new Date(sunsetDate.getTime() + idx * nightPartMs);
     const eDate = new Date(sunsetDate.getTime() + (idx + 1) * nightPartMs);
     const props = CHOGHADIYA_PROPERTIES[name];
@@ -824,7 +828,7 @@ export function calculateComprehensiveDailyPanchanga(
       meaning: props.meaning,
       isActive,
     };
-  });
+  }) : [];
 
   // Tithi Details
   const tithiIdx = basePanchanga.tithi.number - 1;
@@ -913,12 +917,12 @@ export function calculateComprehensiveDailyPanchanga(
     karanaDetail,
     varaDetail,
     solarLunar: {
-      sunrise: formatLocalTime(sunriseDate, timezone),
-      sunset: formatLocalTime(sunsetDate, timezone),
+      sunrise: sunRiseDate ? formatLocalTime(sunRiseDate, timezone) : 'No Sunrise',
+      sunset: sunSetDate ? formatLocalTime(sunSetDate, timezone) : 'No Sunset',
       moonrise: moonriseStr,
       moonset: moonsetStr,
-      dayDuration: `${dayHrs}h ${dayMins}m`,
-      nightDuration: `${nightHrs}h ${nightMins}m`,
+      dayDuration: hasSolarDay ? `${dayHrs}h ${dayMins}m` : 'Unavailable',
+      nightDuration: hasSolarDay ? `${nightHrs}h ${nightMins}m` : 'Unavailable',
       sunSign: `${sunSign} (${SANSKRIT_SIGNS[sunSign]})`,
       sunDegree: formatDMS(sunSidLon % 30),
       moonSign: `${moonSign} (${SANSKRIT_SIGNS[moonSign]})`,
