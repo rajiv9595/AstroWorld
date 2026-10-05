@@ -66,9 +66,6 @@ export const VARGA_METADATA_LIST: VargaMetadata[] = [
 ];
 
 /**
- * Compute the resulting Zodiac sign index (0-11) for any varga from sidereal longitude.
- */
-/**
  * Equal-width Varga boundary helper.
  *
  * Treats boundaries as half-open [start, end) while compensating
@@ -98,6 +95,9 @@ function calculateEqualVargaPart(
   return { part, degreeInVargaSign };
 }
 
+/**
+ * Compute the resulting Zodiac sign index (0-11) for any varga from sidereal longitude.
+ */
 export function calculateVargaSignIndex(vargaCode: VargaCode, siderealLongitude: number): {
   signIndex: number;
   degreeInVargaSign: number;
