@@ -30,6 +30,7 @@ declare global {
 export const AUTH_ACCESS_COOKIE = 'aw_access_token';
 export const AUTH_REFRESH_COOKIE = 'aw_refresh_token';
 export const AUTH_CSRF_COOKIE = 'aw_csrf_token';
+export const AUTH_REMEMBER_COOKIE = 'aw_remember';
 
 function isProduction(): boolean {
   return process.env.NODE_ENV === 'production';
@@ -128,7 +129,7 @@ export function ensureCsrfCookie(req: Request, res: Response): string {
 }
 
 export function setAuthSessionCookies(
-  req: Request,
+  _req: Request,
   res: Response,
   accessToken: string,
   refreshToken: string,
@@ -143,6 +144,9 @@ export function setAuthSessionCookies(
   setCookie(res, AUTH_REFRESH_COOKIE, refreshToken, {
     maxAgeSeconds: refreshMaxAgeSeconds,
   });
+  setCookie(res, AUTH_REMEMBER_COOKIE, rememberMe ? '1' : '0', {
+    maxAgeSeconds: rememberMe ? 60 * 60 * 24 * 30 : undefined,
+  });
 
   // Rotate CSRF token when a new authentication session is established.
   const csrfToken = createCsrfToken();
@@ -151,7 +155,6 @@ export function setAuthSessionCookies(
     maxAgeSeconds: rememberMe ? 60 * 60 * 24 * 30 : undefined,
   });
 
-  void req;
   return csrfToken;
 }
 
@@ -159,6 +162,7 @@ export function clearAuthSessionCookies(res: Response): void {
   clearCookie(res, AUTH_ACCESS_COOKIE, true);
   clearCookie(res, AUTH_REFRESH_COOKIE, true);
   clearCookie(res, AUTH_CSRF_COOKIE, false);
+  clearCookie(res, AUTH_REMEMBER_COOKIE, true);
 }
 
 function requireCsrfForUnsafeRequest(req: Request): boolean {
@@ -172,12 +176,11 @@ function csrfIsValid(req: Request): boolean {
   const cookieToken = cookies[AUTH_CSRF_COOKIE];
   const headerToken = req.headers['x-csrf-token'];
 
-  return Boolean(
-    cookieToken &&
-      typeof headerToken === 'string' &&
-      headerToken.length >= 32 &&
-      crypto.timingSafeEqual(Buffer.from(cookieToken), Buffer.from(headerToken)),
-  );
+  if (!cookieToken || typeof headerToken !== 'string') return false;
+  const expected = Buffer.from(cookieToken);
+  const received = Buffer.from(headerToken);
+  if (expected.length !== received.length || expected.length < 32) return false;
+  return crypto.timingSafeEqual(expected, received);
 }
 
 async function resolveUserFromToken(accessToken: string): Promise<{
@@ -228,7 +231,7 @@ export async function authenticateRequest(
           res,
           data.session.access_token,
           data.session.refresh_token,
-          true,
+          cookies[AUTH_REMEMBER_COOKIE] !== '0',
         );
         resolved = { user: data.user };
       }
