@@ -2,7 +2,66 @@ import { Router, Request, Response } from 'express';
 
 export const geoRouter = Router();
 
-// High-speed Places & Geocoding Autocomplete Endpoint
+interface ResolvedLocation {
+  id: string;
+  description: string;
+  cityName: string;
+  state?: string;
+  country?: string;
+  latitude: number;
+  longitude: number;
+  timezone?: string;
+}
+
+function isValidCoordinatePair(latitude: unknown, longitude: unknown): boolean {
+  return (
+    typeof latitude === 'number' &&
+    Number.isFinite(latitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    typeof longitude === 'number' &&
+    Number.isFinite(longitude) &&
+    longitude >= -180 &&
+    longitude <= 180
+  );
+}
+
+async function resolveGoogleTimezone(
+  latitude: number,
+  longitude: number,
+  timestampSeconds = Math.floor(Date.now() / 1000),
+): Promise<string | undefined> {
+  const key =
+    process.env.GOOGLE_TIMEZONE_API_KEY ||
+    process.env.GOOGLE_PLACES_API_KEY ||
+    process.env.GOOGLE_MAPS_API_KEY ||
+    '';
+
+  if (!key || !isValidCoordinatePair(latitude, longitude)) return undefined;
+
+  try {
+    const url =
+      'https://maps.googleapis.com/maps/api/timezone/json?location=' +
+      encodeURIComponent(latitude + ',' + longitude) +
+      '&timestamp=' +
+      timestampSeconds +
+      '&key=' +
+      encodeURIComponent(key);
+
+    const response = await fetch(url);
+    if (!response.ok) return undefined;
+
+    const data = await response.json();
+    if (data.status === 'OK' && typeof data.timeZoneId === 'string' && data.timeZoneId.trim()) {
+      return data.timeZoneId.trim();
+    }
+  } catch (error) {
+    console.warn('[Google Time Zone] lookup failed:', error);
+  }
+
+  return undefined;
+}
+
 geoRouter.get('/autocomplete', async (req: Request, res: Response) => {
   try {
     const query = String(req.query.q || '').trim();
@@ -16,51 +75,52 @@ geoRouter.get('/autocomplete', async (req: Request, res: Response) => {
       process.env.VITE_GOOGLE_MAPS_API_KEY ||
       '';
 
-    // 1. Google Places API Autocomplete (if key configured)
     if (googlePlacesKey) {
       try {
-        const googleUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
-          query
-        )}&types=(cities)&key=${googlePlacesKey}`;
+        const googleUrl =
+          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=' +
+          encodeURIComponent(query) +
+          '&types=(cities)&key=' +
+          encodeURIComponent(googlePlacesKey);
+
         const gRes = await fetch(googleUrl);
-        const gData: any = await gRes.json();
+        const gData = await gRes.json();
 
         if (gData.status === 'OK' && Array.isArray(gData.predictions)) {
           const topPredictions = gData.predictions.slice(0, 6);
+
           const detailedSuggestions = await Promise.all(
-            topPredictions.map(async (p: any) => {
+            topPredictions.map(async (p: any): Promise<ResolvedLocation | null> => {
               try {
-                const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${p.place_id}&fields=geometry,address_component,formatted_address&key=${googlePlacesKey}`;
+                const detailUrl =
+                  'https://maps.googleapis.com/maps/api/place/details/json?place_id=' +
+                  encodeURIComponent(p.place_id) +
+                  '&fields=geometry,address_component,formatted_address&key=' +
+                  encodeURIComponent(googlePlacesKey);
+
                 const dRes = await fetch(detailUrl);
-                const dData: any = await dRes.json();
+                const dData = await dRes.json();
                 const loc = dData.result?.geometry?.location;
 
-                let timezone = 'Asia/Kolkata';
-                const desc = p.description.toLowerCase();
-                if (desc.includes('united states') || desc.includes('usa')) {
-                  timezone = 'America/New_York';
-                } else if (desc.includes('united kingdom') || desc.includes('uk')) {
-                  timezone = 'Europe/London';
-                } else if (desc.includes('united arab emirates') || desc.includes('dubai')) {
-                  timezone = 'Asia/Dubai';
-                } else if (desc.includes('australia')) {
-                  timezone = 'Australia/Sydney';
-                } else if (desc.includes('singapore')) {
-                  timezone = 'Asia/Singapore';
-                }
+                const latitude = Number(loc?.lat);
+                const longitude = Number(loc?.lng);
+
+                if (!isValidCoordinatePair(latitude, longitude)) return null;
+
+                const timezone = await resolveGoogleTimezone(latitude, longitude);
 
                 return {
                   id: p.place_id,
                   description: p.description,
                   cityName: p.structured_formatting?.main_text || p.description.split(',')[0],
-                  latitude: loc?.lat || 20.5937,
-                  longitude: loc?.lng || 78.9629,
+                  latitude,
+                  longitude,
                   timezone,
                 };
               } catch {
                 return null;
               }
-            })
+            }),
           );
 
           const valid = detailedSuggestions.filter(Boolean);
@@ -68,51 +128,56 @@ geoRouter.get('/autocomplete', async (req: Request, res: Response) => {
             return res.json({ success: true, source: 'google_places_api', suggestions: valid });
           }
         }
-      } catch (err: any) {
-        console.warn('[GOOGLE PLACES FALLBACK]:', err.message);
+      } catch (error) {
+        console.warn('[Google Places] lookup failed:', error);
       }
     }
 
-    // 2. High-Speed Global Photon Geocoder Fallback
-    const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8`;
+    const photonUrl =
+      'https://photon.komoot.io/api/?q=' +
+      encodeURIComponent(query) +
+      '&limit=8';
+
     const photonRes = await fetch(photonUrl);
     if (photonRes.ok) {
-      const photonData: any = await photonRes.json();
-      if (photonData.features && Array.isArray(photonData.features)) {
-        const suggestions = photonData.features
-          .filter((f: any) => f.properties?.name)
-          .map((f: any, idx: number) => {
-            const p = f.properties;
-            const parts = [p.name, p.state, p.country].filter(Boolean);
-            const country = (p.country || '').toLowerCase();
+      const photonData = await photonRes.json();
 
-            let timezone = 'Asia/Kolkata';
-            if (country.includes('united states') || country.includes('usa')) timezone = 'America/New_York';
-            else if (country.includes('united kingdom') || country.includes('uk')) timezone = 'Europe/London';
-            else if (country.includes('united arab emirates')) timezone = 'Asia/Dubai';
-            else if (country.includes('australia')) timezone = 'Australia/Sydney';
-            else if (country.includes('japan')) timezone = 'Asia/Tokyo';
-            else if (country.includes('germany') || country.includes('france')) timezone = 'Europe/Paris';
+      if (Array.isArray(photonData.features)) {
+        const suggestions = (
+          await Promise.all(
+            photonData.features
+              .filter((f: any) => f.properties?.name)
+              .map(async (f: any, idx: number): Promise<ResolvedLocation | null> => {
+                const latitude = Number(f.geometry?.coordinates?.[1]);
+                const longitude = Number(f.geometry?.coordinates?.[0]);
 
-            return {
-              id: `geo_${idx}_${p.osm_id || Math.random()}`,
-              description: parts.join(', '),
-              cityName: p.name,
-              state: p.state,
-              country: p.country,
-              latitude: Number(f.geometry.coordinates[1].toFixed(4)),
-              longitude: Number(f.geometry.coordinates[0].toFixed(4)),
-              timezone,
-            };
-          });
+                if (!isValidCoordinatePair(latitude, longitude)) return null;
+
+                const p = f.properties;
+                const parts = [p.name, p.state, p.country].filter(Boolean);
+                const timezone = await resolveGoogleTimezone(latitude, longitude);
+
+                return {
+                  id: 'geo_' + idx + '_' + String(p.osm_id || Math.floor(latitude * 10000) + '_' + Math.floor(longitude * 10000)),
+                  description: parts.join(', '),
+                  cityName: p.name,
+                  state: p.state,
+                  country: p.country,
+                  latitude: Number(latitude.toFixed(6)),
+                  longitude: Number(longitude.toFixed(6)),
+                  timezone,
+                };
+              }),
+          )
+        ).filter(Boolean);
 
         return res.json({ success: true, source: 'photon_geocoder', suggestions });
       }
     }
 
-    res.json({ success: true, suggestions: [] });
-  } catch (error: any) {
+    return res.json({ success: true, suggestions: [] });
+  } catch (error) {
     console.error('Geo autocomplete error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    return res.status(500).json({ success: false, error: 'Unable to resolve location right now.' });
   }
 });
