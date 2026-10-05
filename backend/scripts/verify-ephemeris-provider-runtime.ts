@@ -12,7 +12,7 @@
 import {
   computeCanonicalChart,
   TEST_BENCHMARK_PROFILE,
-} from '../../../shared/index.ts';
+} from '../../shared/index.ts';
 import {
   computeCanonicalChartWithConfiguredEphemeris,
   getConfiguredEphemerisProvider,
