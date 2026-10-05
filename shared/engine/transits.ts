@@ -17,75 +17,51 @@ import {
   ZodiacSign,
 } from './types.ts';
 import { astronomyEngineEphemerisProvider, SiderealEphemerisProvider } from './ephemeris.ts';
+import { getParashariHouseDistance, getParashariAspectHouses } from './aspects.ts';
 
 /**
  * Determine Parashari aspects cast by a transiting planet onto a natal planet.
  */
 function getParashariAspects(
   transitPlanet: PlanetName,
-  transitSignIdx: number,
+  transitHouse: number,
   transitLongitude: number,
-  natalPlanets: PlanetPosition[]
+  natalPlanets: PlanetPosition[],
 ): TransitPlanet['aspectsToNatal'] {
   const aspects: TransitPlanet['aspectsToNatal'] = [];
+  const transitAspectHouses = new Set(
+    getParashariAspectHouses(transitHouse, transitPlanet),
+  );
 
   for (const np of natalPlanets) {
-    const diff = (np.signIndex - transitSignIdx + 12) % 12;
+    const distance = getParashariHouseDistance(transitHouse, np.houseNumber);
 
-    // Conjunction (diff === 0)
-    if (diff === 0) {
+    if (distance === 1) {
       aspects.push({
         natalPlanet: np.name,
         type: 'PARASHARI',
         aspectDescription: `Conjunction (Yuti) with natal ${np.name} in ${np.sign}`,
       });
-    }
+    } else if (transitAspectHouses.has(np.houseNumber)) {
+      const aspectLabel =
+        transitPlanet === 'Mars' && (distance === 4 || distance === 8)
+          ? `Special Mars ${distance}th House Drishti`
+          : transitPlanet === 'Jupiter' && (distance === 5 || distance === 9)
+            ? `Special Jupiter ${distance}th House Benefic Drishti`
+            : transitPlanet === 'Saturn' && (distance === 3 || distance === 10)
+              ? `Special Saturn ${distance}th House Drishti`
+              : 'Full 7th House Aspect (Drishti)';
 
-    // 7th full aspect (all planets cast 7th aspect)
-    if (diff === 6) {
       aspects.push({
         natalPlanet: np.name,
         type: 'PARASHARI',
-        aspectDescription: `Full 7th House Aspect (Drishti) on natal ${np.name}`,
+        aspectDescription: `${aspectLabel} on natal ${np.name}`,
       });
     }
 
-    // Mars special aspects (4th and 8th)
-    if (transitPlanet === 'Mars' && (diff === 3 || diff === 7)) {
-      aspects.push({
-        natalPlanet: np.name,
-        type: 'PARASHARI',
-        aspectDescription: `Special Mars ${diff === 3 ? '4th' : '8th'} House Drishti on natal ${np.name}`,
-      });
-    }
-
-    // Jupiter special aspects (5th and 9th)
-    if (transitPlanet === 'Jupiter' && (diff === 4 || diff === 8)) {
-      aspects.push({
-        natalPlanet: np.name,
-        type: 'PARASHARI',
-        aspectDescription: `Special Jupiter ${diff === 4 ? '5th' : '9th'} House Benefic Drishti on natal ${np.name}`,
-      });
-    }
-
-    // Saturn special aspects (3rd and 10th)
-    if (transitPlanet === 'Saturn' && (diff === 2 || diff === 9)) {
-      aspects.push({
-        natalPlanet: np.name,
-        type: 'PARASHARI',
-        aspectDescription: `Special Saturn ${diff === 2 ? '3rd' : '10th'} House Drishti on natal ${np.name}`,
-      });
-    }
-
-    // Optional Western aspects with strict degree orb labeling
-    const degDiff = Math.abs(
-      // Western overlay uses the actual transit longitude, not the start of its sign.
-      // The previous implementation compared sign boundaries (e.g. 90°) against the
-      // natal longitude, which could mislabel aspects by the transit planet's degree.
-      transitLongitude - np.siderealLongitude
-    );
+    // Western overlay remains opt-in as a descriptive, degree-based layer.
+    const degDiff = Math.abs(transitLongitude - np.siderealLongitude);
     const circularDegDiff = Math.min(degDiff, 360 - degDiff);
-
     const westernConfigs = [
       { name: 'Trine (120°)', angle: 120, orb: 5.0 },
       { name: 'Square (90°)', angle: 90, orb: 4.5 },
@@ -240,7 +216,7 @@ export function calculateTransits(
     // Ashtakavarga bindus in the transit sign
     const bindus = ashtakavarga.sav[signIndex];
 
-    const aspectsToNatal = getParashariAspects(tp.name, signIndex, siderealLongitude, natalPlanets);
+    const aspectsToNatal = getParashariAspects(tp.name, natalLagnaHouse, siderealLongitude, natalPlanets);
 
     return {
       planet: tp.name,
