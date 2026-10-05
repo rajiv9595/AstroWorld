@@ -3,14 +3,31 @@
  *
  * Structural regression guard for security-critical boundaries. This is not a
  * substitute for live auth integration tests; it makes unsafe patterns fail
- * deterministically before deployment.
+ * deterministically before deployment and scans the full route/client surface.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 
 const repoRoot = path.resolve(process.cwd(), '..');
-const read = (relative: string): string => fs.readFileSync(path.join(repoRoot, relative), 'utf8');
+const read = (relative: string): string =>
+  fs.readFileSync(path.join(repoRoot, relative), 'utf8');
+
+function collectFiles(directory: string): string[] {
+  const absolute = path.join(repoRoot, directory);
+  const output: string[] = [];
+
+  for (const entry of fs.readdirSync(absolute, { withFileTypes: true })) {
+    const fullPath = path.join(absolute, entry.name);
+    if (entry.isDirectory()) {
+      output.push(...collectFiles(path.relative(repoRoot, fullPath)));
+    } else if (entry.isFile() && /\.(ts|tsx|js|jsx)$/.test(entry.name)) {
+      output.push(fullPath);
+    }
+  }
+
+  return output;
+}
 
 const files = {
   authMiddleware: read('backend/src/middleware/authMiddleware.ts'),
@@ -23,6 +40,16 @@ const files = {
   frontendCharts: read('frontend/src/services/chartService.ts'),
   authView: read('frontend/src/views/AuthView.tsx'),
 };
+
+const frontendSource = collectFiles('frontend/src')
+  .map((file) => fs.readFileSync(file, 'utf8'))
+  .join('\n');
+const protectedBackendRoutes = [
+  read('backend/src/routes/authRoutes.ts'),
+  read('backend/src/routes/chartRoutes.ts'),
+  read('backend/src/routes/astrologyRoutes.ts'),
+  read('backend/src/ai_v2/routes/aiV2Routes.ts'),
+].join('\n');
 
 type Contract = {
   name: string;
@@ -43,7 +70,7 @@ const contracts: Contract[] = [
   },
   {
     name: 'AI routes never trust x-user-id',
-    pass: !files.aiRoutes.includes('x-user-id'),
+    pass: !files.aiRoutes.includes('x-user-id') && !protectedBackendRoutes.includes("headers['x-user-id']"),
     detail: 'The deprecated x-user-id authorization header must not exist in the AI route.',
   },
   {
@@ -117,7 +144,9 @@ const contracts: Contract[] = [
   },
   {
     name: 'Frontend does not send x-user-id',
-    pass: !files.frontendAi.includes('x-user-id') && !files.frontendCharts.includes('x-user-id'),
+    pass: !frontendSource.includes("'x-user-id'") &&
+      !frontendSource.includes('"x-user-id"') &&
+      !frontendSource.includes('x-user-id'),
     detail: 'Browser clients must never present a user id as authorization.',
   },
   {
@@ -142,6 +171,19 @@ const contracts: Contract[] = [
     name: 'Session response exposes CSRF bootstrap only',
     pass: files.authRoutes.includes('csrfToken') && !files.authRoutes.match(/\n\s*token:\s*data\.session/),
     detail: 'Auth responses may return CSRF bootstrap data but not raw Supabase access tokens.',
+  },
+  {
+    name: 'Whole frontend has no client identity authorization header',
+    pass: !frontendSource.includes('x-user-id') &&
+      !frontendSource.includes('astroworld_supabase_auth_token'),
+    detail: 'No frontend source file may authorize requests with client identity or browser-stored Supabase tokens.',
+  },
+  {
+    name: 'Whole protected backend route surface has no userId-auth helper',
+    pass: !protectedBackendRoutes.includes('function getRequestUserId') &&
+      !protectedBackendRoutes.includes("req.headers['x-user-id']") &&
+      !protectedBackendRoutes.includes("req.query.userId"),
+    detail: 'Protected route sources must never derive tenant identity from caller-controlled ids.',
   },
   {
     name: 'Guest-login dead endpoint removed',
