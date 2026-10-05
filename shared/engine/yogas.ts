@@ -4,7 +4,7 @@
  */
 
 import { SIGN_LORDS, ZODIAC_SIGNS } from './constants.ts';
-import { hasParashariAspect, hasParashariSambandha } from './aspects.ts';
+import { hasParashariFullAspect, hasParashariSambandha } from './aspects.ts';
 import { DoshaFact, PlanetName, PlanetPosition, YogaFact, ZodiacSign } from './types.ts';
 
 export function calculateYogasAndDoshas(
@@ -304,10 +304,10 @@ export function calculateYogasAndDoshas(
   const mitigating: string[] = [];
   if (mars.sign === 'Aries') mitigating.push('Mars is in its own sign (Aries), substantially neutralizing adverse fire.');
   // Aspect cancellations
-  const isJupAspectingMars = hasParashariAspect(jupiter, mars);
+  const isJupAspectingMars = hasParashariFullAspect(jupiter, mars);
   if (isJupAspectingMars) mitigating.push('Jupiter has a classical full Parashari aspect on Mars; this is recorded as a mitigation factor, not a cancellation.');
 
-  const isSatAspectingMars = hasParashariAspect(saturn, mars);
+  const isSatAspectingMars = hasParashariFullAspect(saturn, mars);
   if (isSatAspectingMars) mitigating.push('Saturn has a classical full Parashari aspect on Mars; this is recorded as a moderation factor, not a cancellation.');
 
   doshas.push({
