@@ -53,7 +53,7 @@ async function main() {
 
     assert(
       'Swiss provider selection is explicit',
-      getConfiguredEphemerisProvider.call(undefined).source === 'astronomy-engine',
+      getConfiguredEphemerisProvider().source === 'astronomy-engine',
       'Default provider object is browser-safe Astronomy Engine',
     );
 
