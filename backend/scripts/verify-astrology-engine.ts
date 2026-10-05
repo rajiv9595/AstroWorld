@@ -6,7 +6,7 @@
 
 import {
   computeCanonicalChart,
-  DEFAULT_BIRTH_PROFILE,
+  TEST_BENCHMARK_PROFILE,
   BirthProfile,
   getLiveDailyPanchanga,
 } from '../../shared/index.ts';
@@ -29,20 +29,7 @@ async function main() {
 
   try {
     // 1. Benchmark Chart Profile Computation
-    const benchmarkProfile: BirthProfile = {
-      name: 'Canonical Test Native',
-      year: 2005,
-      month: 8,
-      day: 17,
-      hour: 0,
-      minute: 2,
-      second: 0,
-      latitude: 16.93407,
-      longitude: 81.95522,
-      timezone: 'Asia/Kolkata',
-      cityName: 'Anaparthy, Andhra Pradesh, India',
-      gender: 'male',
-    };
+    const benchmarkProfile: BirthProfile = TEST_BENCHMARK_PROFILE;
 
     const canonical = computeCanonicalChart(benchmarkProfile);
 
@@ -140,7 +127,7 @@ async function main() {
       console.error(`❌ Astrology Engine Verification Failed!`);
       process.exit(1);
     } else {
-      console.log(`🎉 All ${passed} Astrology Engine subsystems verified 100% operational and pure.`);
+      console.log(`🎉 All ${passed} Astrology Engine subsystem checks passed. Independent ephemeris accuracy is validated separately.`);
       process.exit(0);
     }
   } catch (err: any) {
