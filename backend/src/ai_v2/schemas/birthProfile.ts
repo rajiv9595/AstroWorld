@@ -1,4 +1,4 @@
-import { BirthProfile, VargaCode } from '../../../../shared/index.ts';
+import { BirthProfile, VargaCode, birthProfileToUtcDate } from '../../../../shared/index.ts';
 
 export type { BirthProfile };
 export type BirthProfileInput = BirthProfile;
@@ -60,6 +60,30 @@ export function validateBirthProfile(profile: any): { valid: boolean; error?: st
     return { valid: false, error: 'Timezone string (e.g. "Asia/Kolkata", "UTC") is required.' };
   }
 
+  const second = typeof profile.second === 'number' ? profile.second : 0;
+
+  try {
+    birthProfileToUtcDate({
+      name: profile.name?.trim() || 'Native',
+      year,
+      month,
+      day,
+      hour,
+      minute,
+      second,
+      latitude,
+      longitude,
+      timezone: timezone.trim(),
+      cityName: profile.cityName?.trim() || undefined,
+      gender: profile.gender || undefined,
+    });
+  } catch (error) {
+    return {
+      valid: false,
+      error: error instanceof Error ? error.message : 'Invalid civil birth date/time or timezone.',
+    };
+  }
+
   return {
     valid: true,
     data: {
@@ -69,7 +93,7 @@ export function validateBirthProfile(profile: any): { valid: boolean; error?: st
       day,
       hour,
       minute,
-      second: typeof profile.second === 'number' ? profile.second : 0,
+      second,
       latitude,
       longitude,
       timezone: timezone.trim(),
