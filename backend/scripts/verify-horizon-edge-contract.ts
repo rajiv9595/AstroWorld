@@ -250,7 +250,7 @@ async function main(): Promise<void> {
               'expected local civil date ' +
               testCase.expectedLocalDate +
               ', got ' +
-              local.date +
+              local.date,
             );
           }
 
