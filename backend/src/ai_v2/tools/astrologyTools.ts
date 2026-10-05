@@ -77,8 +77,6 @@ export function executeGetBirthChart(args: any): ToolExecutionResult {
         verified: true,
         crossVerified: false,
         verificationLevel: 'computed',
-        crossVerified: false,
-        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
