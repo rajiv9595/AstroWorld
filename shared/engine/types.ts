@@ -267,6 +267,8 @@ export interface YogaFact {
   bphsReference: string;
   classicalRule: string;
   effects: string;
+  interpretationStatus?: 'structural' | 'qualified';
+  schoolDependent?: boolean;
 }
 
 export interface DoshaFact {
@@ -277,6 +279,8 @@ export interface DoshaFact {
   description: string;
   mitigatingFactors: string[];
   remedies: string[];
+  schoolDependent?: boolean;
+  interpretationStatus?: 'structural' | 'qualified';
 }
 
 export interface CharaKaraka {
