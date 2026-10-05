@@ -73,10 +73,9 @@ export function getConfiguredEphemerisProvider(): SiderealEphemerisProvider {
 /**
  * Canonical backend chart path with an explicit runtime astronomical source.
  *
- * Only the natal astronomical snapshot is provider-injected in Phase 5B.
- * Downstream rule engines continue to consume the canonical D1 facts. Existing
- * Panchanga sunrise/search and transit-event internals are intentionally not
- * silently re-pointed here; those require their own provider contracts.
+ * Phase 5C initializes the selected provider before the canonical chart path
+ * consumes its temporal planetary and horizon-event primitives. Downstream rule
+ * engines continue to consume canonical D1 facts.
  */
 export async function computeCanonicalChartWithConfiguredEphemeris(
   profile: BirthProfile,
