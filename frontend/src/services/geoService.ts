@@ -11,7 +11,7 @@ export interface PlaceSuggestion {
   country?: string;
   latitude: number;
   longitude: number;
-  timezone: string;
+  timezone?: string;
 }
 
 // Pre-indexed high-speed Indian & Global cities for sub-millisecond 1-letter typing response
