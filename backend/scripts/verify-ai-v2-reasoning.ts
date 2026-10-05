@@ -164,6 +164,46 @@ async function runPhase3BSuite() {
     `Identified multi-layer confluence across ${confluence.convergingLayersCount} layers: ${confluence.layers.map(l => l.layer).join(', ')}`
   );
 
+
+  const syntheticPlan = { ...plan1, chartLayers: ['D10'] as any[] };
+  const syntheticEvidence = {
+    ...evidence1,
+    facts: [
+      { id: 'synthetic_varga', category: 'varga' as const, entity: 'Sun in D10', property: 'varga_sign', value: 'Leo', sourceTool: 'get_divisional_chart', verified: true },
+      { id: 'synthetic_natal', category: 'natal' as const, entity: 'Sun', property: 'position', value: 'Leo', sourceTool: 'get_birth_chart', verified: true },
+    ],
+  };
+  const noSupportConfluence = confluenceEngine.evaluateConfluence(
+    syntheticPlan,
+    syntheticEvidence,
+    [],
+    [],
+    [],
+  );
+  assert(
+    noSupportConfluence.hasConfluence === false &&
+      noSupportConfluence.convergingLayersCount === 0,
+    'AI V2 Confluence-2: No Support From Data Existence Alone',
+    'A present Varga record without an evidence-backed classified supporting factor stays neutral'
+  );
+
+  const twoLayerConfluence = confluenceEngine.evaluateConfluence(
+    syntheticPlan,
+    syntheticEvidence,
+    [
+      { id: 'f1', entity: 'Sun', property: 'position', value: 'Leo', role: 'primary', relevance: 'high', rationale: '', sourceTool: 'get_birth_chart', evidenceId: 'synthetic_natal' },
+      { id: 'f2', entity: 'Sun in D10', property: 'varga_sign', value: 'Leo', role: 'supporting', relevance: 'medium', rationale: '', sourceTool: 'get_divisional_chart', evidenceId: 'synthetic_varga' },
+    ],
+    [],
+    [],
+  );
+  assert(
+    twoLayerConfluence.hasConfluence === true &&
+      twoLayerConfluence.convergingLayersCount === 2,
+    'AI V2 Confluence-2: Require Two Evidence-Backed Supportive Layers',
+    'Confluence activates only when at least two independent layers are positively classified'
+  );
+
   // ==========================================
   // 6. TEMPORAL REASONING & WINDOW INTERSECTIONS (STEP 7)
   // ==========================================
@@ -270,7 +310,7 @@ async function runPhase3BSuite() {
   assert(
     benchmarkPassed === GOLDEN_REASONING_BENCHMARK.length,
     `Step 14 & 15: Golden Reasoning Benchmark (50/50)`,
-    `All ${GOLDEN_REASONING_BENCHMARK.length} benchmark test cases passed classification, rule matching, and safety criteria (100% accuracy)`
+    `All ${GOLDEN_REASONING_BENCHMARK.length} benchmark test cases passed classification, rule matching, and safety criteria`
   );
 
   // ==========================================
