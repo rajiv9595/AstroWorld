@@ -13,6 +13,18 @@ import {
 } from './constants.ts';
 import { DignityType, PlanetName, PlanetPosition, ZodiacSign } from './types.ts';
 
+function relationshipToSignLord(
+  planet: PlanetName,
+  signLord: PlanetName,
+): 'FRIEND' | 'NEUTRAL' | 'ENEMY' | 'SELF' {
+  if (planet === signLord) return 'SELF';
+  const rels = NAISARGIKA_RELATIONSHIPS[planet];
+  if (!rels) return 'NEUTRAL';
+  if (rels.friends.includes(signLord)) return 'FRIEND';
+  if (rels.enemies.includes(signLord)) return 'ENEMY';
+  return 'NEUTRAL';
+}
+
 export interface DignityFact {
   chartContext: string; // e.g. "D1", "D9", "D10"
   planet: PlanetName;
@@ -46,7 +58,7 @@ export function calculateDignity(
       occupiedSign,
       degreeInSign,
       signLord,
-      naturalRelationshipToLord: 'ENEMY',
+      naturalRelationshipToLord: relationshipToSignLord(planet, signLord),
       dignity: 'DEBILITATED',
       deepestPointDistance: Math.abs(degreeInSign - deb.deepDegree),
       description: `${chartContext} ${planet} in ${occupiedSign} is DEBILITATED (Neecha). Deep debilitation point: ${deb.deepDegree}°.`,
@@ -76,7 +88,7 @@ export function calculateDignity(
       occupiedSign,
       degreeInSign,
       signLord,
-      naturalRelationshipToLord: 'FRIEND',
+      naturalRelationshipToLord: relationshipToSignLord(planet, signLord),
       dignity: 'EXALTED',
       deepestPointDistance: Math.abs(degreeInSign - ex.deepDegree),
       description: `${chartContext} ${planet} in ${occupiedSign} is EXALTED (Uchcha). Deep exaltation point: ${ex.deepDegree}°.`,
