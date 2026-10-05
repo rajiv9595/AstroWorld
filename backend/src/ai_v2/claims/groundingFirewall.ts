@@ -77,7 +77,7 @@ export class GroundingFirewall {
       const failedChecks: string[] = [];
 
       // 1. Factual Validation & Astrological Invention Firewall
-      this.checkFactualGrounding(claim, evidence, verifiedEntityNames, failedChecks);
+      this.checkFactualGrounding(claim, evidence, verifiedEntityNames, verifiedSigns, failedChecks);
 
       // 2. Temporal Validation
       this.checkTemporalGrounding(claim, reasoning, plan, failedChecks);
@@ -165,6 +165,7 @@ export class GroundingFirewall {
     claim: ClaimItem,
     evidence: EvidencePacket,
     verifiedEntityNames: Set<string>,
+    verifiedSigns: Set<string>,
     failedChecks: string[]
   ): void {
     if (claim.type === 'factual' || claim.type === 'interpretive') {
