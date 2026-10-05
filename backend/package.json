@@ -38,13 +38,14 @@
     "test:transit-reference": "tsx scripts/verify-transit-reference.ts",
     "test:transit-boundaries": "tsx scripts/verify-transit-boundaries.ts",
     "test:panchanga-benchmark": "tsx scripts/verify-panchanga-benchmark.ts",
-    "test:precision": "npm run test:astronomy-reference && npm run test:varga-golden && npm run test:vimshottari-reference && npm run test:vimshottari-boundaries && npm run test:transit-reference && npm run test:transit-boundaries && npm run test:panchanga-benchmark && npm run test:ashtakavarga-golden && npm run test:jaimini-golden && npm run test:shadbala-contract && npm run test:dignity-contract && npm run test:timezone-contract && npm run test:solar-ingress-contract",
+    "test:precision": "npm run test:astronomy-reference && npm run test:varga-golden && npm run test:vimshottari-reference && npm run test:vimshottari-boundaries && npm run test:transit-reference && npm run test:transit-boundaries && npm run test:panchanga-benchmark && npm run test:ashtakavarga-golden && npm run test:jaimini-golden && npm run test:shadbala-contract && npm run test:dignity-contract && npm run test:timezone-contract && npm run test:solar-ingress-contract && npm run test:timing-lineage",
     "test:ashtakavarga-golden": "tsx scripts/verify-ashtakavarga-golden.ts",
     "test:jaimini-golden": "tsx scripts/verify-jaimini-golden.ts",
     "test:shadbala-contract": "tsx scripts/verify-shadbala-contract.ts",
     "test:dignity-contract": "tsx scripts/verify-dignity-contract.ts",
     "test:timezone-contract": "tsx scripts/verify-timezone-contract.ts",
-    "test:solar-ingress-contract": "tsx scripts/verify-solar-ingress-contract.ts"
+    "test:solar-ingress-contract": "tsx scripts/verify-solar-ingress-contract.ts",
+    "test:timing-lineage": "tsx scripts/verify-timing-lineage.ts"
   },
   "dependencies": {
     "@astroworld/shared": "*",
