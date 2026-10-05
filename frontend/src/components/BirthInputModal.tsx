@@ -145,7 +145,7 @@ export const BirthInputModal: React.FC<BirthInputModalProps> = ({
       latitude: parsedLatitude,
       longitude: parsedLongitude,
       timezone: timezone.trim(),
-      cityName: cityName.trim() || 'India',
+      cityName: cityName.trim() || undefined,
       gender,
     };
 
