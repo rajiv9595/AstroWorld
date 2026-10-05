@@ -77,6 +77,8 @@ export function executeGetBirthChart(args: any): ToolExecutionResult {
         verified: true,
         crossVerified: false,
         verificationLevel: 'computed',
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -148,6 +150,8 @@ export function executeGetDivisionalChart(args: any): ToolExecutionResult {
         ruleStandard: `BPHS Ch. 6 (Varga Ganita - ${vargaCode})`,
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -216,6 +220,8 @@ export function executeGetAllDivisionalCharts(args: any): ToolExecutionResult {
         ruleStandard: 'BPHS Ch. 6 (Complete 16 Divisional Matrix)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -271,6 +277,8 @@ export function executeGetCurrentDasha(args: any): ToolExecutionResult {
         ruleStandard: 'BPHS Ch. 46 (Dasha Paddhati)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -343,6 +351,8 @@ export function executeGetDashaAt(args: any): ToolExecutionResult {
         ruleStandard: 'BPHS Ch. 46 (Dasha Paddhati)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -396,6 +406,8 @@ export function executeGetTransits(args: any): ToolExecutionResult {
         ruleStandard: 'Phaladeepika Ch. 26 (Gochara Phala)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -449,6 +461,8 @@ export function executeGetActiveYogas(args: any): ToolExecutionResult {
         ruleStandard: 'Brihat Parashara Hora Shastra (Yoga Adhyaya)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -500,6 +514,8 @@ export function executeGetPlanetaryStrength(args: any): ToolExecutionResult {
         ruleStandard: 'BPHS Ch. 27-28 (Graha-Bhava Bala)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -554,6 +570,8 @@ export function executeGetAshtakavarga(args: any): ToolExecutionResult {
         ruleStandard: 'BPHS Ch. 66-72 (Ashtakavarga Adhyaya)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -601,6 +619,8 @@ export function executeGetJaiminiDetails(args: any): ToolExecutionResult {
         ruleStandard: 'Jaimini Upadesha Sutras (Chara Karaka Adhyaya)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -648,6 +668,8 @@ export function executeGetPanchanga(args: any): ToolExecutionResult {
         ruleStandard: 'Surya Siddhanta & Muhurta Martanda',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
