@@ -10,6 +10,8 @@ import { getParashariAspectHouses, hasParashariAspect } from '../../shared/engin
 import { calculateYogasAndDoshas } from '../../shared/engine/yogas.ts';
 import { calculateVimshottariDasha } from '../../shared/engine/dasha.ts';
 import { ConfluenceEngine } from '../src/ai_v2/reasoning/confluenceEngine.ts';
+import { RulePrerequisiteMatcher } from '../src/ai_v2/reasoning/ruleMatcher.ts';
+import { ClassicalRAGRetriever } from '../src/ai_v2/rag/retriever.ts';
 import type { PlanetName, PlanetPosition, ZodiacSign } from '../../shared/engine/types.ts';
 
 type Check = { name: string; pass: boolean; detail: string };
@@ -268,6 +270,52 @@ const weightedConfluence = confluenceEngine.evaluateConfluence(
 );
 expect('Two genuinely supportive independent layers produce confluence', weightedConfluence.hasConfluence, true);
 expect('Weighted confluence exposes a positive support score', weightedConfluence.supportiveScore! > weightedConfluence.restrictingScore!, true);
+
+// Classical-rule lineage must be exact and must never fall back to evidence[0].
+const matcher = new RulePrerequisiteMatcher();
+const unmatchedRule = {
+  id: 'phase10_unmatched_rule',
+  source: 'Test Source',
+  author: 'Test Author',
+  chapter: 'Test Chapter',
+  citation: 'Test Ch. 1',
+  content: 'Test',
+  normalizedRule: 'Jupiter in the 5th house supports education.',
+  relevanceScore: 0.9,
+  tradition: 'parashari',
+  metadata: {
+    tradition: 'parashari',
+    topic: 'education',
+    subtopic: 'education',
+    ruleType: 'house_lord_rule',
+    planetarySubjects: ['Jupiter'],
+    houseSubjects: [5],
+    signSubjects: [],
+    vargaSubjects: ['D1'],
+    authorityLevel: 'primary_foundational',
+    tags: ['education'],
+  },
+} as any;
+const unrelatedEvidence = {
+  ...natalEvidence,
+  facts: [{
+    ...natalEvidence.facts[0],
+    id: 'unrelated_1',
+    entity: 'Saturn',
+    house: 10,
+  }],
+} as any;
+const matched = matcher.evaluateRules([unmatchedRule], unrelatedEvidence);
+expect('Unmatched classical prerequisite is rejected', matched.appliedRules[0]?.applicabilityStatus, 'rejected');
+expect('Rejected classical rule contains no fabricated evidence lineage', matched.appliedRules[0]?.evidenceIds, []);
+
+const unverifiedRetriever = new ClassicalRAGRetriever({
+  customKnowledgeBase: [{
+    ...unmatchedRule,
+    verified: false,
+  }] as any,
+});
+expect('Unverified classical records are excluded from RAG', unverifiedRetriever.retrieve('Jupiter education').results.length, 0);
 
 let passed = 0;
 for (const c of checks) {
