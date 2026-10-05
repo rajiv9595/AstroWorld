@@ -50,7 +50,8 @@
     "test:yoga-dosha-benchmark": "tsx scripts/verify-yoga-dosha-benchmark.ts",
     "test:precision:all": "npm run test:precision && npm run test:swiss-adapter && npm run test:ephemeris-runtime && npm run test:temporal-provider",
     "test:ephemeris-runtime": "tsx scripts/verify-ephemeris-provider-runtime.ts",
-    "test:temporal-provider": "tsx scripts/verify-temporal-provider.ts"
+    "test:temporal-provider": "tsx scripts/verify-temporal-provider.ts",
+    "test:horizon-precision": "tsx scripts/verify-horizon-precision.ts"
   },
   "dependencies": {
     "@astroworld/shared": "*",
