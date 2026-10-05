@@ -275,8 +275,8 @@ async function main(): Promise<void> {
     console.log('\\n==================================================');
     console.log('PHASE 6 TEMPORAL/EVENT PRECISION: ' + passed + ' PASSED | ' + failed + ' FAILED');
     console.log('Max Swiss oracle delta: ' + maxSwissDelta.toFixed(3) + 's');
-    console.log('Max Astronomy Engine delta: ' + maxAstronomyDelta.toFixed(3) + 's');
-    console.log('Contracts: Swiss ≤ 2s to frozen vectors; Astronomy Engine ≤ 60s; strict event ordering.');
+    console.log('Max Astronomy Engine boundary residual: ' + maxAstronomyBoundaryError.toFixed(9) + '°');
+    console.log('Contracts: Swiss ≤ 2s to frozen vectors; Astronomy Engine boundary residual ≤ 0.00001°; strict event ordering.');
     console.log('==================================================\\n');
 
     if (failed > 0) process.exitCode = 1;
