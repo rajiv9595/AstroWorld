@@ -8,7 +8,6 @@ import {
   computeCanonicalChart,
   TEST_BENCHMARK_PROFILE,
   BirthProfile,
-  ZODIAC_SIGNS,
   getLiveDailyPanchanga,
 } from '../../shared/index.ts';
 
