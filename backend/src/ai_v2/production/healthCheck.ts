@@ -26,6 +26,9 @@ export class HealthCheckService {
 
     const astrologyEngineOperational = true;
     const databaseConfigured = isSupabaseConfigured;
+    const corsConfigured =
+      process.env.NODE_ENV !== 'production' ||
+      Boolean((process.env.CORS_ORIGINS || process.env.PUBLIC_WEB_ORIGIN || '').trim());
     const memorySubsystemOperational = dependencies.isMemoryStoreConnected !== undefined
       ? dependencies.isMemoryStoreConnected
       : true;
@@ -36,6 +39,7 @@ export class HealthCheckService {
     const allReady =
       astrologyEngineOperational &&
       databaseConfigured &&
+      corsConfigured &&
       memorySubsystemOperational &&
       conversationStateOperational;
 
