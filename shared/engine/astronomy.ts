@@ -39,6 +39,119 @@ export function calculateLahiriAyanamsha(time: any): number {
 /**
  * Parse local birth profile into UTC Date object safely.
  */
+function validateCivilDateTimeFields(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second: number,
+  timezone: string,
+): void {
+  const fields = [
+    ['year', year],
+    ['month', month],
+    ['day', day],
+    ['hour', hour],
+    ['minute', minute],
+    ['second', second],
+  ] as const;
+
+  for (const [name, value] of fields) {
+    if (!Number.isInteger(value)) {
+      throw new Error('Birth ' + name + ' must be an integer.');
+    }
+  }
+
+  if (month < 1 || month > 12) throw new Error('Birth month must be between 1 and 12.');
+  if (hour < 0 || hour > 23) throw new Error('Birth hour must be between 0 and 23.');
+  if (minute < 0 || minute > 59) throw new Error('Birth minute must be between 0 and 59.');
+  if (second < 0 || second > 59) throw new Error('Birth second must be between 0 and 59.');
+
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  if (day < 1 || day > daysInMonth) {
+    throw new Error(
+      'Invalid calendar date: ' +
+      year +
+      '-' +
+      String(month).padStart(2, '0') +
+      '-' +
+      String(day).padStart(2, '0') +
+      '.',
+    );
+  }
+
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: timezone }).format();
+  } catch {
+    throw new Error('Invalid IANA timezone: ' + timezone);
+  }
+}
+
+function formatCivilPartsAtUtc(utcMs: number, timezone: string): Record<string, number> {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(utcMs));
+
+  const values: Record<string, number> = {};
+  for (const part of parts) {
+    if (part.type !== 'literal') values[part.type] = Number(part.value);
+  }
+  if (values.hour === 24) values.hour = 0;
+  return values;
+}
+
+function timezoneOffsetMillisAtUtc(utcMs: number, timezone: string): number {
+  const p = formatCivilPartsAtUtc(utcMs, timezone);
+  const asUtcWallMs = Date.UTC(
+    p.year,
+    p.month - 1,
+    p.day,
+    p.hour,
+    p.minute,
+    p.second,
+  );
+  return Math.round((asUtcWallMs - utcMs) / 1000) * 1000;
+}
+
+function civilPartsMatch(
+  utcMs: number,
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second: number,
+  timezone: string,
+): boolean {
+  const p = formatCivilPartsAtUtc(utcMs, timezone);
+  return (
+    p.year === year &&
+    p.month === month &&
+    p.day === day &&
+    p.hour === hour &&
+    p.minute === minute &&
+    p.second === second
+  );
+}
+
+/**
+ * Convert a civil local date/time in a real IANA timezone to UTC.
+ *
+ * Strict policy:
+ * - calendar-invalid values are rejected;
+ * - invalid IANA zones are rejected;
+ * - nonexistent DST-gap times are rejected;
+ * - ambiguous DST-fold times are rejected rather than silently selecting
+ *   one of two possible UTC instants.
+ */
 export function localDateTimeToUtcDate(
   year: number,
   month: number,
@@ -48,44 +161,43 @@ export function localDateTimeToUtcDate(
   second = 0,
   timezone = 'Asia/Kolkata',
 ): Date {
+  validateCivilDateTimeFields(year, month, day, hour, minute, second, timezone);
+
   const targetWallMs = Date.UTC(year, month - 1, day, hour, minute, second);
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  });
+  const possibleOffsets = new Set<number>();
+  const sixHours = 6 * 60 * 60 * 1000;
 
-  // Iteratively solve UTC -> requested timezone wall time. A single probe can
-  // cross a DST transition and select the wrong offset; iteration converges
-  // on the offset that actually applies to the target wall-clock instant.
-  let candidateMs = targetWallMs;
-  for (let i = 0; i < 4; i++) {
-    const parts = formatter.formatToParts(new Date(candidateMs));
-    const p: Record<string, number> = {};
-    for (const part of parts) {
-      if (part.type !== 'literal') p[part.type] = parseInt(part.value, 10);
-    }
-
-    const formattedWallMs = Date.UTC(
-      p.year,
-      p.month - 1,
-      p.day,
-      p.hour === 24 ? 0 : p.hour,
-      p.minute,
-      p.second,
-    );
-    const correctionMs = targetWallMs - formattedWallMs;
-    if (correctionMs === 0) return new Date(candidateMs);
-    candidateMs += correctionMs;
+  // Sample +/- 48 hours so both sides of ordinary DST transitions are covered.
+  for (let delta = -48 * 60 * 60 * 1000; delta <= 48 * 60 * 60 * 1000; delta += sixHours) {
+    possibleOffsets.add(timezoneOffsetMillisAtUtc(targetWallMs + delta, timezone));
   }
 
-  return new Date(candidateMs);
+  const candidates = Array.from(possibleOffsets)
+    .map((offsetMs) => targetWallMs - offsetMs)
+    .filter((utcMs) =>
+      civilPartsMatch(utcMs, year, month, day, hour, minute, second, timezone),
+    )
+    .sort((a, b) => a - b);
+
+  if (candidates.length === 0) {
+    throw new Error(
+      'Local birth time does not exist in ' +
+      timezone +
+      ' (likely a daylight-saving clock gap). Please verify the recorded birth time.',
+    );
+  }
+
+  if (candidates.length > 1) {
+    throw new Error(
+      'Local birth time is ambiguous in ' +
+      timezone +
+      ' (it occurs twice during a daylight-saving clock fold). Please verify the recorded civil time.',
+    );
+  }
+
+  return new Date(candidates[0]);
 }
+
 export function birthProfileToUtcDate(profile: BirthProfile): Date {
   return localDateTimeToUtcDate(
     profile.year,
