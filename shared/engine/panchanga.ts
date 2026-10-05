@@ -562,8 +562,21 @@ export function calculateComprehensiveDailyPanchanga(
   const amritKaalStart = new Date(sunriseDate.getTime() + 4 * muhurat15Ms);
   const amritKaalEnd = new Date(sunriseDate.getTime() + 5.5 * muhurat15Ms);
 
-  // Dur Muhurat (inauspicious daytime interval)
-  const durMuhuratStart = new Date(sunriseDate.getTime() + (dayOfWeek % 5 + 1) * muhurat15Ms);
+  // Dur Muhurtam: weekday-specific daytime muhurta slots.
+  // This follows the common Drik-Ganita / Muhurta Chintamani table.
+  // Some regional panchangams use two slots on certain weekdays; keep the
+  // engine's legacy single-window API by selecting the first published slot.
+  const durMuhuratSlots: Record<number, number[]> = {
+    0: [14],      // Sunday
+    1: [9, 12],   // Monday
+    2: [4],       // Tuesday
+    3: [8],       // Wednesday
+    4: [6, 12],   // Thursday
+    5: [4, 12],   // Friday
+    6: [1, 2],    // Saturday
+  };
+  const durSlot = durMuhuratSlots[dayOfWeek][0];
+  const durMuhuratStart = new Date(sunriseDate.getTime() + (durSlot - 1) * muhurat15Ms);
   const durMuhuratEnd = new Date(durMuhuratStart.getTime() + muhurat15Ms);
 
   // Choghadiya Day & Night
@@ -753,7 +766,7 @@ export function calculateComprehensiveDailyPanchanga(
         start: formatLocalTime(durMuhuratStart, timezone),
         end: formatLocalTime(durMuhuratEnd, timezone),
         status: 'Inauspicious',
-        description: 'Inauspicious planetary alignment duration for the day.',
+        description: 'Weekday-selected Dur Muhurtam slot from the daytime fifteen-muhurta division. Regional panchangams may publish a second slot on some weekdays.',
       },
     },
     choghadiyaDay,
