@@ -183,11 +183,11 @@ export interface ComprehensiveDailyPanchanga {
     abhijit: { start: string; end: string; status: 'Highly Auspicious' | 'Avoid' | 'Unavailable'; description: string };
     brahma: { start: string; end: string; status: 'Highly Auspicious' | 'Unavailable'; description: string };
     amritKaal: { start: string; end: string; status: 'Auspicious' | 'Unavailable'; description: string };
-    vijaya: { start: string; end: string; status: 'Auspicious'; description: string };
+    vijaya: { start: string; end: string; status: 'Auspicious' | 'Unavailable'; description: string };
     rahuKaal: { start: string; end: string; status: 'Inauspicious' | 'Unavailable'; description: string };
-    yamaganda: { start: string; end: string; status: 'Inauspicious'; description: string };
-    gulika: { start: string; end: string; status: 'Inauspicious'; description: string };
-    durMuhurat: { start: string; end: string; status: 'Inauspicious'; description: string };
+    yamaganda: { start: string; end: string; status: 'Inauspicious' | 'Unavailable'; description: string };
+    gulika: { start: string; end: string; status: 'Inauspicious' | 'Unavailable'; description: string };
+    durMuhurat: { start: string; end: string; status: 'Inauspicious' | 'Unavailable'; description: string };
   };
   choghadiyaDay: Array<{
     period: number;
@@ -935,18 +935,22 @@ export function calculateComprehensiveDailyPanchanga(
         end: formatLocalTime(w.end, timezone),
       })),
       abhijit: {
-        start: formatLocalTime(abhijitStart, timezone),
-        end: formatLocalTime(abhijitEnd, timezone),
-        status: isAbhijitAuspicious ? 'Highly Auspicious' : 'Avoid',
-        description: isAbhijitAuspicious
-          ? 'Midday golden window, removes obstacles and brings victory for major deeds.'
-          : 'Avoided on Wednesday (Budhavara) as per classical Muhurat rules.',
+        start: abhijitStart ? formatLocalTime(abhijitStart, timezone) : 'Unavailable',
+        end: abhijitEnd ? formatLocalTime(abhijitEnd, timezone) : 'Unavailable',
+        status: !hasSolarDay ? 'Unavailable' : isAbhijitAuspicious ? 'Highly Auspicious' : 'Avoid',
+        description: !hasSolarDay
+          ? 'Unavailable because no sunrise/sunset event exists for this civil date at the selected location.'
+          : isAbhijitAuspicious
+            ? 'Midday golden window, removes obstacles and brings victory for major deeds.'
+            : 'Avoided on Wednesday (Budhavara) as per classical Muhurat rules.',
       },
       brahma: {
-        start: formatLocalTime(brahmaStart, timezone),
-        end: formatLocalTime(brahmaEnd, timezone),
-        status: 'Highly Auspicious',
-        description: 'Pre-dawn divine hour, optimal for meditation, study, yoga, and spiritual prayer.',
+        start: brahmaStart ? formatLocalTime(brahmaStart, timezone) : 'Unavailable',
+        end: brahmaEnd ? formatLocalTime(brahmaEnd, timezone) : 'Unavailable',
+        status: hasSolarDay ? 'Highly Auspicious' : 'Unavailable',
+        description: hasSolarDay
+          ? 'Pre-dawn divine hour, optimal for meditation, study, yoga, and spiritual prayer.'
+          : 'Unavailable because no sunrise event exists for this civil date at the selected location.',
       },
       amritKaal: {
         start: amritaWindows.length > 0 ? formatLocalTime(amritaWindows[0].start, timezone) : '',
@@ -955,34 +959,44 @@ export function calculateComprehensiveDailyPanchanga(
         description: 'Nakshatra-specific Amrita Kaal from the Prasna Marga Amrita-ghatika table, scaled to the Moon’s actual star transit. Multiple windows may occur in one civil day.',
       },
       vijaya: {
-        start: formatLocalTime(vijayaStart, timezone),
-        end: formatLocalTime(vijayaEnd, timezone),
-        status: 'Auspicious',
-        description: 'Victorious hour, ideal for launching lawsuits, debates, exams, and competitions.',
+        start: vijayaStart ? formatLocalTime(vijayaStart, timezone) : 'Unavailable',
+        end: vijayaEnd ? formatLocalTime(vijayaEnd, timezone) : 'Unavailable',
+        status: hasSolarDay ? 'Auspicious' : 'Unavailable',
+        description: hasSolarDay
+          ? 'Victorious hour, ideal for launching lawsuits, debates, exams, and competitions.'
+          : 'Unavailable because no sunrise event exists for this civil date at the selected location.',
       },
       rahuKaal: {
         start: rahuWindow.start,
         end: rahuWindow.end,
-        status: 'Inauspicious',
-        description: 'Rahu-governed period. Avoid beginning travel, signing agreements, or buying assets.',
+        status: hasSolarDay ? 'Inauspicious' : 'Unavailable',
+        description: hasSolarDay
+          ? 'Rahu-governed period. Avoid beginning travel, signing agreements, or buying assets.'
+          : 'Unavailable because no sunrise event exists for this civil date at the selected location.',
       },
       yamaganda: {
         start: yamaWindow.start,
         end: yamaWindow.end,
-        status: 'Inauspicious',
-        description: 'Yamaganda period. Highly discouraged for vital celebrations and financial investments.',
+        status: hasSolarDay ? 'Inauspicious' : 'Unavailable',
+        description: hasSolarDay
+          ? 'Yamaganda period. Highly discouraged for vital celebrations and financial investments.'
+          : 'Unavailable because no sunrise event exists for this civil date at the selected location.',
       },
       gulika: {
         start: guliWindow.start,
         end: guliWindow.end,
-        status: 'Inauspicious',
-        description: 'Saturnian Gulika window. Avoid starting new partnerships or auspicious undertakings.',
+        status: hasSolarDay ? 'Inauspicious' : 'Unavailable',
+        description: hasSolarDay
+          ? 'Saturnian Gulika window. Avoid starting new partnerships or auspicious undertakings.'
+          : 'Unavailable because no sunrise event exists for this civil date at the selected location.',
       },
       durMuhurat: {
-        start: formatLocalTime(durMuhuratStart, timezone),
-        end: formatLocalTime(durMuhuratEnd, timezone),
-        status: 'Inauspicious',
-        description: 'Weekday-selected Dur Muhurtam slot from the daytime fifteen-muhurta division. Regional panchangams may publish a second slot on some weekdays.',
+        start: durMuhuratStart ? formatLocalTime(durMuhuratStart, timezone) : 'Unavailable',
+        end: durMuhuratEnd ? formatLocalTime(durMuhuratEnd, timezone) : 'Unavailable',
+        status: hasSolarDay ? 'Inauspicious' : 'Unavailable',
+        description: hasSolarDay
+          ? 'Weekday-selected Dur Muhurtam slot from the daytime fifteen-muhurta division. Regional panchangams may publish a second slot on some weekdays.'
+          : 'Unavailable because no sunrise event exists for this civil date at the selected location.',
       },
     },
     choghadiyaDay,
