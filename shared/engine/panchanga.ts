@@ -490,10 +490,7 @@ export function calculateComprehensiveDailyPanchanga(
   cityName: string = 'New Delhi, India',
   ephemerisProvider: SiderealEphemerisProvider = astronomyEngineEphemerisProvider,
 ): ComprehensiveDailyPanchanga {
-  const observer = new Astronomy.Observer(latitude, longitude, 0);
-
-  // Astronomy AstroTime
-  const astroTime = new Astronomy.AstroTime(date);
+  // Provider-native astronomical calculations.
   const ayanamsaDeg = ephemerisProvider.getAyanamsa(date);
 
   // Sun and Moon positions
@@ -509,8 +506,6 @@ export function calculateComprehensiveDailyPanchanga(
   const sunTropLon = normalizeDegrees(sunSidLon + ayanamsaDeg);
   const moonTropLon = normalizeDegrees(moonSidLon + ayanamsaDeg);
 
-  const sunSidLon = normalizeDegrees(sunTropLon - ayanamsaDeg);
-  const moonSidLon = normalizeDegrees(moonTropLon - ayanamsaDeg);
 
   const sunSignIdx = Math.floor(sunSidLon / 30);
   const moonSignIdx = Math.floor(moonSidLon / 30);
