@@ -133,6 +133,7 @@ export interface ReadinessCheckResult {
   status: 'ready' | 'degraded' | 'not_ready';
   checks: {
     geminiConfigured: boolean;
+    databaseConfigured: boolean;
     astrologyEngineOperational: boolean;
     memorySubsystemOperational: boolean;
     conversationStateOperational: boolean;
