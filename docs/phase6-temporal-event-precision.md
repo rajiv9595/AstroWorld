@@ -58,8 +58,11 @@ within 2 seconds. Astronomy Engine is required to remain within 60 seconds of
 the same controlled event reference.
 
 This is an independent execution path, not an independent ephemeris-model
-claim, because both Swiss checks use the same Swiss Ephemeris computational
-core.
+claim, because the Swiss frozen vectors use the same Swiss Ephemeris
+computational core. Astronomy Engine is intentionally not given a cross-model
+timestamp tolerance: the repository's existing planetary contract allows a
+model-aware difference versus Swiss, and solar ingress time converts small
+longitude-model differences directly into event-time differences.
 
 ## Regression policy
 
