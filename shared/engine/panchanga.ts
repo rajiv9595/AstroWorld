@@ -6,7 +6,7 @@
 
 // @ts-ignore astronomy-engine has cjs/esm export
 import * as Astronomy from 'astronomy-engine';
-import { formatDMS, normalizeDegrees, calculateLahiriAyanamsha, localDateTimeToUtcDate } from './astronomy.ts';
+import { formatDMS, normalizeDegrees, localDateTimeToUtcDate } from './astronomy.ts';
 import { NAKSHATRAS, ZODIAC_SIGNS, SANSKRIT_SIGNS } from './constants.ts';
 import { PanchangaFacts, PlanetName, PlanetPosition } from './types.ts';
 import { astronomyEngineEphemerisProvider, SiderealEphemerisProvider } from './ephemeris.ts';
