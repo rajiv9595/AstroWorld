@@ -329,6 +329,23 @@ export class ProductionConsultationService {
     return this.orchestrator;
   }
 
+  public isConversationOwnedBy(conversationId: string, userId: string): boolean {
+    return this.conversationOwners.get(conversationId) === userId;
+  }
+
+  public listOwnedConversationIds(userId: string): string[] {
+    return Array.from(this.conversationOwners.entries())
+      .filter(([, ownerId]) => ownerId === userId)
+      .map(([conversationId]) => conversationId);
+  }
+
+  public deleteOwnedConversation(conversationId: string, userId: string): boolean {
+    if (!this.isConversationOwnedBy(conversationId, userId)) return false;
+    this.stateManager.resetState(conversationId);
+    this.conversationOwners.delete(conversationId);
+    return true;
+  }
+
   public getRateLimiter(): RateLimiter {
     return this.rateLimiter;
   }
