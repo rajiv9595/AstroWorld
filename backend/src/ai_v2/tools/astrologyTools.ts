@@ -489,8 +489,8 @@ export function executeGetPlanetaryStrength(args: any): ToolExecutionResult {
       tool: 'get_planetary_strength',
       error: validation.error || 'Invalid birth profile.',
       provenance: {
-        sourceEngine: 'Shadbala Six-Fold Strength Engine',
-        ruleStandard: 'BPHS Ch. 27-28',
+        sourceEngine: 'Shadbala Classical-Partial Engine',
+        ruleStandard: 'BPHS Ch. 27-28 (classical partial)',
         calculatedAtIso: new Date().toISOString(),
         verified: false,
       },
@@ -509,8 +509,8 @@ export function executeGetPlanetaryStrength(args: any): ToolExecutionResult {
         methodology: chart.strength.methodology,
       },
       provenance: {
-        sourceEngine: 'Shadbala Six-Fold Strength Engine',
-        ruleStandard: 'BPHS Ch. 27-28 (Graha-Bhava Bala)',
+        sourceEngine: 'Shadbala Classical-Partial Engine',
+        ruleStandard: 'BPHS Ch. 27-28 (classical partial; Bhava Bala approximate)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
         crossVerified: false,
