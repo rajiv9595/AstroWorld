@@ -26,7 +26,7 @@ assert(yoga('raja_yoga')?.present === true, 'Canonical Raja Yoga must be present
 assert(yoga('vimala_viparita')?.present === true, 'Canonical Vimala Viparita must be present: 12th lord Mars is in 12th');
 assert(yoga('amala_yoga')?.present === true, 'Canonical Amala must be present from benefics in 10th from Moon');
 assert(yoga('budhaditya')?.present === false, 'Canonical Budhaditya must be absent: Sun and Mercury are in different signs');
-assert(yoga('kala_sarpa')?.schoolDependent === true, 'Kala Sarpa must remain school-dependent');
+assert(dosha('kala_sarpa')?.schoolDependent === true, 'Kala Sarpa must remain school-dependent');
 
 assert(dosha('kuja_dosha')?.present === true, 'Canonical Kuja Dosha is structurally present from Mars in 12th from Lagna');
 assert(dosha('kuja_dosha')?.schoolDependent === true, 'Kuja Dosha must remain explicitly school-dependent');
