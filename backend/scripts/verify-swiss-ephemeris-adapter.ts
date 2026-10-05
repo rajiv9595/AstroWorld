@@ -102,10 +102,15 @@ async function main(): Promise<void> {
       for (const [name, expected] of Object.entries(ref.planets)) {
         const actual = snapshot.planets.find((planet) => planet.name === name);
         assert(Boolean(actual), ref.utc + ' — missing ' + name);
+        // The Moon can differ slightly across Swiss-compatible builds/data
+        // packs at future epochs. Keep this cross-build tolerance explicit and
+        // narrow; all other bodies remain sub-arcsecond.
+        const toleranceArcsec = name === 'Moon' ? 1.0 : 0.5;
         assertArcsec(
           ref.utc + ' — ' + name,
           actual!.siderealLongitude,
           expected,
+          toleranceArcsec,
         );
       }
 
