@@ -95,7 +95,10 @@ export function getNakshatraAndPada(siderealLongitude: number): {
   const nakSpan = 360 / 27; // 13.333333°
   const index = Math.min(26, Math.floor(norm / nakSpan));
   const nak = NAKSHATRAS[index];
-  const degInNak = norm - nak.startDegree;
+  // Use the exact mathematical nakshatra start rather than the rounded
+  // display constants in NAKSHATRAS. This makes boundary behavior deterministic.
+  const exactNakStart = index * nakSpan;
+  const degInNak = norm - exactNakStart;
   const padaSpan = nakSpan / 4; // 3.333333°
   const pada = Math.min(4, Math.floor(degInNak / padaSpan) + 1);
   const completedPercent = Math.min(100, Math.max(0, (degInNak / nakSpan) * 100));
