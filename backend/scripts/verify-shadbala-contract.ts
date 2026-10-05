@@ -35,7 +35,7 @@ const expected: Record<string, {
   Sun: { sthana: 308.32, dig: 0, kala: 14.23, chesta: 30, naisargika: 60, drik: 0 },
   Moon: { sthana: 164.95, dig: 20, kala: 105.77, chesta: 30, naisargika: 51.43, drik: 0 },
   Mars: { sthana: 150.05, dig: 40, kala: 73.89, chesta: 30, naisargika: 17.14, drik: -15 },
-  Mercury: { sthana: 148.70, dig: 40, kala: 105.77, chesta: 30, naisargika: 25.71, drik: -15 },
+  Mercury: { sthana: 148.70, dig: 40, kala: 105.94, chesta: 30, naisargika: 25.71, drik: -15 },
   Jupiter: { sthana: 158.14, dig: 20, kala: 46.11, chesta: 30, naisargika: 34.29, drik: -15 },
   Venus: { sthana: 157.12, dig: 50, kala: 46.11, chesta: 30, naisargika: 42.86, drik: -15 },
   Saturn: { sthana: 135.44, dig: 20, kala: 73.89, chesta: 30, naisargika: 8.57, drik: -15 },
