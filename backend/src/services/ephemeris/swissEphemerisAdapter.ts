@@ -17,7 +17,7 @@ import type {
 
 const SWISS_PACKAGE = '@swisseph/node';
 
-type SwissModule = typeof import('@swisseph/node');
+type SwissModule = any;
 
 let swissModulePromise: Promise<SwissModule> | null = null;
 
