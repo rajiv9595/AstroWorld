@@ -5,6 +5,7 @@ import {
   clearAuthSessionCookies,
   getAuthenticatedUser,
   setAuthSessionCookies,
+  ensureCsrfCookie,
 } from '../middleware/authMiddleware.ts';
 
 export const authRouter = Router();
@@ -98,7 +99,8 @@ authRouter.post('/signup', async (req: Request, res: Response) => {
       });
     }
 
-    setAuthSessionCookies(
+    const csrfToken = setAuthSessionCookies(
+      req,
       res,
       sessionData.session.access_token,
       sessionData.session.refresh_token,
@@ -158,7 +160,8 @@ authRouter.post('/login', async (req: Request, res: Response) => {
       console.warn('[Supabase Profiles Notice]:', profileError.message);
     }
 
-    setAuthSessionCookies(
+    const csrfToken = setAuthSessionCookies(
+      req,
       res,
       data.session.access_token,
       data.session.refresh_token,
@@ -168,6 +171,7 @@ authRouter.post('/login', async (req: Request, res: Response) => {
     return res.json({
       success: true,
       authenticated: true,
+      csrfToken,
       user: publicUser(userId, cleanEmail, displayName),
     });
   } catch (err) {
@@ -181,10 +185,12 @@ authRouter.get('/session', authenticateRequest, async (req: Request, res: Respon
   try {
     const { userId, email } = getAuthenticatedUser(req);
     const displayName = await resolveDisplayName(userId, email || '');
+    const csrfToken = ensureCsrfCookie(req, res);
 
     return res.json({
       success: true,
       authenticated: true,
+      csrfToken,
       user: publicUser(userId, email || '', displayName),
     });
   } catch (err) {
