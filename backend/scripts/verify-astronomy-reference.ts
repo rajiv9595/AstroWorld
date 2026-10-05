@@ -19,33 +19,69 @@ import {
 } from '../../shared/index.ts';
 
 type ReferenceVector = {
-  profileName: string;
-  ephemeris: string;
-  siderealMode: string;
+  label: string;
+  utcDate: string;
+  latitude: number;
+  longitude: number;
   ayanamshaDeg: number;
+  ascendantDeg: number;
   positionsDeg: Record<string, number>;
-  toleranceArcsec: number;
 };
 
-const REFERENCE: ReferenceVector = {
-  profileName: 'Canonical Test Native — Anaparthy 2005-08-17 00:02 IST',
-  ephemeris: 'Swiss Ephemeris 2.10.03',
-  siderealMode: 'Lahiri / Chitrapaksha',
-  ayanamshaDeg: 23.93565836563647,
-  toleranceArcsec: 120,
-  positionsDeg: {
-    Ascendant: 39.95620244441955,
-    Sun: 120.04284066208803,
-    Moon: 257.8637656115666,
-    Mars: 16.59405768925442,
-    Mercury: 104.84054007297352,
-    Jupiter: 171.84362377517232,
-    Venus: 155.6427499901487,
-    Saturn: 100.06349180994296,
-    Rahu: 352.32741227614775,
-    Ketu: 172.3274122761477,
+const REFERENCE: ReferenceVector[] = [
+  {
+    label: 'Anaparthy — 1900-02-28 18:30 UTC',
+    utcDate: '1900-02-28T18:30:00.000Z',
+    latitude: 16.93407,
+    longitude: 81.95522,
+    ayanamshaDeg: 22.46277727837305,
+    ascendantDeg: 220.52170588251926,
+    positionsDeg: {
+      Sun: 317.2754094214595, Moon: 307.1603230214832, Mars: 307.4088322112195,
+      Mercury: 332.647599557872, Jupiter: 227.27610565027965, Venus: 355.7531823713323,
+      Saturn: 250.98677727502135, Rahu: 233.5815434612041, Ketu: 53.58154346120409,
+    },
   },
-};
+  {
+    label: 'Anaparthy — 2000-01-01 00:00 UTC',
+    utcDate: '2000-01-01T00:00:00.000Z',
+    latitude: 16.93407,
+    longitude: 81.95522,
+    ayanamshaDeg: 23.857073231355002,
+    ascendantDeg: 240.97993501026534,
+    positionsDeg: {
+      Sun: 256.0060121369246, Moon: 193.44016305684002, Mars: 303.7222767659089,
+      Mercury: 247.25860135926806, Jupiter: 1.37986875141131, Venus: 217.10821741787453,
+      Saturn: 16.552636092487752, Rahu: 101.21391957635842, Ketu: 281.2139195763584,
+    },
+  },
+  {
+    label: 'Anaparthy — 2024-02-29 00:00 UTC (leap day)',
+    utcDate: '2024-02-29T00:00:00.000Z',
+    latitude: 16.93407,
+    longitude: 81.95522,
+    ayanamshaDeg: 24.194600702481353,
+    ascendantDeg: 299.5154141442983,
+    positionsDeg: {
+      Sun: 315.6922904539581, Moon: 184.23275098950916, Mars: 287.9495844981665,
+      Mercury: 316.2460069721165, Jupiter: 16.951180472099413, Venus: 291.0618677721009,
+      Saturn: 315.5977076400617, Rahu: 353.5595218635826, Ketu: 173.55952186358263,
+    },
+  },
+  {
+    label: 'Anaparthy — 2030-07-01 12:00 UTC',
+    utcDate: '2030-07-01T12:00:00.000Z',
+    latitude: 16.93407,
+    longitude: 81.95522,
+    ayanamshaDeg: 24.28312871434332,
+    ascendantDeg: 240.20772072234294,
+    positionsDeg: {
+      Sun: 75.43011121160335, Moon: 82.14200260283613, Mars: 65.6181615921832,
+      Mercury: 83.98909338207324, Jupiter: 203.75230971273257, Venus: 46.44232830134532,
+      Saturn: 39.41900537771398, Rahu: 230.90957323623547, Ketu: 50.909573236235474,
+    },
+  },
+];
 
 function circularDifferenceDeg(a: number, b: number): number {
   const d = Math.abs(a - b) % 360;
@@ -71,50 +107,38 @@ function assertClose(
 
 async function main() {
   console.log('🌌 AstroWorld independent astronomical reference verification');
-  console.log(`Reference: ${REFERENCE.ephemeris}, ${REFERENCE.siderealMode}`);
-  console.log(`Profile: ${REFERENCE.profileName}`);
+  console.log('Reference: Swiss Ephemeris 2.10.03, Lahiri / Chitrapaksha, mean lunar node');
 
-  const utcDate = birthProfileToUtcDate(TEST_BENCHMARK_PROFILE);
-  const astroTime = new Astronomy.AstroTime(utcDate);
+  for (const ref of REFERENCE) {
+    const astroTime = new Astronomy.AstroTime(new Date(ref.utcDate));
+    const ayanamsha = calculateLahiriAyanamsha(astroTime);
+    assertClose(`${ref.label} — Lahiri ayanamsha`, ayanamsha, ref.ayanamshaDeg, 2);
 
-  const ayanamsha = calculateLahiriAyanamsha(astroTime);
-  assertClose('Lahiri ayanamsha', ayanamsha, REFERENCE.ayanamshaDeg, 2);
-
-  const ascendant = calculateAscendant(
-    astroTime,
-    TEST_BENCHMARK_PROFILE.latitude,
-    TEST_BENCHMARK_PROFILE.longitude,
-    ayanamsha
-  );
-
-  assertClose(
-    'Ascendant',
-    ascendant.siderealLongitude,
-    REFERENCE.positionsDeg.Ascendant,
-    REFERENCE.toleranceArcsec
-  );
-
-  const planets = calculatePlanetaryPositions(
-    astroTime,
-    ayanamsha,
-    ascendant.signIndex
-  );
-
-  for (const [name, expected] of Object.entries(REFERENCE.positionsDeg)) {
-    if (name === 'Ascendant') continue;
-    const planet = planets.find((p) => p.name === name);
-    if (!planet) throw new Error(`Missing planet from canonical engine: ${name}`);
-    assertClose(
-      name,
-      planet.siderealLongitude,
-      expected,
-      REFERENCE.toleranceArcsec
+    const ascendant = calculateAscendant(
+      astroTime,
+      ref.latitude,
+      ref.longitude,
+      ayanamsha
     );
+    assertClose(`${ref.label} — Ascendant`, ascendant.siderealLongitude, ref.ascendantDeg, 120);
+
+    const planets = calculatePlanetaryPositions(
+      astroTime,
+      ayanamsha,
+      ascendant.signIndex
+    );
+
+    for (const [name, expected] of Object.entries(ref.positionsDeg)) {
+      const planet = planets.find((p) => p.name === name);
+      if (!planet) throw new Error(`Missing planet: ${name}`);
+      assertClose(`${ref.label} — ${name}`, planet.siderealLongitude, expected, 120);
+    }
+
+    console.log(`✅ ${ref.label}: complete vector passed`);
   }
 
-  console.log('\\n✅ Independent astronomical reference verification passed.');
-  console.log('Note: this validates the current engine against a Swiss Ephemeris vector;');
-  console.log('it does not prove every historical date or every boundary condition.');
+  console.log('\n✅ Multi-date independent astronomical reference verification passed.');
+  console.log('Coverage: 1900, J2000, leap-day 2024, and 2030; planetary longitudes + Ascendant.');
 }
 
 main().catch((err) => {
