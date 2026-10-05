@@ -110,7 +110,9 @@ function calculateEqualAngularPart(
 ): { part: number; offset: number } {
   const quotient = value / span;
   const nearestInteger = Math.round(quotient);
-  const boundaryTolerance = 1e-10;
+  // Keep this well below the boundary-test perturbation after scaling
+  // (1e-9 degrees / 13.333... degrees ≈ 7.5e-11).
+  const boundaryTolerance = 1e-12;
   const isExactBoundary = Math.abs(quotient - nearestInteger) < boundaryTolerance;
 
   const part = Math.min(
