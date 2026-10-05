@@ -613,7 +613,11 @@ export function executeGetJaiminiDetails(args: any): ToolExecutionResult {
     return {
       success: true,
       tool: 'get_jaimini_details',
-      data: chart.jaimini,
+      data: {
+        ...chart.jaimini,
+        atmakarakaRashiSign: chart.jaimini.karakamsaSign,
+        karakamsa: chart.jaimini.karakamsaNavamshaSign,
+      },
       provenance: {
         sourceEngine: 'Jaimini Sutras Engine',
         ruleStandard: 'Jaimini Upadesha Sutras (Chara Karaka Adhyaya)',
@@ -649,8 +653,8 @@ export function executeGetPanchanga(args: any): ToolExecutionResult {
       tool: 'get_panchanga',
       error: validation.error || 'Invalid birth profile.',
       provenance: {
-        sourceEngine: 'Panchanga Calculation Engine',
-        ruleStandard: 'Surya Siddhanta',
+        sourceEngine: 'Panchanga Engine (Astronomy + Lahiri + classical Panchanga tables)',
+        ruleStandard: 'Tithi/Nakshatra/Yoga/Karana rules',
         calculatedAtIso: new Date().toISOString(),
         verified: false,
       },
@@ -664,8 +668,8 @@ export function executeGetPanchanga(args: any): ToolExecutionResult {
       tool: 'get_panchanga',
       data: chart.panchanga,
       provenance: {
-        sourceEngine: 'Panchanga Calculation Engine',
-        ruleStandard: 'Surya Siddhanta & Muhurta Martanda',
+        sourceEngine: 'Panchanga Engine (Astronomy + Lahiri + classical Panchanga tables)',
+        ruleStandard: 'Tithi/Nakshatra/Yoga/Karana rules; regional Muhurta conventions disclosed per calculation',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
         crossVerified: false,
