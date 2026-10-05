@@ -120,7 +120,7 @@ export const signOutFromSupabase = async (): Promise<void> => {
     await fetch('/api/auth/logout', {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authWriteHeaders({ 'Content-Type': 'application/json' }),
     });
   } finally {
     localStorage.removeItem('astroworld_user');
@@ -142,6 +142,7 @@ export const getCurrentSupabaseUser = async (): Promise<SupabaseUserProfile | nu
     }
 
     const data = await res.json();
+    if (typeof data?.csrfToken === 'string') csrfToken = data.csrfToken;
     if (!data?.authenticated || !data?.user) {
       localStorage.removeItem('astroworld_user');
       return null;
