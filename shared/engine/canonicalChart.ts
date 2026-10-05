@@ -55,6 +55,22 @@ export const GOLDEN_BENCHMARK_PROFILE = DEFAULT_BIRTH_PROFILE;
 /** Explicit name for the built-in demo chart. */
 export const DEFAULT_DEMO_PROFILE = DEFAULT_BIRTH_PROFILE;
 
+/** Stable non-production profile used by engine integrity tests. */
+export const TEST_BENCHMARK_PROFILE: BirthProfile = {
+  name: 'Canonical Test Native',
+  year: 2005,
+  month: 8,
+  day: 17,
+  hour: 0,
+  minute: 2,
+  second: 0,
+  latitude: 16.93407,
+  longitude: 81.95522,
+  timezone: 'Asia/Kolkata',
+  cityName: 'Anaparthy, Andhra Pradesh, India',
+  gender: 'male',
+};
+
 /**
  * Generate 12 whole sign houses and identify occupants and aspects.
  */
