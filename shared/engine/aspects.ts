@@ -35,13 +35,25 @@ export function getParashariAspectHouses(
     throw new Error('Parashari aspect calculation requires an occupied house in the range 1..12.');
   }
 
-  const offsets = new Set<number>([
-    ...STANDARD_ASPECTS,
-    ...(SPECIAL_ASPECTS[planet] ?? []),
-    ...(includeNodeAspects && (planet === 'Rahu' || planet === 'Ketu') ? NODE_ASPECTS : []),
-  ]);
+  const special = SPECIAL_ASPECTS[planet] ?? [];
+  const nodeSpecial = includeNodeAspects && (planet === 'Rahu' || planet === 'Ketu')
+    ? NODE_ASPECTS
+    : [];
 
-  return Array.from(offsets).map((distance) => ((fromHouse + distance - 2) % 12) + 1);
+  // Stable classical order: special graha drishti is reported by its
+  // traditional distance, with the universal 7th aspect in the middle.
+  const offsets = planet === 'Mars'
+    ? [4, 7, 8]
+    : planet === 'Jupiter'
+      ? [5, 7, 9]
+      : planet === 'Saturn'
+        ? [3, 7, 10]
+        : nodeSpecial.length > 0
+          ? [5, 7, 9]
+          : [7];
+
+  void special;
+  return offsets.map((distance) => ((fromHouse + distance - 2) % 12) + 1);
 }
 
 /**
