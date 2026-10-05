@@ -45,16 +45,17 @@ export class GroundingFirewall {
     const rejectedClaims: ClaimItem[] = [];
     const auditRecords: ClaimAuditRecord[] = [];
 
-    // Canonical Sets for Fast Verification
+    // Canonical entity/sign sets for exact grounding. Avoid substring
+    // matching because "Moon" could otherwise match unrelated descriptive text.
     const verifiedEntityNames = new Set<string>();
+    const verifiedSigns = new Set<string>();
     for (const f of evidence.facts) {
-      verifiedEntityNames.add(f.entity.toLowerCase());
-      if (f.sign) verifiedEntityNames.add(f.sign.toLowerCase());
+      verifiedEntityNames.add(f.entity.trim().toLowerCase());
+      if (f.sign) verifiedSigns.add(f.sign.trim().toLowerCase());
     }
     for (const d of evidence.derivedFacts) {
-      verifiedEntityNames.add(d.description.toLowerCase());
       if (d.participatingPlanets) {
-        d.participatingPlanets.forEach(p => verifiedEntityNames.add(p.toLowerCase()));
+        d.participatingPlanets.forEach(p => verifiedEntityNames.add(p.trim().toLowerCase()));
       }
     }
 
@@ -144,7 +145,7 @@ export class GroundingFirewall {
       questionCoverage,
       preservesContradictions,
       auditRecords,
-      validatorVersion: 'ai-v2-firewall-1',
+      validatorVersion: 'ai-v2-firewall-2',
       createdAtIso: new Date().toISOString(),
       verified: true,
     };
@@ -169,8 +170,10 @@ export class GroundingFirewall {
     if (claim.type === 'factual' || claim.type === 'interpretive') {
       if (claim.astrologicalEntities && claim.astrologicalEntities.length > 0) {
         for (const ent of claim.astrologicalEntities) {
-          const lower = ent.toLowerCase();
-          const isVerified = Array.from(verifiedEntityNames).some(v => v.includes(lower) || lower.includes(v));
+          const lower = ent.trim().toLowerCase();
+          const isVerified =
+            verifiedEntityNames.has(lower) ||
+            verifiedSigns.has(lower);
           if (!isVerified) {
             failedChecks.push(`Unverified astrological entity "${ent}" not found in canonical chart evidence`);
           }
@@ -242,11 +245,24 @@ export class GroundingFirewall {
       }
     }
 
-    // Verify all cited evidence IDs exist in EvidencePacket
     if (claim.evidenceIds.length > 0) {
       const invalidEvidence = claim.evidenceIds.filter(id => !verifiedEvidenceIds.has(id));
       if (invalidEvidence.length > 0) {
         failedChecks.push(`Claim references unverified evidence IDs: ${invalidEvidence.join(', ')}`);
+      }
+    }
+
+    if (claim.ruleIds.length > 0) {
+      const invalidRules = claim.ruleIds.filter(id => !verifiedRuleIds.has(id));
+      if (invalidRules.length > 0) {
+        failedChecks.push(`Claim references rules that were not applied: ${invalidRules.join(', ')}`);
+      }
+    }
+
+    if (claim.sourceIds.length > 0) {
+      const invalidSources = claim.sourceIds.filter(id => !verifiedSourceIds.has(id));
+      if (invalidSources.length > 0) {
+        failedChecks.push(`Claim references unverified source IDs: ${invalidSources.join(', ')}`);
       }
     }
   }
