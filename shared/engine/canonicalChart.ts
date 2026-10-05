@@ -240,9 +240,12 @@ export function computeCanonicalChart(
   evaluationDateUtc: Date = new Date(),
   ephemerisSnapshot?: SiderealEphemerisSnapshot,
   ephemerisProvider?: SiderealEphemerisProvider,
+  birthUtcDateOverride?: Date,
 ): AIInterpretationContext {
-  // 1. Precise astronomical time conversion
-  const birthUtcDate = birthProfileToUtcDate(profile);
+  // 1. Precise astronomical time conversion.
+  // Live astronomical views may already have an exact UTC instant; bypass civil
+  // time reverse-resolution in that case, including DST-fold ambiguity.
+  const birthUtcDate = birthUtcDateOverride ?? birthProfileToUtcDate(profile);
   const astroTime = new Astronomy.AstroTime(birthUtcDate);
 
   // 2. Lahiri Ayanamsha (Chitra Paksha)
@@ -407,6 +410,6 @@ export function getLiveDailyPanchanga(
     timezone: tz,
   };
 
-  const chart = computeCanonicalChart(profile, date);
+  const chart = computeCanonicalChart(profile, date, undefined, undefined, date);
   return chart.panchanga;
 }
