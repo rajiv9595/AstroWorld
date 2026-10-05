@@ -9,7 +9,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { MapPin, X, Sparkles, ShieldCheck } from 'lucide-react';
-import { BirthProfile, birthProfileToUtcDate } from '../engine/types.ts';
+import { BirthProfile } from '../engine/types.ts';
+import { birthProfileToUtcDate } from '../engine/astronomy.ts';
 import { CityAutocompleteInput } from './CityAutocompleteInput.tsx';
 import { VedicDatePicker } from './VedicDatePicker.tsx';
 import { VedicTimePicker } from './VedicTimePicker.tsx';
