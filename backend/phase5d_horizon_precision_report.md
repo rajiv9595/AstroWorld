@@ -16,7 +16,7 @@ Phase 5D hardens and validates horizon-event handling for:
 
 The Phase 5C provider boundary exposes a generic `getHorizonEvent()` primitive.
 
-The Swiss adapter calls `calculateRiseTransitSet()` at sea level with the default Swiss rise/set mode. The Phase 5D contract therefore treats the calculation as an **apparent upper-limb event with standard atmospheric refraction**, not a disc-center/no-refraction Hindu sunrise convention.
+The Swiss adapter calls `calculateRiseTransitSet()` at sea level with the default Swiss rise/set mode and explicitly fixes atmospheric inputs at **1013.25 hPa pressure and 15 C temperature**. The Phase 5D contract therefore treats the calculation as an **apparent upper-limb event with standard atmospheric refraction**, not a disc-center/no-refraction Hindu sunrise convention.
 
 Astronomy Engine is compared through `SearchRiseSet()` using its observer model and documented visible-top/refraction behavior.
 
@@ -33,6 +33,8 @@ Reference inputs:
 - pressure: 1013.25 hPa
 - temperature: 15 C
 - observer altitude: 0 m
+
+The Node adapter now passes these atmospheric inputs explicitly so the production calculation does not depend on the binding's zero/default atmospheric parameters.
 - geographic horizon
 - default Swiss rise/set convention
 
@@ -75,8 +77,10 @@ Phase 5D now filters Sun/Moon rise/set candidates so that a daily Panchanga only
 - `backend/scripts/verify-horizon-precision.ts`
 - `backend/package.json`
 - `shared/engine/panchanga.ts`
+- `backend/src/services/ephemeris/swissEphemerisAdapter.ts`
+- `backend/phase5d_horizon_precision_report.md`
 
-No changes were made to the Swiss production calculation algorithm itself.
+The Swiss horizon algorithm is unchanged; only its atmospheric inputs are now explicit and aligned with the frozen reference convention.
 
 ## Validation status
 
