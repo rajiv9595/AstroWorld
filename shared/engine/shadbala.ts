@@ -442,5 +442,15 @@ export function calculateStrengthFacts(
     shadbala,
     bhavaBala,
     avasthas,
+    methodology: {
+      shadbala: 'classical_partial',
+      notes: [
+        'Sthana Bala uses Uchcha, Saptavargaja, Oja-Yugma, Kendradi and Drekkana sub-components.',
+        'Kala Bala currently includes Nathonnatha and Paksha only; Tribhaga, Varsha/Masa/Vara/Hora, Ayana and Yuddha require richer birth-context inputs.',
+        'Cheshta Bala uses exact retrograde=60 treatment for classical planets; the remaining direct-motion states are intentionally not guessed.',
+        'Drik Bala uses discrete Parashari graha-drishṭi contributions (+15 benefic / -15 malefic) and is sign/house based.',
+        'Bhava Bala remains an approximate house-strength layer and should not be represented as a full BPHS Bhava Bala computation.',
+      ],
+    },
   };
 }
