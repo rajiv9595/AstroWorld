@@ -47,6 +47,9 @@ assert(panchanga.karana.number === 23 && panchanga.karana.name === 'Bava',
   `Expected Bava at exact birth instant, got ${panchanga.karana.name} (#${panchanga.karana.number})`);
 assert(panchanga.ayanamsa.type === 'lahiri' && Math.abs(panchanga.ayanamsa.valueDegrees - 23.93565836563647) < 0.0001,
   `Lahiri ayanamsha mismatch: ${panchanga.ayanamsa.valueDegrees}`);
+assert(Date.parse(panchanga.sunsetUtc) > Date.parse(panchanga.sunriseUtc),
+  `Sunset must occur after sunrise on the requested Panchanga date: ${panchanga.sunriseUtc} -> ${panchanga.sunsetUtc}`);
+
 
 console.log('✅ Canonical Panchanga: Shukla Dwadashi / Wednesday / Purva Ashadha Pada 2 / Priti / Bava');
 console.log(`✅ Sunrise UTC: ${panchanga.sunriseUtc}`);
