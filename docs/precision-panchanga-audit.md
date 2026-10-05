@@ -70,7 +70,7 @@ Using the exact Swiss-Lahiri longitudes at the birth instant:
 - Priti Yoga
 - Bava Karana
 
-The external Panchanga comparison agrees on the major date identity (Wednesday, Shukla Dwadashi, Purva Ashadha and Priti), while some sources report a different Moon longitude/pada because they use a different astronomical substrate or calendar convention. AstroWorld keeps the Swiss-Lahiri astronomical basis explicit rather than forcing every Panchanga source to match. The Swiss mean-node oracle is also kept separate from AstroWorld's compact analytical node polynomial; local checks showed the production node model differs from Swiss mean node by roughly 0–18 arcsec in the sampled epochs, so D60 boundary-sensitive node cases should be treated with additional caution.
+The external Panchanga comparison agrees on the major date identity (Wednesday, Shukla Dwadashi, Purva Ashadha and Priti), while some sources report a different Moon longitude/pada because they use a different astronomical substrate or calendar convention. AstroWorld keeps the Swiss-Lahiri astronomical basis explicit rather than forcing every Panchanga source to match. The Swiss mean-node oracle is kept separate from AstroWorld's compact analytical node polynomial; corrected multi-date checks show the production node model is within a few hundredths of an arcsecond of the direct Swiss mean-node vectors at the sampled epochs.
 
 ## Ashtakavarga audit
 The published Parashari contributor matrix was independently reconstructed outside the TypeScript implementation.
