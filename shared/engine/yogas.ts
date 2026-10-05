@@ -357,5 +357,19 @@ export function calculateYogasAndDoshas(
     ],
   });
 
-  return { yogas, doshas };
+  const enrichedYogas = yogas.map((y) => ({
+    ...y,
+    interpretationStatus: y.id === 'budhaditya' ? 'qualified' as const : 'structural' as const,
+    schoolDependent: y.id === 'kala_sarpa',
+  }));
+
+  const enrichedDoshas = doshas.map((d) => ({
+    ...d,
+    interpretationStatus: d.id === 'kuja_dosha' || d.id === 'kala_sarpa'
+      ? 'qualified' as const
+      : 'structural' as const,
+    schoolDependent: d.id === 'kuja_dosha' || d.id === 'kala_sarpa',
+  }));
+
+  return { yogas: enrichedYogas, doshas: enrichedDoshas };
 }
