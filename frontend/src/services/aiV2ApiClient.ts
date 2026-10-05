@@ -6,6 +6,7 @@
  */
 
 import { BirthProfile } from '../engine/types.ts';
+import { authWriteHeaders } from '../lib/supabase.ts';
 
 export interface ClientConsultRequest {
   userMessage: string;
@@ -127,10 +128,10 @@ export class AIApiClient {
     const idempotencyKey =
       req.idempotencyKey || ('idem_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9));
 
-    const headers: Record<string, string> = {
+    const headers: Record<string, string> = authWriteHeaders({
       'Content-Type': 'application/json',
       'idempotency-key': idempotencyKey,
-    };
+    });
 
     const payload = {
       conversationId: req.conversationId,
@@ -203,7 +204,7 @@ export class AIApiClient {
     const res = await fetch(this.baseUrl + '/api/ai-v2/memory/' + encodeURIComponent(memoryId), {
       method: 'DELETE',
       credentials: 'include',
-      headers: { Accept: 'application/json' },
+      headers: authWriteHeaders({ Accept: 'application/json' }),
     });
 
     return res.ok;
@@ -213,7 +214,7 @@ export class AIApiClient {
     const res = await fetch(this.baseUrl + '/api/ai-v2/memory', {
       method: 'DELETE',
       credentials: 'include',
-      headers: { Accept: 'application/json' },
+      headers: authWriteHeaders({ Accept: 'application/json' }),
     });
 
     if (!res.ok) throw new Error('Failed to clear memories (HTTP ' + res.status + ').');
