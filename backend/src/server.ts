@@ -132,14 +132,3 @@ export async function startBackendServer(port: number = PORT) {
 
   return server;
 }
-
-// Start only when this module is the direct process entrypoint.
-const invokedScript = process.argv[1] ? path.resolve(process.argv[1]) : '';
-if (invokedScript === __filename) {
-  startBackendServer(PORT).catch((error) => {
-    console.error('[ASTROWORLD BACKEND] Failed to start:', error);
-    process.exitCode = 1;
-  });
-}
-
-
