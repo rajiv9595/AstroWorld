@@ -15,6 +15,7 @@ import {
   calculatePlanetaryPositions,
 } from './astronomy.ts';
 import { calculateAshtakavarga } from './ashtakavarga.ts';
+import { getParashariAspectHouses } from './aspects.ts';
 import { SIGN_LORDS, ZODIAC_SIGNS, SANSKRIT_PLANET_NAMES } from './constants.ts';
 import { calculateVimshottariDasha } from './dasha.ts';
 import { enrichPlanetaryDignity } from './dignity.ts';
@@ -109,24 +110,12 @@ function buildHouses(
       .filter((p) => p.houseNumber === h)
       .map((p) => p.name);
 
-    // Aspecting planets (Classical full aspects)
-    const aspectingPlanets: PlanetName[] = [];
-    for (const p of planets) {
-      if (p.houseNumber === h) continue;
-      const diff = (h - p.houseNumber + 12) % 12;
-      // 7th house aspect (diff = 6)
-      if (diff === 6) aspectingPlanets.push(p.name);
-      // Mars 4th and 8th (diff = 3 or 7)
-      if (p.name === 'Mars' && (diff === 3 || diff === 7)) aspectingPlanets.push('Mars');
-      // Jupiter 5th and 9th (diff = 4 or 8)
-      if (p.name === 'Jupiter' && (diff === 4 || diff === 8)) aspectingPlanets.push('Jupiter');
-      // Saturn 3rd and 10th (diff = 2 or 9)
-      if (p.name === 'Saturn' && (diff === 2 || diff === 9)) aspectingPlanets.push('Saturn');
-      // Nodes 5th and 9th
-      if ((p.name === 'Rahu' || p.name === 'Ketu') && (diff === 4 || diff === 8)) {
-        aspectingPlanets.push(p.name);
-      }
-    }
+    // Classical Parashari full graha drishti. Node special aspects are
+    // intentionally excluded by default because schools differ on that rule.
+    const aspectingPlanets = planets
+      .filter((p) => p.houseNumber !== h)
+      .filter((p) => getParashariAspectHouses(p.houseNumber, p.name).includes(h))
+      .map((p) => p.name);
 
     houses.push({
       houseNumber: h,
