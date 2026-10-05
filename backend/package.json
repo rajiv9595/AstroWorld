@@ -48,11 +48,12 @@
     "test:solar-ingress-contract": "tsx scripts/verify-solar-ingress-contract.ts",
     "test:timing-lineage": "tsx scripts/verify-timing-lineage.ts",
     "test:yoga-dosha-benchmark": "tsx scripts/verify-yoga-dosha-benchmark.ts",
-    "test:precision:all": "npm run test:precision && npm run test:swiss-adapter && npm run test:ephemeris-runtime && npm run test:temporal-provider && npm run test:horizon-precision && npm run test:temporal-event-precision",
+    "test:precision:all": "npm run test:precision && npm run test:swiss-adapter && npm run test:ephemeris-runtime && npm run test:temporal-provider && npm run test:horizon-precision && npm run test:temporal-event-precision && npm run test:independent-horizon-reference",
     "test:ephemeris-runtime": "tsx scripts/verify-ephemeris-provider-runtime.ts",
     "test:temporal-provider": "tsx scripts/verify-temporal-provider.ts",
     "test:horizon-precision": "tsx scripts/verify-horizon-precision.ts",
-    "test:temporal-event-precision": "tsx scripts/verify-temporal-event-precision.ts"
+    "test:temporal-event-precision": "tsx scripts/verify-temporal-event-precision.ts",
+    "test:independent-horizon-reference": "tsx scripts/verify-independent-horizon-reference.ts"
   },
   "dependencies": {
     "@astroworld/shared": "*",
@@ -65,7 +66,7 @@
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
+    "@types/express": "^4.17.0",
     "@types/node": "^22.14.0",
     "tsx": "^4.21.0",
     "typescript": "^7.0.2",
