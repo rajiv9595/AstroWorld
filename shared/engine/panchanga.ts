@@ -382,6 +382,74 @@ const NIGHT_CHOGHADIYA_ORDER = [
   ['Labh', 'Udveg', 'Shubh', 'Amrit', 'Char', 'Rog', 'Kaal', 'Labh'], // Saturday (6)
 ];
 
+const AMRITA_GHATIKA_TABLE: Array<[number, number]> = [
+  [42, 46], [48, 52], [54, 58], [52, 56], [38, 42], [35, 39],
+  [54, 58], [44, 48], [56, 60], [54, 58], [44, 48], [42, 46],
+  [45, 49], [44, 48], [38, 42], [38, 42], [28, 34], [38, 42],
+  [44, 48], [48, 52], [44, 48], [34, 38], [34, 38], [42, 46],
+  [40, 44], [48, 52], [54, 58],
+];
+
+/**
+ * Prasna Marga Amrita-ghatika table.
+ * Values are fractions of the actual Moon nakshatra transit duration:
+ * 60 nominal ghatikas span one nominal nakshatra; each listed B/E value
+ * is scaled against the observed star duration for the day.
+ */
+export const AMRITA_KAAL_CONVENTION = {
+  source: 'Prasna Marga, chapter/table on Vishaghatika-Ushna-Amrita-Mrityubhaga',
+  tableUnit: 'ghatika',
+  nominalNakshatraGhatikas: 60,
+  note: 'Anuradha is retained as printed at 28–34 ghatikas; printed traditions differ on this row.',
+} as const;
+
+function moonSiderealLongitudeAt(date: Date): number {
+  const astroTime = new Astronomy.AstroTime(date);
+  const ayanamsa = calculateLahiriAyanamsha(astroTime);
+  const tropicalMoon = Astronomy.Ecliptic(
+    Astronomy.GeoVector(Astronomy.Body.Moon, astroTime, true)
+  ).elon;
+  return normalizeDegrees(tropicalMoon - ayanamsa);
+}
+
+function findNakshatraTransition(date: Date, direction: -1 | 1): Date {
+  const span = 360 / 27;
+  const currentIndex = Math.min(26, Math.floor(moonSiderealLongitudeAt(date) / span));
+  let edge = date;
+  let sample = date;
+  for (let i = 0; i < 16; i++) {
+    sample = new Date(sample.getTime() + direction * 6 * 3600 * 1000);
+    const idx = Math.min(26, Math.floor(moonSiderealLongitudeAt(sample) / span));
+    if (idx !== currentIndex) {
+      let lo = direction < 0 ? sample : edge;
+      let hi = direction < 0 ? edge : sample;
+      for (let j = 0; j < 45; j++) {
+        const mid = new Date((lo.getTime() + hi.getTime()) / 2);
+        const idxMid = Math.min(26, Math.floor(moonSiderealLongitudeAt(mid) / span));
+        if (idxMid === currentIndex) {
+          if (direction < 0) hi = mid;
+          else lo = mid;
+        } else {
+          if (direction < 0) lo = mid;
+          else hi = mid;
+        }
+      }
+      return new Date((lo.getTime() + hi.getTime()) / 2);
+    }
+    edge = sample;
+  }
+  throw new Error('Unable to bracket Moon nakshatra transition within 4 days');
+}
+
+function getAmritaWindowForNakshatra(nakIndex: number, start: Date, end: Date): { start: Date; end: Date } {
+  const [beginGhati, endGhati] = AMRITA_GHATIKA_TABLE[nakIndex];
+  const durationMs = end.getTime() - start.getTime();
+  return {
+    start: new Date(start.getTime() + (beginGhati / 60) * durationMs),
+    end: new Date(start.getTime() + (endGhati / 60) * durationMs),
+  };
+}
+
 /**
  * Real-time Comprehensive Daily Panchanga and Muhurat Calculator
  */
@@ -548,7 +616,7 @@ export function calculateComprehensiveDailyPanchanga(
   const muhurat15Ms = dayMs / 15;
   const abhijitStart = new Date(sunriseDate.getTime() + 7 * muhurat15Ms);
   const abhijitEnd = new Date(sunriseDate.getTime() + 8 * muhurat15Ms);
-  const isAbhijitAuspicious = dayOfWeek !== 3; // Avoided on Wednesday (Budhavara)
+  const isAbhijitAuspicious = dayOfWeek !== 3; // Common panchanga convention: avoided on Wednesday
 
   // Brahma Muhurat: 2 Muhurats before sunrise (96 min to 48 min before sunrise)
   const brahmaStart = new Date(sunriseDate.getTime() - 96 * 60 * 1000);
@@ -558,9 +626,25 @@ export function calculateComprehensiveDailyPanchanga(
   const vijayaStart = new Date(sunriseDate.getTime() + 10 * muhurat15Ms);
   const vijayaEnd = new Date(sunriseDate.getTime() + 11 * muhurat15Ms);
 
-  // Amrit Kaal (auspicious time window)
-  const amritKaalStart = new Date(sunriseDate.getTime() + 4 * muhurat15Ms);
-  const amritKaalEnd = new Date(sunriseDate.getTime() + 5.5 * muhurat15Ms);
+  // Amrit Kaal is nakshatra-based, not a fixed daytime muhurta.
+  // Collect every Amrita window whose actual Moon-star interval touches this
+  // local Panchanga day; a date can therefore contain 0, 1, or 2 windows.
+  const amritaWindows: Array<{ start: Date; end: Date }> = [];
+  let cursor = startOfDayUtc;
+  for (let i = 0; i < 4 && cursor.getTime() < nextDayUtc.getTime(); i++) {
+    const span = 360 / 27;
+    const nakIndex = Math.min(26, Math.floor(moonSiderealLongitudeAt(cursor) / span));
+    const starStart = findNakshatraTransition(cursor, -1);
+    const starEnd = findNakshatraTransition(cursor, 1);
+    const amrita = getAmritaWindowForNakshatra(nakIndex, starStart, starEnd);
+    if (amrita.end.getTime() > startOfDayUtc.getTime() && amrita.start.getTime() < nextDayUtc.getTime()) {
+      amritaWindows.push({
+        start: amrita.start,
+        end: amrita.end,
+      });
+    }
+    cursor = new Date(starEnd.getTime() + 1000);
+  }
 
   // Dur Muhurtam: weekday-specific daytime muhurta slots.
   // This follows the common Drik-Ganita / Muhurta Chintamani table.
@@ -718,6 +802,10 @@ export function calculateComprehensiveDailyPanchanga(
       ayanamsa: formatDMS(ayanamsaDeg),
     },
     muhurats: {
+      amritKaalWindows: amritaWindows.map((w) => ({
+        start: formatLocalTime(w.start, timezone),
+        end: formatLocalTime(w.end, timezone),
+      })),
       abhijit: {
         start: formatLocalTime(abhijitStart, timezone),
         end: formatLocalTime(abhijitEnd, timezone),
@@ -733,10 +821,10 @@ export function calculateComprehensiveDailyPanchanga(
         description: 'Pre-dawn divine hour, optimal for meditation, study, yoga, and spiritual prayer.',
       },
       amritKaal: {
-        start: formatLocalTime(amritKaalStart, timezone),
-        end: formatLocalTime(amritKaalEnd, timezone),
+        start: amritaWindows.length > 0 ? formatLocalTime(amritaWindows[0].start, timezone) : '',
+        end: amritaWindows.length > 0 ? formatLocalTime(amritaWindows[0].end, timezone) : '',
         status: 'Auspicious',
-        description: 'Nectar hour for starting important journeys, ceremonies, or business deals.',
+        description: 'Nakshatra-specific Amrita Kaal from the Prasna Marga Amrita-ghatika table, scaled to the Moon’s actual star transit. Multiple windows may occur in one civil day.',
       },
       vijaya: {
         start: formatLocalTime(vijayaStart, timezone),
