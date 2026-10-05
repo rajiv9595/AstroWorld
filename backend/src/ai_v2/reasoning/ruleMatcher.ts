@@ -52,8 +52,9 @@ export class RulePrerequisiteMatcher {
     // 1. Planetary Precondition Check
     if (meta.planetarySubjects && meta.planetarySubjects.length > 0) {
       for (const planet of meta.planetarySubjects) {
+        const normalizedPlanet = planet.trim().toLowerCase();
         const matchingFact = evidence.facts.find(
-          f => f.entity.toLowerCase() === planet.toLowerCase() || f.entity.toLowerCase().includes(planet.toLowerCase())
+          f => f.entity.trim().toLowerCase() === normalizedPlanet
         );
         if (matchingFact) {
           satisfiedPrerequisites.push(`Verified presence and placement of ${planet} (${matchingFact.value})`);
@@ -70,8 +71,13 @@ export class RulePrerequisiteMatcher {
         if (varga === 'D1') {
           satisfiedPrerequisites.push('Verified D1 Rasi chart facts present');
         } else {
-          const hasVargaEvidence = evidence.facts.some(f => f.category === 'varga' && f.entity.includes(varga)) ||
-            evidence.toolResults.some(r => r.toolName === 'get_divisional_chart' && r.success && r.data?.vargaCode === varga);
+          const hasVargaEvidence = evidence.facts.some(
+            f => f.category === 'varga' &&
+              new RegExp(`(^|\\\\s)${varga}(\\\\s|$)`, 'i').test(f.entity)
+          ) ||
+            evidence.toolResults.some(
+              r => r.toolName === 'get_divisional_chart' && r.success && r.data?.vargaCode === varga
+            );
 
           if (hasVargaEvidence) {
             satisfiedPrerequisites.push(`Verified ${varga} divisional chart computed`);
@@ -124,12 +130,12 @@ export class RulePrerequisiteMatcher {
     const isApplied = missingPrerequisites.length === 0;
     const isPartiallySatisfied = satisfiedPrerequisites.length > 0 && missingPrerequisites.length > 0;
 
-    if (isApplied && matchedEvidenceIds.length === 0 && evidence.facts.length > 0) {
-      const houseMatches = evidence.facts.filter(f => meta.houseSubjects?.includes(f.house || 0));
+    if (isApplied && matchedEvidenceIds.length === 0) {
+      const houseMatches = evidence.facts.filter(
+        f => typeof f.house === 'number' && meta.houseSubjects?.includes(f.house)
+      );
       if (houseMatches.length > 0) {
         matchedEvidenceIds.push(...houseMatches.map(f => f.id));
-      } else {
-        matchedEvidenceIds.push(evidence.facts[0].id);
       }
     }
 
