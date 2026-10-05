@@ -76,7 +76,7 @@ export const saveUserChart = async (
   const res = await fetch('/api/user/charts', {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authWriteHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
 
@@ -93,7 +93,7 @@ export const deleteUserChart = async (_legacyUserId: string | undefined, chartId
     const res = await fetch('/api/user/charts/' + encodeURIComponent(chartId), {
       method: 'DELETE',
       credentials: 'include',
-      headers: { Accept: 'application/json' },
+      headers: authWriteHeaders({ Accept: 'application/json' }),
     });
 
     return res.ok;
