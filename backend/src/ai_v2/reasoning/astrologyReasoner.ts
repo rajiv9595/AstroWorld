@@ -142,7 +142,7 @@ export class AstrologyReasoner {
       coverageStatus,
       confidence,
       auditTrace,
-      version: 'ai-v2-reasoning-1',
+      version: 'ai-v2-reasoning-2',
       createdAtIso: new Date().toISOString(),
       verified: true,
     };
@@ -279,12 +279,14 @@ export class AstrologyReasoner {
           id: 'yoga_gajakesari_absence',
           entity: 'Gajakesari Yoga',
           property: 'presence',
-          value: 'Not present in chart (Jupiter is in Cancer, 8th from Moon in Sagittarius; Kendra relationship 1, 4, 7, 10 is not formed)',
+          value: 'Not present in the verified active-yoga evidence under the selected classical rule.',
           role: 'primary',
           relevance: 'high',
-          rationale: 'Inquired yoga verified absent from chart under classical Parashari principles',
+          rationale: 'Inquired yoga has no verified positive formation in the deterministic yoga engine.',
           sourceTool: 'get_active_yogas',
-          evidenceId: evidence.facts.find(f => f.entity === 'Moon')?.id || 'evidence_gajakesari_absent',
+          evidenceId: evidence.derivedFacts.find(d => d.type === 'Yoga')?.id ||
+            evidence.facts.find(f => f.entity.trim().toLowerCase() === 'moon')?.id ||
+            'evidence_gajakesari_absent',
         });
       }
     }
@@ -334,38 +336,68 @@ export class AstrologyReasoner {
     coverageStatus: 'complete' | 'partial' | 'insufficient_evidence';
     confidence: 'high' | 'medium' | 'low';
   } {
-    const totalSupportive = primaryFactors.length + supportingFactors.length;
-    const totalRestricting = restrictingFactors.length;
+    const relevanceWeight: Record<FactorRelevance, number> = {
+      high: 3,
+      medium: 2,
+      low: 1,
+      irrelevant: 0,
+    };
 
+    const supportScore =
+      [...primaryFactors, ...supportingFactors]
+        .reduce((sum, f) => sum + relevanceWeight[f.relevance], 0) +
+      Math.min(appliedRulesCount, 4) * 0.5;
+
+    const restrictingScore =
+      restrictingFactors.reduce((sum, f) => sum + relevanceWeight[f.relevance], 0);
+
+    const conflictScore =
+      conflictingFactors.reduce((sum, f) => sum + relevanceWeight[f.relevance], 0);
+
+    const netScore = supportScore - restrictingScore;
     let direction: InterpretationDirection = 'neutral';
-    let strength: InterpretationStrength = 'moderate';
-    let confidence: 'high' | 'medium' | 'low' = 'medium';
 
-    if (totalSupportive >= totalRestricting * 2 && totalSupportive > 0) {
-      direction = 'supportive';
-      strength = confluence.confluenceStrength === 'strong' ? 'strong' : 'moderate';
-      confidence = 'high';
-    } else if (totalRestricting >= totalSupportive * 2 && totalRestricting > 0) {
-      direction = 'challenging';
-      strength = 'moderate';
-      confidence = 'medium';
-    } else if (totalSupportive > 0 && totalRestricting > 0) {
+    if (supportScore > 0 && restrictingScore > 0) direction = 'mixed';
+    else if (netScore > 0) direction = 'supportive';
+    else if (netScore < 0) direction = 'challenging';
+
+    if (conflictScore > 0 && direction !== 'neutral') {
       direction = 'mixed';
-      strength = 'moderate';
-      confidence = 'medium';
-    } else if (totalSupportive > 0) {
-      direction = 'supportive';
-      strength = 'moderate';
-      confidence = 'high';
-    } else if (totalRestricting > 0) {
-      direction = 'challenging';
-      strength = 'moderate';
-      confidence = 'medium';
     }
 
-    const coverageStatus = appliedRulesCount >= 1 && totalSupportive + totalRestricting >= 2
-      ? 'complete'
-      : 'partial';
+    let strength: InterpretationStrength = 'weak';
+    const magnitude = Math.abs(netScore);
+    if (magnitude >= 8 && conflictScore === 0) strength = 'strong';
+    else if (magnitude >= 3) strength = 'moderate';
+    else if (magnitude > 0) strength = 'weak';
+    else strength = 'inconclusive';
+
+    const evidenceVolume =
+      primaryFactors.length +
+      supportingFactors.length +
+      restrictingFactors.length +
+      conflictingFactors.length;
+
+    const coverageStatus =
+      evidenceVolume >= 2 && (appliedRulesCount > 0 || plan.chartLayers.length > 0)
+        ? 'complete'
+        : evidenceVolume > 0
+          ? 'partial'
+          : 'insufficient_evidence';
+
+    let confidence: 'high' | 'medium' | 'low' = 'low';
+    if (
+      coverageStatus === 'complete' &&
+      conflictScore === 0 &&
+      confluence.confluenceStrength === 'strong'
+    ) {
+      confidence = 'high';
+    } else if (
+      coverageStatus !== 'insufficient_evidence' &&
+      conflictScore <= 2
+    ) {
+      confidence = 'medium';
+    }
 
     return {
       direction,
@@ -374,6 +406,7 @@ export class AstrologyReasoner {
       confidence,
     };
   }
+
 
   private buildInsufficientEvidencePacket(
     plan: QuestionPlan,
