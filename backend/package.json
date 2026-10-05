@@ -36,7 +36,7 @@
     "test:phase9:engine": "tsx scripts/verify-phase9-engine-convergence.ts",
     "test:phase9:horizon-edge": "tsx scripts/verify-phase9-horizon-edge-contract.ts",
     "test:precision-core": "npm run test:astronomy-reference && npm run test:varga-golden && npm run test:vimshottari-reference && npm run test:vimshottari-boundaries && npm run test:transit-reference && npm run test:transit-boundaries && npm run test:panchanga-benchmark && npm run test:ashtakavarga-golden && npm run test:jaimini-golden && npm run test:shadbala-contract && npm run test:dignity-contract && npm run test:timezone-contract && npm run test:solar-ingress-contract && npm run test:timing-lineage && npm run test:yoga-dosha-benchmark && npm run test:ephemeris-runtime",
-    "test:phase9:all": "npm run build && npm run test:phase9:security && npm run test:phase9:time-place && npm run test:phase9:engine && npm run test:phase9:horizon-edge && npm run test:precision-core",
+    "test:phase9:all": "npm run build && npm run test:phase9:auth && npm run test:phase9:security && npm run test:phase9:time-place && npm run test:phase9:engine && npm run test:phase9:horizon-edge && npm run test:precision-core",
     "test:astronomy-reference": "tsx scripts/verify-astronomy-reference.ts",
     "test:varga-golden": "tsx scripts/verify-varga-golden-vectors.ts",
     "test:vimshottari-reference": "tsx scripts/verify-vimshottari-reference.ts",
@@ -52,7 +52,8 @@
     "test:solar-ingress-contract": "tsx scripts/verify-solar-ingress-contract.ts",
     "test:timing-lineage": "tsx scripts/verify-timing-lineage.ts",
     "test:yoga-dosha-benchmark": "tsx scripts/verify-yoga-dosha-benchmark.ts",
-    "test:ephemeris-runtime": "tsx scripts/verify-ephemeris-provider-runtime.ts"
+    "test:ephemeris-runtime": "tsx scripts/verify-ephemeris-provider-runtime.ts",
+    "test:phase9:auth": "tsx scripts/verify-phase9-auth-runtime.ts"
   },
   "dependencies": {
     "@astroworld/shared": "*",
