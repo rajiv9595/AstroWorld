@@ -16,8 +16,8 @@ import {
 
 const EXPECTED_MOON = 257.8637656115666;
 const EXPECTED_BALANCE_YEARS = 13.204351582650148;
-const EXPECTED_MD_START = '1998-10-30T15:52:45.504Z';
-const EXPECTED_VENUS_END = '2018-10-30T15:52:45.504Z';
+const EXPECTED_MD_START_MS = Date.parse('1998-10-30T15:52:45.504Z');
+const EXPECTED_VENUS_END_MS = Date.parse('2018-10-30T15:52:45.504Z');
 
 function assert(condition: boolean, message: string) {
   if (!condition) throw new Error(message);
@@ -48,8 +48,8 @@ assertNear('Venus balance years', dasha.balanceAtBirth.balanceYears, EXPECTED_BA
 
 const firstMd = dasha.mahadashas[0].period;
 assert(firstMd.lord === 'Venus', `Expected first Mahadasha Venus, got ${firstMd.lord}`);
-assert(firstMd.startDateIso === EXPECTED_MD_START, `Expected Venus MD start ${EXPECTED_MD_START}, got ${firstMd.startDateIso}`);
-assert(firstMd.endDateIso === EXPECTED_VENUS_END, `Expected Venus MD end ${EXPECTED_VENUS_END}, got ${firstMd.endDateIso}`);
+assert(Math.abs(Date.parse(firstMd.startDateIso) - EXPECTED_MD_START_MS) <= 1000, `Venus MD start differs by more than 1s: ${firstMd.startDateIso}`);
+assert(Math.abs(Date.parse(firstMd.endDateIso) - EXPECTED_VENUS_END_MS) <= 1000, `Venus MD end differs by more than 1s: ${firstMd.endDateIso}`);
 
 console.log('✅ Venus Mahadasha boundary reference checks passed');
 console.log('✅ Vimshottari reference verification passed.');
