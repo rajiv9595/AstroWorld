@@ -49,6 +49,7 @@ export class HealthCheckService {
         geminiConfigured,
         astrologyEngineOperational,
         databaseConfigured,
+        corsConfigured,
         memorySubsystemOperational,
         conversationStateOperational,
       },
