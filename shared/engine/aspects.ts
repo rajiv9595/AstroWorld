@@ -13,13 +13,6 @@
 
 import { PlanetName, PlanetPosition } from './types.ts';
 
-const STANDARD_ASPECTS = [7] as const;
-const SPECIAL_ASPECTS: Partial<Record<PlanetName, readonly number[]>> = {
-  Mars: [4, 8],
-  Jupiter: [5, 9],
-  Saturn: [3, 10],
-};
-
 const NODE_ASPECTS = [5, 7, 9] as const;
 
 /**
@@ -35,7 +28,6 @@ export function getParashariAspectHouses(
     throw new Error('Parashari aspect calculation requires an occupied house in the range 1..12.');
   }
 
-  const special = SPECIAL_ASPECTS[planet] ?? [];
   const nodeSpecial = includeNodeAspects && (planet === 'Rahu' || planet === 'Ketu')
     ? NODE_ASPECTS
     : [];
@@ -52,7 +44,6 @@ export function getParashariAspectHouses(
           ? [5, 7, 9]
           : [7];
 
-  void special;
   return offsets.map((distance) => ((fromHouse + distance - 2) % 12) + 1);
 }
 
