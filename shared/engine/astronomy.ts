@@ -193,7 +193,9 @@ export function calculatePlanetaryPositions(
     { name: 'Saturn', tropLon: tropicalLongitude('Saturn' as any, time), body: 'Saturn' as any },
   ];
 
-  // Mean Lunar Node (Rahu) using the established mean-node formula.
+  // Analytical mean lunar node (Rahu). This is a compact polynomial model,
+  // not a direct Swiss-Ephemeris node call; reference suites therefore use
+  // an independent Swiss mean-node oracle with an explicit wider tolerance.
   const omegaTrop = normalizeDegrees(125.04452 - 1934.136261 * t + 0.0020708 * t * t);
   bodies.push({ name: 'Rahu', tropLon: omegaTrop });
   bodies.push({ name: 'Ketu', tropLon: normalizeDegrees(omegaTrop + 180.0) });
