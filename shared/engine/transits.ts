@@ -123,6 +123,49 @@ export function classifySadeSati(
   return { active: false, phase: 'NONE' };
 }
 
+function calculateSiderealSunLongitude(date: Date): number {
+  const astroTime = new Astronomy.AstroTime(date);
+  const ayanamsha = calculateLahiriAyanamsha(astroTime);
+  const tropical = Astronomy.SunPosition(astroTime).elon;
+  return normalizeDegrees(tropical - ayanamsha);
+}
+
+/**
+ * Find the next sidereal solar ingress after the evaluated instant.
+ * The search uses a forward bracket followed by bisection on the exact
+ * 30-degree zodiac boundary in sidereal longitude.
+ */
+export function findNextSiderealSolarIngress(startDateUtc: Date): {
+  timestampUtc: Date;
+  targetSignIndex: number;
+} {
+  const startLon = calculateSiderealSunLongitude(startDateUtc);
+  const currentSign = Math.floor(startLon / 30);
+  const targetSignIndex = (currentSign + 1) % 12;
+  const targetLon = (targetSignIndex * 30);
+  const targetDelta = (targetLon - startLon + 360) % 360;
+
+  const forwardDelta = (lon: number) => (lon - startLon + 360) % 360;
+  let hi = new Date(startDateUtc.getTime() + Math.max(2, targetDelta / 0.75) * 86400000);
+  let guard = 0;
+  while (forwardDelta(calculateSiderealSunLongitude(hi)) < targetDelta && guard++ < 12) {
+    hi = new Date(hi.getTime() + 7 * 86400000);
+  }
+
+  let lo = startDateUtc;
+  for (let i = 0; i < 55; i++) {
+    const mid = new Date((lo.getTime() + hi.getTime()) / 2);
+    const midDelta = forwardDelta(calculateSiderealSunLongitude(mid));
+    if (midDelta >= targetDelta) hi = mid;
+    else lo = mid;
+  }
+
+  return {
+    timestampUtc: new Date((lo.getTime() + hi.getTime()) / 2),
+    targetSignIndex,
+  };
+}
+
 /**
  * Calculate Gochara (Transit) facts for an arbitrary date.
  */
@@ -166,6 +209,8 @@ export function calculateTransits(
     };
   });
 
+  const solarIngress = findNextSiderealSolarIngress(targetDateUtc);
+
   // Sade Sati Analysis
   const transitSaturn = transitPlanets.find((p) => p.planet === 'Saturn')!;
   const saturnSignIdx = ZODIAC_SIGNS.indexOf(transitSaturn.sign);
@@ -186,6 +231,10 @@ export function calculateTransits(
   return {
     queryDateIso: targetDateUtc.toISOString(),
     planets: transitPlanets,
+    solarIngress: {
+      timestampUtc: solarIngress.timestampUtc.toISOString(),
+      targetSign: ZODIAC_SIGNS[solarIngress.targetSignIndex],
+    },
     sadeSati: {
       active: isSadeSati,
       phase,
