@@ -55,8 +55,11 @@ const REFERENCE: Vector[] = [
       Jupiter: 203.75230971273257,
       Venus: 46.44232830134532,
       Saturn: 39.41900537771398,
-      Rahu: 230.91437167191663,
-      Ketu: 50.91437167191663,
+      // Direct Swiss sidereal mean node (SEFLG_SIDEREAL). Mean lunar
+      // nodes are mathematical points; do not reconstruct them by mixing
+      // nutated tropical longitude with a non-nutated ayanamsha.
+      Rahu: 230.90957323623547,
+      Ketu: 50.90957323623547,
     },
   },
 ];
