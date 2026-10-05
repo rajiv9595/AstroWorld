@@ -33,6 +33,10 @@ export interface ToolExecutionResult<T = any> {
     ruleStandard: string;
     calculatedAtIso: string;
     verified: boolean;
+    /** True only when this output has been independently cross-validated against a reference implementation. */
+    crossVerified?: boolean;
+    /** Current epistemic state of the deterministic result. */
+    verificationLevel?: 'computed' | 'cross_verified' | 'rule_verified';
   };
 }
 
@@ -67,10 +71,12 @@ export function executeGetBirthChart(args: any): ToolExecutionResult {
         houses: chart.houses,
       },
       provenance: {
-        sourceEngine: 'AstroWorld Canonical Ephemeris (astronomy-engine + Analytical Lahiri Ayanamsha)',
+        sourceEngine: 'AstroWorld Canonical Ephemeris (astronomy-engine + Analytical Lahiri Ayanamsha; reference cross-check pending)',
         ruleStandard: 'BPHS Ch. 3 (Graha Guna Swarupa)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
