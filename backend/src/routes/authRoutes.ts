@@ -110,6 +110,7 @@ authRouter.post('/signup', async (req: Request, res: Response) => {
     return res.status(201).json({
       success: true,
       authenticated: true,
+      csrfToken,
       user: publicUser(createdUser.id, cleanEmail, cleanName),
     });
   } catch (err) {
