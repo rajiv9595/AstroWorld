@@ -9,6 +9,7 @@
 import { getParashariAspectHouses, hasParashariAspect } from '../../shared/engine/aspects.ts';
 import { calculateYogasAndDoshas } from '../../shared/engine/yogas.ts';
 import { calculateVimshottariDasha } from '../../shared/engine/dasha.ts';
+import { ConfluenceEngine } from '../src/ai_v2/reasoning/confluenceEngine.ts';
 import type { PlanetName, PlanetPosition, ZodiacSign } from '../../shared/engine/types.ts';
 
 type Check = { name: string; pass: boolean; detail: string };
@@ -161,6 +162,112 @@ try {
   preBirthRejected = true;
 }
 expect('Vimshottari rejects an evaluation date before birth', preBirthRejected, true);
+
+// Weighted confluence guard: raw existence of a layer must remain neutral unless
+// classified, relevant evidence actually supports the user's domain.
+const confluenceEngine = new ConfluenceEngine();
+const timingPlan = {
+  questionId: 'phase10-weighted-confluence',
+  rawQuestion: 'Will career timing improve?',
+  normalizedQuestion: 'will career timing improve',
+  intent: 'career_timing',
+  domain: 'career',
+  planetFocus: ['Jupiter'],
+  houseFocus: [10],
+  chartLayers: ['D1', 'D10'],
+  temporalScope: { type: 'upcoming' },
+  targetDatesIso: [],
+  requestedComparison: false,
+  requiredTools: [],
+  priority: 1,
+  ambiguities: [],
+  clarificationRequired: false,
+  version: 'phase10-test',
+  createdAtIso: new Date().toISOString(),
+};
+const natalEvidence = {
+  version: 'phase10-test',
+  createdAtIso: new Date().toISOString(),
+  question: {
+    raw: 'Will career timing improve?',
+    normalized: 'will career timing improve',
+    intent: 'career_timing',
+    domain: 'career',
+  },
+  plan: timingPlan,
+  facts: [
+    {
+      id: 'natal_1',
+      category: 'natal',
+      entity: 'Saturn',
+      property: 'placement',
+      value: 'Saturn in 10th',
+      sign: 'Capricorn',
+      house: 10,
+      sourceTool: 'get_birth_chart',
+      verified: true,
+    },
+    {
+      id: 'varga_1',
+      category: 'varga',
+      entity: 'D10',
+      property: 'placement',
+      value: 'Saturn strong in D10',
+      sign: 'Capricorn',
+      house: 1,
+      sourceTool: 'get_divisional_chart',
+      verified: true,
+    },
+  ],
+  derivedFacts: [],
+  toolResults: [],
+  provenance: [],
+  warnings: [],
+  missingEvidence: [],
+  executionMetrics: { totalDurationMs: 0, toolsExecutedCount: 2, parallelBatchesCount: 1 },
+  verified: true,
+} as any;
+const backgroundOnly = [{
+  id: 'factor_background',
+  entity: 'Saturn',
+  property: 'placement',
+  value: 'background',
+  role: 'background',
+  relevance: 'low',
+  rationale: 'background only',
+  sourceTool: 'get_birth_chart',
+  evidenceId: 'natal_1',
+  weight: 0.2,
+}] as any;
+const noConfluence = confluenceEngine.evaluateConfluence(timingPlan as any, natalEvidence, backgroundOnly, []);
+expect('A background fact does not create supportive D1 confluence', noConfluence.layers[0]?.alignment, 'neutral');
+
+const primaryNatal = [{
+  ...backgroundOnly[0],
+  role: 'primary',
+  relevance: 'high',
+  weight: 1,
+}] as any;
+const primaryVarga = [{
+  id: 'factor_varga',
+  entity: 'Saturn',
+  property: 'placement',
+  value: 'strong D10',
+  role: 'primary',
+  relevance: 'high',
+  rationale: 'direct career varga factor',
+  sourceTool: 'get_divisional_chart',
+  evidenceId: 'varga_1',
+  weight: 1,
+}] as any;
+const weightedConfluence = confluenceEngine.evaluateConfluence(
+  timingPlan as any,
+  natalEvidence,
+  [...primaryNatal, ...primaryVarga],
+  [],
+);
+expect('Two genuinely supportive independent layers produce confluence', weightedConfluence.hasConfluence, true);
+expect('Weighted confluence exposes a positive support score', weightedConfluence.supportiveScore! > weightedConfluence.restrictingScore!, true);
 
 let passed = 0;
 for (const c of checks) {
