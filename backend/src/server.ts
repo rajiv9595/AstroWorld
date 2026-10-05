@@ -28,9 +28,10 @@ const configuredOrigins = (process.env.CORS_ORIGINS || process.env.PUBLIC_WEB_OR
   .map((origin) => origin.trim())
   .filter(Boolean);
 const allowedOrigins = new Set([
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
   ...configuredOrigins,
+  ...(process.env.NODE_ENV === 'production'
+    ? []
+    : ['http://localhost:5173', 'http://127.0.0.1:5173']),
 ]);
 
 // Production Security Headers & CORS Middleware
