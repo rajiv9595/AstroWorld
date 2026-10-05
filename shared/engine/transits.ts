@@ -112,6 +112,17 @@ function getParashariAspects(
   return aspects;
 }
 
+export function classifySadeSati(
+  transitSaturnSignIndex: number,
+  natalMoonSignIndex: number
+): { active: boolean; phase: 'RISING' | 'PEAK' | 'SETTING' | 'NONE' } {
+  const diffFromMoon = (transitSaturnSignIndex - natalMoonSignIndex + 12) % 12;
+  if (diffFromMoon === 11) return { active: true, phase: 'RISING' };
+  if (diffFromMoon === 0) return { active: true, phase: 'PEAK' };
+  if (diffFromMoon === 1) return { active: true, phase: 'SETTING' };
+  return { active: false, phase: 'NONE' };
+}
+
 /**
  * Calculate Gochara (Transit) facts for an arbitrary date.
  */
@@ -158,23 +169,17 @@ export function calculateTransits(
   // Sade Sati Analysis
   const transitSaturn = transitPlanets.find((p) => p.planet === 'Saturn')!;
   const saturnSignIdx = ZODIAC_SIGNS.indexOf(transitSaturn.sign);
-  const diffFromMoon = (saturnSignIdx - natalMoonSignIndex + 12) % 12;
+  const sadeSatiState = classifySadeSati(saturnSignIdx, natalMoonSignIndex);
 
-  let isSadeSati = false;
-  let phase: TransitFacts['sadeSati']['phase'] = 'NONE';
+  let isSadeSati = sadeSatiState.active;
+  let phase: TransitFacts['sadeSati']['phase'] = sadeSatiState.phase;
   let desc = 'Saturn is outside the Sade Sati zone from natal Moon.';
 
-  if (diffFromMoon === 11) {
-    isSadeSati = true;
-    phase = 'RISING';
+  if (phase === 'RISING') {
     desc = `Rising phase of Sade Sati: Saturn in ${transitSaturn.sign} (12th from natal Moon in ${natalMoon.sign}). Brings introspection, structural re-evaluation, and mental preparation.`;
-  } else if (diffFromMoon === 0) {
-    isSadeSati = true;
-    phase = 'PEAK';
+  } else if (phase === 'PEAK') {
     desc = `Peak (Janma Shani) phase of Sade Sati: Saturn conjunct natal Moon in ${natalMoon.sign}. A time of deep maturity, disciplined focus, emotional endurance, and karmic consolidation.`;
-  } else if (diffFromMoon === 1) {
-    isSadeSati = true;
-    phase = 'SETTING';
+  } else if (phase === 'SETTING') {
     desc = `Setting phase of Sade Sati: Saturn in ${transitSaturn.sign} (2nd from natal Moon). Rebuilding financial foundations, family responsibilities, and reaping lessons of resilience.`;
   }
 
