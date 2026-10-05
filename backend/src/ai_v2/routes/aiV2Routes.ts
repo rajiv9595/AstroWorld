@@ -10,7 +10,7 @@ import { ToolExecutionOrchestrator } from '../orchestrator/toolOrchestrator.ts';
 import { validateBirthProfile } from '../schemas/birthProfile.ts';
 import { ProductionConsultationService } from '../production/productionConsultationService.ts';
 import { ProductionError } from '../production/productionErrors.ts';
-import { authenticateRequest, getAuthenticatedUser, requireAdmin } from '../../../middleware/authMiddleware.ts';
+import { authenticateRequest, getAuthenticatedUser, requireAdmin } from '../../middleware/authMiddleware.ts';
 import { UserMemoryService } from '../memory/userMemoryService.ts';
 
 export const aiV2Router = Router();
