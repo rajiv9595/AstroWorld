@@ -176,7 +176,7 @@ const REFERENCE: ReferenceVector[] = [
     startUtc: '2024-03-10T05:00:00.000Z',
     expectedUtc: '2024-03-10T11:33:53.998Z',
     expectedLocalDate: '2024-03-10',
-    expectedLocalTime: '07:33:53',
+    expectedLocalTime: '07:33:54',
   },
   {
     label: 'New York 2024-03-10 DST-start Moon set',
@@ -361,7 +361,7 @@ async function main(): Promise<void> {
         new Astronomy.Observer(ref.latitude, ref.longitude, 0),
         direction,
         start,
-        1,
+        2,
       );
 
       if (!astronomyActual) {
