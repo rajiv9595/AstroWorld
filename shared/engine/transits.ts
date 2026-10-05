@@ -3,11 +3,7 @@
  * Real-time or arbitrary date transit calculations, Parashari aspects, and labeled Western overlays.
  */
 
-// @ts-ignore astronomy-engine has cjs/esm export
-import * as Astronomy from 'astronomy-engine';
 import {
-  calculateLahiriAyanamsha,
-  calculatePlanetaryPositions,
   formatDMS,
   normalizeDegrees,
 } from './astronomy.ts';
@@ -20,6 +16,7 @@ import {
   TransitPlanet,
   ZodiacSign,
 } from './types.ts';
+import { astronomyEngineEphemerisProvider, SiderealEphemerisProvider } from './ephemeris.ts';
 
 /**
  * Determine Parashari aspects cast by a transiting planet onto a natal planet.
