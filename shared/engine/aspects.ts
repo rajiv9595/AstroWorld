@@ -66,14 +66,32 @@ export function getParashariHouseDistance(fromHouse: number, toHouse: number): n
  * Determine whether one planet has a classical full Parashari aspect on
  * another planet under the current whole-sign convention.
  */
+/**
+ * Determine whether one planet casts a classical full Parashari drishti on
+ * another planet. Conjunction is deliberately excluded; use
+ * hasParashariSambandha when conjunction should also count.
+ */
+export function hasParashariFullAspect(
+  from: Pick<PlanetPosition, 'name' | 'houseNumber'>,
+  to: Pick<PlanetPosition, 'houseNumber'>,
+  includeNodeAspects = false,
+): boolean {
+  if (from.houseNumber === to.houseNumber) return false;
+  return getParashariAspectHouses(from.houseNumber, from.name, includeNodeAspects)
+    .includes(to.houseNumber);
+}
+
+/**
+ * Determine whether two placements have either conjunction or a full
+ * Parashari mutual aspect relationship.
+ */
 export function hasParashariAspect(
   from: Pick<PlanetPosition, 'name' | 'houseNumber'>,
   to: Pick<PlanetPosition, 'houseNumber'>,
   includeNodeAspects = false,
 ): boolean {
-  if (from.houseNumber === to.houseNumber) return true;
-  return getParashariAspectHouses(from.houseNumber, from.name, includeNodeAspects)
-    .includes(to.houseNumber);
+  return from.houseNumber === to.houseNumber
+    || hasParashariFullAspect(from, to, includeNodeAspects);
 }
 
 /**
