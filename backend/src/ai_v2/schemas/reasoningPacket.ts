@@ -37,6 +37,8 @@ export interface ClassifiedFactor {
   rationale: string;
   sourceTool: string;
   evidenceId: string;
+  /** Deterministic contribution weight used by confluence synthesis. */
+  weight?: number;
 }
 
 export interface AppliedRuleRecord {
@@ -60,6 +62,8 @@ export interface ConfluenceItem {
   alignment: 'supportive' | 'restricting' | 'neutral';
   evidenceId: string;
   ruleId?: string;
+  supportScore?: number;
+  restrictingScore?: number;
 }
 
 export interface ConfluenceResult {
@@ -68,6 +72,8 @@ export interface ConfluenceResult {
   convergingLayersCount: number;
   layers: ConfluenceItem[];
   confluenceSummary: string;
+  supportiveScore?: number;
+  restrictingScore?: number;
 }
 
 export interface TemporalWindowResult {
