@@ -10,9 +10,12 @@ const backend = fs.readFileSync(path.join(root, 'backend/src/server.ts'), 'utf8'
 const rootServer = fs.readFileSync(path.join(root, 'server.ts'), 'utf8');
 
 const checks: Array<[string, boolean]> = [
-  ['Backend has a direct-entry startup guard', backend.includes('if (invokedScript === __filename)')],
-  ['Backend has exactly one guarded start call', (backend.match(/startBackendServer\(PORT\)/g) || []).length === 2],
-  ['Backend does not retain unconditional auto-start', !backend.includes('// Auto-start server')],
+  ['Backend server module is side-effect free', !backend.includes('startBackendServer(PORT);') && !backend.includes('invokedScript')],
+  ['Dedicated backend process entrypoint exists', fs.existsSync(path.join(root, 'backend/src/main.ts'))],
+  ['Dedicated entrypoint starts backend exactly once', (() => {
+    const launcher = fs.readFileSync(path.join(root, 'backend/src/main.ts'), 'utf8');
+    return (launcher.match(/startBackendServer\(\)/g) || []).length === 1;
+  })()],
   ['Root bridge remains the explicit application entrypoint', rootServer.includes('startBackendServer')],
   ['Root bridge imports the backend starter instead of duplicate logic', rootServer.includes("from './backend/src/server.ts'")],
 ];
