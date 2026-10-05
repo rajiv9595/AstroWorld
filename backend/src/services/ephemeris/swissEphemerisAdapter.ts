@@ -67,6 +67,13 @@ export async function createSwissEphemerisSnapshot(
 
   const jd = swiss.dateToJulianDay(dateUtc);
   const flags = buildFlags(swiss);
+  // Mean lunar nodes are mathematical points. Swiss sidereal-node output
+  // does not have a separate apparent/nutation state, so keep node flags
+  // explicit rather than implying SEFLG_NONUT changes the node itself.
+  const nodeFlags =
+    swiss.CalculationFlag.SwissEphemeris |
+    swiss.CalculationFlag.Speed |
+    swiss.CalculationFlag.Sidereal;
   // Report the mean/precessional Lahiri offset without nutation.
   // Swiss's traditional sidereal-house transformation intentionally uses
   // the standard (nutated) Lahiri ayanamsha together with the tropical
