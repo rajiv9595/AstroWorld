@@ -63,7 +63,7 @@ export function calculateVimshottariDasha(
   const evalMs = evaluationDateUtc.getTime();
 
   // Initial Mahadasha virtual start timestamp (when the lord's full period theoretically began)
-  let currentMs = birthMs - elapsedYears * MS_PER_YEAR;
+  let currentMs = Math.round(birthMs - elapsedYears * MS_PER_YEAR);
 
   const mahadashaLords = getCycleStartingFrom(startLord);
   const cycleLengthMs = 120 * MS_PER_YEAR;
@@ -82,7 +82,7 @@ export function calculateVimshottariDasha(
   for (let cycle = 0; cycle < cycleCount; cycle++) {
     for (const mdLord of mahadashaLords) {
     const mdDurYears = VIMSHOTTARI_DURATIONS[mdLord];
-    const mdDurMs = mdDurYears * MS_PER_YEAR;
+    const mdDurMs = Math.round(mdDurYears * MS_PER_YEAR);
     const mdStartMs = currentMs;
     const mdEndMs = mdStartMs + mdDurMs;
 
@@ -114,7 +114,7 @@ export function calculateVimshottariDasha(
     for (const adLord of adLords) {
       const adLordDur = VIMSHOTTARI_DURATIONS[adLord];
       const adDurYears = (mdDurYears * adLordDur) / 120.0;
-      const adDurMs = adDurYears * MS_PER_YEAR;
+      const adDurMs = Math.round(adDurYears * MS_PER_YEAR);
       const adStartMs = adCurrentMs;
       const adEndMs = adStartMs + adDurMs;
 
@@ -143,7 +143,7 @@ export function calculateVimshottariDasha(
       for (const pdLord of pdLords) {
         const pdLordDur = VIMSHOTTARI_DURATIONS[pdLord];
         const pdDurYears = (adDurYears * pdLordDur) / 120.0;
-        const pdDurMs = pdDurYears * MS_PER_YEAR;
+        const pdDurMs = Math.round(pdDurYears * MS_PER_YEAR);
         const pdStartMs = pdCurrentMs;
         const pdEndMs = pdStartMs + pdDurMs;
 
