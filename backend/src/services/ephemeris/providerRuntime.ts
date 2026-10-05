@@ -24,14 +24,32 @@ import type {
   SiderealEphemerisProvider,
   EphemerisSource,
 } from '../../../../shared/index.ts';
-import { createSwissEphemerisSnapshot } from './swissEphemerisAdapter.ts';
+import { createSwissEphemerisProvider } from './swissEphemerisAdapter.ts';
 
 function swissEphemerisProvider(): SiderealEphemerisProvider {
+  let delegate: SiderealEphemerisProvider | null = null;
+
   return {
     source: 'swiss-ephemeris',
     model: 'Swiss Ephemeris / Lahiri sidereal / apparent geocentric ecliptic longitude',
+    async initialize() {
+      delegate ??= await createSwissEphemerisProvider();
+    },
+    getAyanamsa(dateUtc) {
+      if (!delegate) throw new Error('Swiss Ephemeris provider is not initialized.');
+      return delegate.getAyanamsa(dateUtc);
+    },
+    getPlanetaryPositions(dateUtc) {
+      if (!delegate) throw new Error('Swiss Ephemeris provider is not initialized.');
+      return delegate.getPlanetaryPositions(dateUtc);
+    },
     getSnapshot(dateUtc, location) {
-      return createSwissEphemerisSnapshot(dateUtc, location);
+      if (!delegate) throw new Error('Swiss Ephemeris provider is not initialized.');
+      return delegate.getSnapshot(dateUtc, location);
+    },
+    getHorizonEvent(startDateUtc, body, event, location) {
+      if (!delegate) throw new Error('Swiss Ephemeris provider is not initialized.');
+      return delegate.getHorizonEvent(startDateUtc, body, event, location);
     },
   };
 }
@@ -65,6 +83,7 @@ export async function computeCanonicalChartWithConfiguredEphemeris(
   evaluationDateUtc: Date = new Date(),
 ) {
   const provider = getConfiguredEphemerisProvider();
+  if (provider.initialize) await provider.initialize();
   const birthUtcDate = birthProfileToUtcDate(profile);
   let snapshot;
   try {
