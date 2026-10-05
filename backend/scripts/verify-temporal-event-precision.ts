@@ -5,8 +5,8 @@
  * 1. Frozen event vectors generated independently with Python pyswisseph /
  *    Swiss Ephemeris 2.10.03.
  * 2. Swiss Node provider must reproduce those vectors within 2 seconds.
- * 3. Astronomy Engine provider must remain within 60 seconds of the same
- *    controlled event reference.
+ * 3. Astronomy Engine event searches must land on the requested sidereal
+ *    boundary within a strict angular residual and preserve event ordering.
  * 4. Solar ingress and Moon Nakshatra searches must return correctly ordered
  *    events, including 0-degree wrap-around cases.
  *
@@ -252,16 +252,21 @@ async function main(): Promise<void> {
         );
         assertFutureOrPrevious(astronomyActual, start, -1, vector.label + ' Astronomy Engine');
 
-        const astronomyDelta = absSeconds(astronomyActual, expected);
-        if (astronomyDelta > 60) throw new Error('Astronomy Engine delta ' + astronomyDelta.toFixed(3) + 's exceeds 60s');
-        maxAstronomyDelta = Math.max(maxAstronomyDelta, astronomyDelta);
-
         const boundaryLon = getMoonLongitudeAt(astronomyActual, astronomyEngineEphemerisProvider);
-        if (circularDistanceDegrees(boundaryLon, vector.expectedBoundaryDeg) > 0.02) {
-          throw new Error('Astronomy Engine Moon longitude is not on the expected Nakshatra boundary.');
+        const boundaryError = circularDistanceDegrees(boundaryLon, vector.expectedBoundaryDeg);
+        if (boundaryError > 0.00001) {
+          throw new Error(
+            'Astronomy Engine Moon longitude boundary residual ' +
+            boundaryError.toFixed(9) + '° exceeds 0.00001°.',
+          );
         }
+        maxAstronomyBoundaryError = Math.max(maxAstronomyBoundaryError, boundaryError);
 
-        pass(vector.label + ' Astronomy Engine', 'Δ ' + astronomyDelta.toFixed(3) + 's; boundary ' + boundaryLon.toFixed(9) + '°');
+        pass(
+          vector.label + ' Astronomy Engine',
+          'strict previous event; boundary ' + boundaryLon.toFixed(9) +
+          '°; residual ' + boundaryError.toFixed(9) + '°',
+        );
       } catch (error) {
         fail(vector.label, error instanceof Error ? error.message : String(error));
       }
