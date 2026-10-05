@@ -230,9 +230,9 @@ export function calculatePlanetaryPositions(
       const combustionOrbs: Record<string, number> = {
         Moon: 12.0,
         Mars: 17.0,
-        Mercury: 14.0,
+        Mercury: (speed < 0 ? 12.0 : 14.0),
         Jupiter: 11.0,
-        Venus: 10.0,
+        Venus: (speed < 0 ? 8.0 : 10.0),
         Saturn: 15.0,
       };
       if (diff <= (combustionOrbs[b.name] || 10.0)) combust = true;
