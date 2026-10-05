@@ -708,7 +708,7 @@ export function calculateComprehensiveDailyPanchanga(
   let cursor = startOfDayUtc;
   for (let i = 0; i < 4 && cursor.getTime() < nextDayUtc.getTime(); i++) {
     const span = 360 / 27;
-    const nakIndex = Math.min(26, Math.floor(moonSiderealLongitudeAt(cursor) / span));
+    const nakIndex = Math.min(26, Math.floor(moonSiderealLongitudeAt(cursor, ephemerisProvider) / span));
     const starStart = findNakshatraTransition(cursor, -1, ephemerisProvider);
     const starEnd = findNakshatraTransition(cursor, 1, ephemerisProvider);
     const amrita = getAmritaWindowForNakshatra(nakIndex, starStart, starEnd);
