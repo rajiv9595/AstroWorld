@@ -11,7 +11,7 @@ export const astrologyRouter = Router();
 astrologyRouter.use(authenticateRequest);
 
 // Compute Chart API
-astrologyRouter.post('/compute', (req: Request, res: Response) => {
+astrologyRouter.post('/compute', async (req: Request, res: Response) => {
   try {
     const profile: BirthProfile = req.body.profile || DEFAULT_BIRTH_PROFILE;
     const evalDate = req.body.evaluationDate ? new Date(req.body.evaluationDate) : new Date();
@@ -24,7 +24,7 @@ astrologyRouter.post('/compute', (req: Request, res: Response) => {
 });
 
 // Canonical Default Benchmark Profile API
-astrologyRouter.get('/default', (_req: Request, res: Response) => {
+astrologyRouter.get('/default', async (_req: Request, res: Response) => {
   try {
     const chart = await computeCanonicalChartWithConfiguredEphemeris(DEFAULT_BIRTH_PROFILE);
     res.json({
