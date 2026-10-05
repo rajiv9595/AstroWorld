@@ -14,6 +14,16 @@ export interface SupabaseUserProfile {
   preferredChartStyle?: 'NORTH_INDIAN' | 'SOUTH_INDIAN';
 }
 
+let csrfToken: string | null = null;
+
+export const getCsrfToken = (): string | null => csrfToken;
+
+export const authWriteHeaders = (extra: Record<string, string> = {}): Record<string, string> => {
+  return csrfToken
+    ? { ...extra, 'X-CSRF-Token': csrfToken }
+    : { ...extra };
+};
+
 async function parseJsonResponse(res: Response): Promise<any> {
   return res.json().catch(() => null);
 }
@@ -28,7 +38,7 @@ export const signUpWithSupabase = async (
     const res = await fetch('/api/auth/signup', {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authWriteHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
         name: fullName.trim(),
         email: email.trim().toLowerCase(),
@@ -39,6 +49,7 @@ export const signUpWithSupabase = async (
 
     const data = await parseJsonResponse(res);
     if (res.ok && data?.success && data?.user) {
+      if (typeof data.csrfToken === 'string') csrfToken = data.csrfToken;
       return {
         success: true,
         authenticated: data.authenticated !== false,
@@ -64,7 +75,7 @@ export const signInWithSupabase = async (
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authWriteHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
         email: email.trim().toLowerCase(),
         password,
@@ -74,6 +85,7 @@ export const signInWithSupabase = async (
 
     const data = await parseJsonResponse(res);
     if (res.ok && data?.success && data?.user) {
+      if (typeof data.csrfToken === 'string') csrfToken = data.csrfToken;
       return { success: true, user: data.user };
     }
 
