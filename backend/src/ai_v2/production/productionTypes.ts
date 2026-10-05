@@ -134,6 +134,7 @@ export interface ReadinessCheckResult {
   checks: {
     geminiConfigured: boolean;
     databaseConfigured: boolean;
+    corsConfigured: boolean;
     astrologyEngineOperational: boolean;
     memorySubsystemOperational: boolean;
     conversationStateOperational: boolean;
