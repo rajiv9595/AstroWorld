@@ -7,6 +7,7 @@
 import {
   birthProfileToUtcDate,
   localDateTimeToUtcDate,
+  getLiveDailyPanchanga,
 } from '../../shared/index.ts';
 import { validateBirthProfile } from '../src/ai_v2/schemas/birthProfile.ts';
 
@@ -130,6 +131,21 @@ const contracts: Contract[] = [
     },
   },
 
+
+
+  {
+    name: 'Live Panchanga accepts exact DST-fold instant',
+    run: () => {
+      // 2024-11-03T05:30Z is the first 01:30 occurrence in New York.
+      const result = getLiveDailyPanchanga(
+        new Date('2024-11-03T05:30:00.000Z'),
+        40.7128,
+        -74.0060,
+        'America/New_York',
+      );
+      if (!result) throw new Error('Live Panchanga returned no result.');
+    },
+  },
   {
     name: 'Backend rejects invalid timezone birth profile',
     run: () => {
