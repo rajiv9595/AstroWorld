@@ -94,9 +94,16 @@ const contracts: Contract[] = [
   },
   {
     name: 'Cross-site sessions use explicit credentialed CORS',
-    pass: files.server.includes("Access-Control-Allow-Credentials",) &&
-      !files.server.includes("Access-Control-Allow-Origin', '*'"),
-    detail: 'Credentialed CORS must use an explicit origin allowlist.',
+    pass: files.server.includes("Access-Control-Allow-Credentials") &&
+      !files.server.includes("Access-Control-Allow-Origin', '*'") &&
+      files.server.includes('CORS_ORIGINS'),
+    detail: 'Credentialed CORS must use an explicit configured origin allowlist.',
+  },
+  {
+    name: 'Production does not implicitly allow localhost',
+    pass: files.server.includes("process.env.NODE_ENV === 'production'") &&
+      files.server.includes("['http://localhost:5173', 'http://127.0.0.1:5173']"),
+    detail: 'Development origins must be conditional, not globally allowed in production.',
   },
   {
     name: 'Production trusts the proxy correctly',
@@ -122,9 +129,19 @@ const contracts: Contract[] = [
   },
   {
     name: 'Frontend auth tokens are not persisted',
-    pass: !files.frontendAuth.includes('astroworld_supabase_auth_token') ||
-      files.frontendAuth.includes("localStorage.removeItem('astroworld_supabase_auth_token')"),
-    detail: 'No browser-accessible token storage may be introduced.',
+    pass: !files.frontendAuth.includes("localStorage.setItem('astroworld_supabase_auth_token'") &&
+      !files.frontendAuth.includes("localStorage.setItem(\"astroworld_supabase_auth_token\""),
+    detail: 'No Supabase access/refresh token may be stored in browser localStorage.',
+  },
+  {
+    name: 'Logout is authenticated',
+    pass: files.authRoutes.includes("authRouter.post('/logout', authenticateRequest"),
+    detail: 'Session termination must use the authenticated cookie/CSRF boundary.',
+  },
+  {
+    name: 'Session response exposes CSRF bootstrap only',
+    pass: files.authRoutes.includes('csrfToken') && !files.authRoutes.match(/\n\s*token:\s*data\.session/),
+    detail: 'Auth responses may return CSRF bootstrap data but not raw Supabase access tokens.',
   },
   {
     name: 'Guest-login dead endpoint removed',
