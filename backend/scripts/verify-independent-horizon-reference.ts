@@ -175,7 +175,7 @@ function radToDeg(value: number): number {
 }
 
 function normalizeCivilDate(input: string): { year: number; month: number; day: number } {
-  const match = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(input);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input);
   if (!match) throw new Error('Invalid Gregorian civil date: ' + input);
   const year = Number(match[1]);
   const month = Number(match[2]);
