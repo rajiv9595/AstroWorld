@@ -148,6 +148,56 @@ expect(
   false,
 );
 
+const nonOpposedNodes = firstHalfPlanets.map((p) => p.name === 'Ketu'
+  ? { ...p, signIndex: 5, sign: 'Virgo' as ZodiacSign }
+  : p
+);
+expect(
+  'Kala Sarpa rejects non-opposite Rahu/Ketu nodes',
+  calculateYogasAndDoshas(nonOpposedNodes, 'Aries').doshas.find(d => d.id === 'kala_sarpa')?.present,
+  false,
+);
+
+const mahapurushaBase = [
+  syntheticPlanet('Sun', 2, 1),
+  syntheticPlanet('Moon', 3, 2),
+  syntheticPlanet('Mercury', 5, 4),
+  syntheticPlanet('Jupiter', 9, 8),
+  syntheticPlanet('Venus', 6, 5),
+  syntheticPlanet('Saturn', 8, 7),
+  syntheticPlanet('Rahu', 11, 10),
+  syntheticPlanet('Ketu', 5, 4),
+];
+const ruchakaChart = [syntheticPlanet('Mars', 1, 0), ...mahapurushaBase];
+const nonRuchakaChart = [syntheticPlanet('Mars', 1, 1), ...mahapurushaBase];
+expect(
+  'Ruchaka requires Mars in own/exaltation sign in a Kendra',
+  calculateYogasAndDoshas(ruchakaChart, 'Aries').yogas.find(y => y.id === 'ruchaka')?.present,
+  true,
+);
+expect(
+  'Ruchaka rejects a Kendra placement in a non-qualifying sign',
+  calculateYogasAndDoshas(nonRuchakaChart, 'Aries').yogas.find(y => y.id === 'ruchaka')?.present,
+  false,
+);
+
+const viparitaChart = [
+  syntheticPlanet('Sun', 1, 0),
+  syntheticPlanet('Moon', 2, 1),
+  syntheticPlanet('Mars', 6, 5),
+  syntheticPlanet('Mercury', 8, 7),
+  syntheticPlanet('Jupiter', 3, 2),
+  syntheticPlanet('Venus', 10, 9),
+  syntheticPlanet('Saturn', 11, 10),
+  syntheticPlanet('Rahu', 4, 3),
+  syntheticPlanet('Ketu', 10, 9),
+];
+expect(
+  'Harsha is detected only when the 6th lord occupies a dusthana',
+  calculateYogasAndDoshas(viparitaChart, 'Aries').yogas.find(y => y.id === 'harsha_viparita')?.present,
+  true,
+);
+
 const dashaBirth = new Date('2005-08-16T18:32:00.000Z');
 const dashaAtBirth = calculateVimshottariDasha(257.8637656115666, dashaBirth, dashaBirth);
 const activeAtBirth = dashaAtBirth.mahadashas
