@@ -291,7 +291,6 @@ export function computeCanonicalChart(
     moon.siderealLongitude,
     birthUtcDate,
     evaluationDateUtc,
-    ephemerisProvider,
   );
 
   // 10. Strength (Shadbala, Bhava Bala, Avasthas)
@@ -315,7 +314,8 @@ export function computeCanonicalChart(
     planets,
     ascendant.signIndex,
     ashtakavarga,
-    evaluationDateUtc
+    evaluationDateUtc,
+    ephemerisProvider,
   );
 
   // 15. Timing and Predictions
