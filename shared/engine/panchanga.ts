@@ -579,6 +579,30 @@ export function calculateComprehensiveDailyPanchanga(
   for (const part of localDateParts) {
     if (part.type !== 'literal') localDay[part.type] = parseInt(part.value, 10);
   }
+
+  // Horizon providers return the next event after the supplied UTC instant.
+  // For a civil-day Panchanga, rise/set labels must belong to the requested
+  // local calendar date. This matters especially for Moon events and across
+  // DST boundaries, where the next event can legitimately fall on the next
+  // local day.
+  const isSameLocalCalendarDay = (candidate: Date | null): candidate is Date => {
+    if (!candidate) return false;
+    const candidateParts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+    }).formatToParts(candidate);
+    const candidateDay: Record<string, number> = {};
+    for (const part of candidateParts) {
+      if (part.type !== 'literal') candidateDay[part.type] = parseInt(part.value, 10);
+    }
+    return (
+      candidateDay.year === localDay.year &&
+      candidateDay.month === localDay.month &&
+      candidateDay.day === localDay.day
+    );
+  }
   const startOfDayUtc = localDateTimeToUtcDate(
     localDay.year,
     localDay.month,
@@ -608,13 +632,13 @@ export function calculateComprehensiveDailyPanchanga(
     timezone,
   );
 
-  const sunRiseDate = ephemerisProvider.getHorizonEvent(
+  const sunRiseCandidate = ephemerisProvider.getHorizonEvent(
     startOfDayUtc,
     'Sun',
     'RISE',
     { latitude, longitude },
   );
-  const sunSetDate = ephemerisProvider.getHorizonEvent(
+  const sunSetCandidate = ephemerisProvider.getHorizonEvent(
     localMiddayUtc,
     'Sun',
     'SET',
@@ -627,23 +651,28 @@ export function calculateComprehensiveDailyPanchanga(
     { latitude, longitude },
   );
 
+  const sunRiseDate = isSameLocalCalendarDay(sunRiseCandidate) ? sunRiseCandidate : null;
+  const sunSetDate = isSameLocalCalendarDay(sunSetCandidate) ? sunSetCandidate : null;
+
   const sunriseDate = sunRiseDate || new Date(startOfDayUtc.getTime() + 6 * 3600 * 1000);
   const sunsetDate = sunSetDate || new Date(startOfDayUtc.getTime() + 18 * 3600 * 1000);
   const nextSunriseDate = nextSunRiseDate || new Date(sunriseDate.getTime() + 24 * 3600 * 1000);
 
   // Moonrise & Moonset
-  const moonRiseDate = ephemerisProvider.getHorizonEvent(
+  const moonRiseCandidate = ephemerisProvider.getHorizonEvent(
     startOfDayUtc,
     'Moon',
     'RISE',
     { latitude, longitude },
   );
-  const moonSetDate = ephemerisProvider.getHorizonEvent(
+  const moonSetCandidate = ephemerisProvider.getHorizonEvent(
     localMiddayUtc,
     'Moon',
     'SET',
     { latitude, longitude },
   );
+  const moonRiseDate = isSameLocalCalendarDay(moonRiseCandidate) ? moonRiseCandidate : null;
+  const moonSetDate = isSameLocalCalendarDay(moonSetCandidate) ? moonSetCandidate : null;
   const moonriseStr = moonRiseDate ? formatLocalTime(moonRiseDate, timezone) : 'No Moonrise';
   const moonsetStr = moonSetDate ? formatLocalTime(moonSetDate, timezone) : 'No Moonset';
 
