@@ -558,11 +558,28 @@ export function calculateComprehensiveDailyPanchanga(
     0,
     timezone,
   );
-  const sunRiseResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, +1, startOfDayUtc, 1);
-  const localMiddayUtc = new Date(startOfDayUtc.getTime() + 12 * 3600 * 1000);
-  const sunSetResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, -1, localMiddayUtc, 1);
+  const localMiddayUtc = localDateTimeToUtcDate(
+    localDay.year,
+    localDay.month,
+    localDay.day,
+    12,
+    0,
+    0,
+    timezone,
+  );
+  const nextLocalDayDate = new Date(Date.UTC(localDay.year, localDay.month - 1, localDay.day + 1));
+  const nextDayUtc = localDateTimeToUtcDate(
+    nextLocalDayDate.getUTCFullYear(),
+    nextLocalDayDate.getUTCMonth() + 1,
+    nextLocalDayDate.getUTCDate(),
+    0,
+    0,
+    0,
+    timezone,
+  );
 
-  const nextDayUtc = new Date(startOfDayUtc.getTime() + 24 * 3600 * 1000);
+  const sunRiseResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, +1, startOfDayUtc, 1);
+  const sunSetResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, -1, localMiddayUtc, 1);
   const nextSunRiseResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, +1, nextDayUtc, 1);
 
   const sunriseDate = sunRiseResult ? sunRiseResult.date : new Date(startOfDayUtc.getTime() + 6 * 3600 * 1000);
