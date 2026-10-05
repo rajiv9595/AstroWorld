@@ -206,7 +206,7 @@ authRouter.get('/session', authenticateRequest, async (req: Request, res: Respon
 });
 
 // Sign Out
-authRouter.post('/logout', (_req: Request, res: Response) => {
+authRouter.post('/logout', authenticateRequest, (_req: Request, res: Response) => {
   clearAuthSessionCookies(res);
   return res.json({ success: true, authenticated: false });
 });
