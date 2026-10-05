@@ -239,7 +239,7 @@ export class AIApiClient {
       {
         method: 'DELETE',
         credentials: 'include',
-        headers: { Accept: 'application/json' },
+        headers: authWriteHeaders({ Accept: 'application/json' }),
       },
     );
 
