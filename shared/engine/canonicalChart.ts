@@ -268,17 +268,33 @@ export function getLiveDailyPanchanga(
   longitude: number = 77.2090,
   timezone: string = 'Asia/Kolkata'
 ): PanchangaFacts {
+  const tz = timezone || 'Asia/Kolkata';
+  const localParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hour12: false,
+  }).formatToParts(date);
+  const local: Record<string, number> = {};
+  for (const part of localParts) {
+    if (part.type !== 'literal') local[part.type] = parseInt(part.value, 10);
+  }
+
   const profile: BirthProfile = {
     name: 'Today Live Transit',
-    year: date.getFullYear(),
-    month: date.getMonth() + 1,
-    day: date.getDate(),
-    hour: date.getHours(),
-    minute: date.getMinutes(),
-    second: date.getSeconds(),
+    year: local.year,
+    month: local.month,
+    day: local.day,
+    hour: local.hour === 24 ? 0 : local.hour,
+    minute: local.minute,
+    second: local.second,
     latitude,
     longitude,
-    timezone: timezone || 'Asia/Kolkata',
+    timezone: tz,
   };
 
   const chart = computeCanonicalChart(profile, date);
