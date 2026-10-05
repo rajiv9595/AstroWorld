@@ -4,8 +4,11 @@ import {
   DEFAULT_BIRTH_PROFILE,
   BirthProfile,
 } from '../../../shared/index.ts';
+import { authenticateRequest } from '../middleware/authMiddleware.ts';
 
 export const astrologyRouter = Router();
+
+astrologyRouter.use(authenticateRequest);
 
 // Compute Chart API
 astrologyRouter.post('/compute', (req: Request, res: Response) => {
