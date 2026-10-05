@@ -46,7 +46,14 @@ export const DEFAULT_BIRTH_PROFILE: BirthProfile = {
 };
 
 // Aliased for canonical engine references
+/**
+ * Backward-compatible alias for callers that previously imported this symbol.
+ * This is demo data, NOT an astronomical golden/reference vector.
+ */
 export const GOLDEN_BENCHMARK_PROFILE = DEFAULT_BIRTH_PROFILE;
+
+/** Explicit name for the built-in demo chart. */
+export const DEFAULT_DEMO_PROFILE = DEFAULT_BIRTH_PROFILE;
 
 /**
  * Generate 12 whole sign houses and identify occupants and aspects.
