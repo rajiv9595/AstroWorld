@@ -33,6 +33,10 @@ export interface ToolExecutionResult<T = any> {
     ruleStandard: string;
     calculatedAtIso: string;
     verified: boolean;
+    /** True only when this output has been independently cross-validated against a reference implementation. */
+    crossVerified?: boolean;
+    /** Current epistemic state of the deterministic result. */
+    verificationLevel?: 'computed' | 'cross_verified' | 'rule_verified';
   };
 }
 
@@ -67,10 +71,12 @@ export function executeGetBirthChart(args: any): ToolExecutionResult {
         houses: chart.houses,
       },
       provenance: {
-        sourceEngine: 'AstroWorld Canonical Ephemeris (astronomy-engine + Analytical Lahiri Ayanamsha)',
+        sourceEngine: 'AstroWorld Canonical Ephemeris (astronomy-engine + Analytical Lahiri Ayanamsha; reference cross-check pending)',
         ruleStandard: 'BPHS Ch. 3 (Graha Guna Swarupa)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -142,6 +148,8 @@ export function executeGetDivisionalChart(args: any): ToolExecutionResult {
         ruleStandard: `BPHS Ch. 6 (Varga Ganita - ${vargaCode})`,
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -210,6 +218,8 @@ export function executeGetAllDivisionalCharts(args: any): ToolExecutionResult {
         ruleStandard: 'BPHS Ch. 6 (Complete 16 Divisional Matrix)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -265,6 +275,8 @@ export function executeGetCurrentDasha(args: any): ToolExecutionResult {
         ruleStandard: 'BPHS Ch. 46 (Dasha Paddhati)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -337,6 +349,8 @@ export function executeGetDashaAt(args: any): ToolExecutionResult {
         ruleStandard: 'BPHS Ch. 46 (Dasha Paddhati)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -383,6 +397,7 @@ export function executeGetTransits(args: any): ToolExecutionResult {
       data: {
         queryDateIso: chart.transits.queryDateIso,
         planets: chart.transits.planets,
+        solarIngress: chart.transits.solarIngress,
         sadeSati: chart.transits.sadeSati,
       },
       provenance: {
@@ -390,6 +405,8 @@ export function executeGetTransits(args: any): ToolExecutionResult {
         ruleStandard: 'Phaladeepika Ch. 26 (Gochara Phala)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -443,6 +460,8 @@ export function executeGetActiveYogas(args: any): ToolExecutionResult {
         ruleStandard: 'Brihat Parashara Hora Shastra (Yoga Adhyaya)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -471,8 +490,8 @@ export function executeGetPlanetaryStrength(args: any): ToolExecutionResult {
       tool: 'get_planetary_strength',
       error: validation.error || 'Invalid birth profile.',
       provenance: {
-        sourceEngine: 'Shadbala Six-Fold Strength Engine',
-        ruleStandard: 'BPHS Ch. 27-28',
+        sourceEngine: 'Shadbala Classical-Partial Engine',
+        ruleStandard: 'BPHS Ch. 27-28 (classical partial)',
         calculatedAtIso: new Date().toISOString(),
         verified: false,
       },
@@ -488,12 +507,15 @@ export function executeGetPlanetaryStrength(args: any): ToolExecutionResult {
         shadbala: chart.strength.shadbala,
         bhavaBala: chart.strength.bhavaBala,
         avasthas: chart.strength.avasthas,
+        methodology: chart.strength.methodology,
       },
       provenance: {
-        sourceEngine: 'Shadbala Six-Fold Strength Engine',
-        ruleStandard: 'BPHS Ch. 27-28 (Graha-Bhava Bala)',
+        sourceEngine: 'Shadbala Classical-Partial Engine',
+        ruleStandard: 'BPHS Ch. 27-28 (classical partial; Bhava Bala approximate)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -548,6 +570,8 @@ export function executeGetAshtakavarga(args: any): ToolExecutionResult {
         ruleStandard: 'BPHS Ch. 66-72 (Ashtakavarga Adhyaya)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -589,12 +613,18 @@ export function executeGetJaiminiDetails(args: any): ToolExecutionResult {
     return {
       success: true,
       tool: 'get_jaimini_details',
-      data: chart.jaimini,
+      data: {
+        ...chart.jaimini,
+        atmakarakaRashiSign: chart.jaimini.karakamsaSign,
+        karakamsa: chart.jaimini.karakamsaNavamshaSign,
+      },
       provenance: {
         sourceEngine: 'Jaimini Sutras Engine',
         ruleStandard: 'Jaimini Upadesha Sutras (Chara Karaka Adhyaya)',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {
@@ -623,8 +653,8 @@ export function executeGetPanchanga(args: any): ToolExecutionResult {
       tool: 'get_panchanga',
       error: validation.error || 'Invalid birth profile.',
       provenance: {
-        sourceEngine: 'Panchanga Calculation Engine',
-        ruleStandard: 'Surya Siddhanta',
+        sourceEngine: 'Panchanga Engine (Astronomy + Lahiri + classical Panchanga tables)',
+        ruleStandard: 'Tithi/Nakshatra/Yoga/Karana rules',
         calculatedAtIso: new Date().toISOString(),
         verified: false,
       },
@@ -638,10 +668,12 @@ export function executeGetPanchanga(args: any): ToolExecutionResult {
       tool: 'get_panchanga',
       data: chart.panchanga,
       provenance: {
-        sourceEngine: 'Panchanga Calculation Engine',
-        ruleStandard: 'Surya Siddhanta & Muhurta Martanda',
+        sourceEngine: 'Panchanga Engine (Astronomy + Lahiri + classical Panchanga tables)',
+        ruleStandard: 'Tithi/Nakshatra/Yoga/Karana rules; regional Muhurta conventions disclosed per calculation',
         calculatedAtIso: new Date().toISOString(),
         verified: true,
+        crossVerified: false,
+        verificationLevel: 'computed',
       },
     };
   } catch (err: any) {

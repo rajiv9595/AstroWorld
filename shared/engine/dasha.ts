@@ -46,13 +46,21 @@ export function calculateVimshottariDasha(
   let currentMs = birthMs - elapsedYears * MS_PER_YEAR;
 
   const mahadashaLords = getCycleStartingFrom(startLord);
+  const cycleLengthMs = 120 * MS_PER_YEAR;
+  const cycleCount = Math.max(
+    1,
+    evalMs >= currentMs
+      ? Math.ceil((evalMs - currentMs + 1) / cycleLengthMs)
+      : 1,
+  );
   const mahadashas: VimshottariDashaFacts['mahadashas'] = [];
 
   let activeMd: DashaPeriod | null = null;
   let activeAd: DashaPeriod | null = null;
   let activePd: DashaPeriod | null = null;
 
-  for (const mdLord of mahadashaLords) {
+  for (let cycle = 0; cycle < cycleCount; cycle++) {
+    for (const mdLord of mahadashaLords) {
     const mdDurYears = VIMSHOTTARI_DURATIONS[mdLord];
     const mdDurMs = mdDurYears * MS_PER_YEAR;
     const mdStartMs = currentMs;
@@ -154,10 +162,11 @@ export function calculateVimshottariDasha(
       antardashas,
     });
 
-    currentMs = mdEndMs;
+      currentMs = mdEndMs;
+    }
   }
 
-  // Fallbacks if evaluation date is beyond 120 years or edge case
+  // Fallbacks only for evaluation dates that precede the generated sequence.
   const defaultMd = mahadashas[0].period;
   const defaultAd = mahadashas[0].antardashas[0].period;
   const defaultPd = mahadashas[0].antardashas[0].pratyantardashas[0];

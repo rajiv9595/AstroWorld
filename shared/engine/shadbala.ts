@@ -3,7 +3,14 @@
  * Classical Parashari strength calculations (Virupas & Rupas).
  */
 
-import { SIGN_LORDS, ZODIAC_SIGNS } from './constants.ts';
+import {
+  MOOLATRIKONA_MAP,
+  NAISARGIKA_RELATIONSHIPS,
+  OWN_SIGNS_MAP,
+  SIGN_LORDS,
+  ZODIAC_SIGNS,
+} from './constants.ts';
+import { calculateVargaSignIndex } from './vargas.ts';
 import {
   BhavaBalaItem,
   PlanetName,
@@ -27,18 +34,99 @@ const MIN_REQUIRED_VIRUPAS: Record<PlanetName, number> = {
   Ketu: 300,
 };
 
-// Fixed natural strength (Naisargika Bala) in Virupas
+// Fixed natural strength (Naisargika Bala) in Virupas.
 const NAISARGIKA_BALA: Record<PlanetName, number> = {
-  Sun: 60.0,
-  Moon: 51.43,
-  Venus: 42.86,
-  Jupiter: 34.29,
-  Mercury: 25.71,
-  Mars: 17.14,
-  Saturn: 8.57,
-  Rahu: 15.0,
-  Ketu: 15.0,
+  Sun: 60.0, Moon: 51.43, Venus: 42.86, Jupiter: 34.29,
+  Mercury: 25.71, Mars: 17.14, Saturn: 8.57,
+  Rahu: 15.0, Ketu: 15.0,
 };
+
+const CLASSICAL_SHADBALA_BODIES: PlanetName[] = [
+  'Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn',
+];
+
+const SAPTAVARGA_CODES = ['D1', 'D2', 'D3', 'D7', 'D9', 'D12', 'D30'] as const;
+
+function circularDistanceDegrees(a: number, b: number): number {
+  const raw = Math.abs(a - b) % 360;
+  return Math.min(raw, 360 - raw);
+}
+
+function calculateUcchaBala(planet: PlanetPosition): number {
+  const ex: Partial<Record<PlanetName, { sign: ZodiacSign; deepDegree: number }>> = {
+    Sun: { sign: 'Aries', deepDegree: 10 },
+    Moon: { sign: 'Taurus', deepDegree: 3 },
+    Mars: { sign: 'Capricorn', deepDegree: 28 },
+    Mercury: { sign: 'Virgo', deepDegree: 15 },
+    Jupiter: { sign: 'Cancer', deepDegree: 5 },
+    Venus: { sign: 'Pisces', deepDegree: 27 },
+    Saturn: { sign: 'Libra', deepDegree: 20 },
+  };
+  const point = ex[planet.name];
+  if (!point) return 0;
+  const exaltationLongitude = ZODIAC_SIGNS.indexOf(point.sign) * 30 + point.deepDegree;
+  return Math.max(0, Math.round((60 - circularDistanceDegrees(planet.siderealLongitude, exaltationLongitude) / 3) * 100) / 100);
+}
+
+function calculateSaptavargajaBala(planet: PlanetPosition, planets: PlanetPosition[]): number {
+  const score = { greatFriend: 22.5, friend: 15, neutral: 7.5, enemy: 3.75, greatEnemy: 1.875 };
+  const permanent = NAISARGIKA_RELATIONSHIPS[planet.name];
+  const temporaryFriendHouses = new Set([2, 3, 4, 10, 11, 12]);
+
+  const total = SAPTAVARGA_CODES.reduce((sum, code) => {
+    const placement = calculateVargaSignIndex(code, planet.siderealLongitude);
+    const sign = ZODIAC_SIGNS[placement.signIndex];
+    const owner = SIGN_LORDS[sign];
+
+    if ((code === 'D1') && MOOLATRIKONA_MAP[planet.name]?.sign === sign &&
+        placement.degreeInVargaSign >= MOOLATRIKONA_MAP[planet.name]!.startDegree &&
+        placement.degreeInVargaSign < MOOLATRIKONA_MAP[planet.name]!.endDegree) {
+      return sum + 45;
+    }
+    if ((OWN_SIGNS_MAP[planet.name] || []).includes(sign)) return sum + 30;
+    if (!permanent) return sum + score.neutral;
+
+    const natural =
+      permanent.friends.includes(owner) ? 1 :
+      permanent.enemies.includes(owner) ? -1 : 0;
+
+    const ownerPlanet = planets.find(p => p.name === owner);
+    const temporary = ownerPlanet
+      ? (temporaryFriendHouses.has(((ownerPlanet.houseNumber - planet.houseNumber + 12) % 12) + 1) ? 1 : -1)
+      : 0;
+
+    const compound = natural + temporary;
+    if (compound >= 2) return sum + score.greatFriend;
+    if (compound === 1) return sum + score.friend;
+    if (compound === 0) return sum + score.neutral;
+    if (compound === -1) return sum + score.enemy;
+    return sum + score.greatEnemy;
+  }, 0);
+
+  return Math.round(total * 100) / 100;
+}
+
+function calculateOjaYugmaBala(planet: PlanetPosition): number {
+  const female = planet.name === 'Moon' || planet.name === 'Venus';
+  const d1Matches = female ? planet.signIndex % 2 === 1 : planet.signIndex % 2 === 0;
+  const d9 = calculateVargaSignIndex('D9', planet.siderealLongitude);
+  const d9Matches = female ? d9.signIndex % 2 === 1 : d9.signIndex % 2 === 0;
+  return (d1Matches ? 15 : 0) + (d9Matches ? 15 : 0);
+}
+
+function calculateKendradiBala(house: number): number {
+  if ([1, 4, 7, 10].includes(house)) return 60;
+  if ([2, 5, 8, 11].includes(house)) return 30;
+  return 15;
+}
+
+function calculateDrekkanaBala(planet: PlanetPosition): number {
+  const deg = planet.degreeInSign;
+  if (['Sun', 'Mars', 'Jupiter'].includes(planet.name)) return deg < 10 ? 15 : 0;
+  if (['Mercury', 'Saturn'].includes(planet.name)) return deg >= 10 && deg < 20 ? 15 : 0;
+  if (['Moon', 'Venus'].includes(planet.name)) return deg >= 20 ? 15 : 0;
+  return 0;
+}
 
 // House where each planet gets maximum Dig Bala (Directional Strength - 60 Virupas)
 const DIG_BALA_OPTIMAL_HOUSES: Record<PlanetName, number> = {
@@ -57,71 +145,99 @@ const DIG_BALA_OPTIMAL_HOUSES: Record<PlanetName, number> = {
  * Compute Dig Bala (0 to 60 Virupas) based on distance from optimal house.
  */
 function calculateDigBala(planet: PlanetName, house: number): number {
-  const optHouse = DIG_BALA_OPTIMAL_HOUSES[planet] || 1;
-  const houseDiff = Math.abs(house - optHouse);
-  const circularDiff = Math.min(houseDiff, 12 - houseDiff);
-  // Maximum at 0 diff (60 virupas), drops linearly to 0 at 6 houses away
-  return Math.round((60.0 - (circularDiff / 6.0) * 60.0) * 10) / 10;
+  const optHouse = DIG_BALA_OPTIMAL_HOUSES[planet];
+  if (!optHouse) return 0;
+  const houseDiff = Math.min(
+    Math.abs(house - optHouse),
+    12 - Math.abs(house - optHouse),
+  );
+  return Math.round(Math.max(0, 60 - houseDiff * 10) * 100) / 100;
 }
 
 /**
  * Compute Sthana Bala (Positional Strength) approx in Virupas.
  */
-function calculateSthanaBala(planet: PlanetPosition): number {
-  let score = 60.0; // base
-
-  // Uchcha Bala (Exaltation / Debilitation component)
-  if (planet.dignity === 'EXALTED') score += 60.0;
-  else if (planet.dignity === 'MOOLATRIKONA') score += 45.0;
-  else if (planet.dignity === 'OWN_SIGN') score += 30.0;
-  else if (planet.dignity === 'FRIEND') score += 15.0;
-  else if (planet.dignity === 'ENEMY') score -= 15.0;
-  else if (planet.dignity === 'DEBILITATED') score -= 30.0;
-
-  // Kendra Bala (Angular house bonus)
-  if ([1, 4, 7, 10].includes(planet.houseNumber)) score += 60.0;
-  else if ([2, 5, 8, 11].includes(planet.houseNumber)) score += 30.0;
-  else score += 15.0;
-
-  return Math.max(20, Math.round(score * 10) / 10);
+function calculateSthanaBala(planet: PlanetPosition, planets: PlanetPosition[]): number {
+  const uccha = calculateUcchaBala(planet);
+  const saptavargaja = calculateSaptavargajaBala(planet, planets);
+  const ojayugma = calculateOjaYugmaBala(planet);
+  const kendradi = calculateKendradiBala(planet.houseNumber);
+  const drekkana = calculateDrekkanaBala(planet);
+  return Math.round((uccha + saptavargaja + ojayugma + kendradi + drekkana) * 100) / 100;
 }
 
 /**
  * Compute Kala Bala (Temporal Strength) in Virupas.
  */
-function calculateKalaBala(planet: PlanetPosition, birthHour: number): number {
-  let score = 90.0; // nominal base
-  const isDay = birthHour >= 6 && birthHour < 18;
-
-  // Day/Night strong planets
-  if (isDay) {
-    if (['Sun', 'Jupiter', 'Venus'].includes(planet.name)) score += 30.0;
-  } else {
-    if (['Moon', 'Mars', 'Saturn'].includes(planet.name)) score += 30.0;
+function calculateKalaBala(
+  planet: PlanetPosition,
+  birthHourFraction: number,
+  moonSunElongation: number,
+): number {
+  // Classical sub-components available from the current input contract:
+  // Nathonnatha + Paksha. Tribhaga, Vara/Hora, Ayana and Yuddha need richer
+  // birth-context inputs and are deliberately not fabricated here.
+  if (planet.name === 'Mercury') {
+    const nathonnatha = 60;
+    const half = moonSunElongation <= 180 ? moonSunElongation : 360 - moonSunElongation;
+    const paksha = Math.max(0, Math.min(60, half / 3));
+    return Math.round((nathonnatha + paksha) * 100) / 100;
   }
-  if (planet.name === 'Mercury') score += 20.0; // Strong all times
 
-  return Math.round(score * 10) / 10;
+  const hour = ((birthHourFraction % 24) + 24) % 24;
+  const distanceFromMidnight = Math.min(hour, 24 - hour);
+  const unna = (distanceFromMidnight / 12) * 60;
+  const nata = 60 - unna;
+  const nathonnatha = ['Sun', 'Jupiter', 'Venus'].includes(planet.name) ? unna : nata;
+
+  const half = moonSunElongation <= 180 ? moonSunElongation : 360 - moonSunElongation;
+  const beneficPaksha = Math.max(0, Math.min(60, half / 3));
+  const paksha = ['Moon', 'Mercury', 'Jupiter', 'Venus'].includes(planet.name)
+    ? beneficPaksha
+    : 60 - beneficPaksha;
+
+  return Math.round((nathonnatha + paksha) * 100) / 100;
 }
 
 /**
  * Compute Chesta Bala (Motional Strength) in Virupas.
  */
 function calculateChestaBala(planet: PlanetPosition): number {
-  if (['Sun', 'Moon'].includes(planet.name)) return 45.0; // Based on Ayana for luminaries
-  if (planet.retrograde) return 60.0; // Vakri planets have peak chesta bala
-  if (planet.speed > 1.0) return 45.0;
-  return 30.0;
+  if (planet.name === 'Sun' || planet.name === 'Moon') return 30;
+  if (planet.retrograde) return 60;
+  // Without mean-vs-true longitude inputs we cannot distinguish the remaining
+  // classical motion states without guessing; use the neutral partial value.
+  return 30;
 }
 
 /**
  * Compute Drik Bala (Aspect Strength) in Virupas.
  */
-function calculateDrikBala(planet: PlanetPosition): number {
-  // Benefic influence vs Malefic influence
-  if (['Jupiter', 'Venus'].includes(planet.name)) return 25.0;
-  if (['Mars', 'Saturn'].includes(planet.name)) return -10.0;
-  return 10.0;
+function calculateDrikBala(planet: PlanetPosition, planets: PlanetPosition[]): number {
+  const moon = planets.find(p => p.name === 'Moon');
+  const sun = planets.find(p => p.name === 'Sun');
+  const elongation = moon && sun
+    ? ((moon.siderealLongitude - sun.siderealLongitude) % 360 + 360) % 360
+    : 90;
+  let score = 0;
+
+  for (const source of planets) {
+    if (source.name === planet.name || !CLASSICAL_SHADBALA_BODIES.includes(source.name)) continue;
+    const diff = (planet.houseNumber - source.houseNumber + 12) % 12;
+    const aspects =
+      diff === 6 ||
+      (source.name === 'Mars' && (diff === 3 || diff === 7)) ||
+      (source.name === 'Jupiter' && (diff === 4 || diff === 8)) ||
+      (source.name === 'Saturn' && (diff === 2 || diff === 9));
+    if (!aspects) continue;
+
+    const benefic =
+      ['Jupiter', 'Venus', 'Mercury'].includes(source.name) ||
+      (source.name === 'Moon' && elongation < 180);
+    score += benefic ? 15 : -15;
+  }
+
+  return Math.max(-60, Math.min(60, score));
 }
 
 /**
@@ -143,12 +259,17 @@ export function calculateShadbala(
 
   const factors: ShadbalaFactor[] = classicalBodies.map((name) => {
     const p = planets.find((x) => x.name === name)!;
-    const sthanaBala = calculateSthanaBala(p);
+    const sthanaBala = calculateSthanaBala(p, planets);
     const digBala = calculateDigBala(name, p.houseNumber);
-    const kalaBala = calculateKalaBala(p, birthHour);
+    const moon = planets.find(x => x.name === 'Moon');
+    const sun = planets.find(x => x.name === 'Sun');
+    const moonSunElongation = moon && sun
+      ? ((moon.siderealLongitude - sun.siderealLongitude) % 360 + 360) % 360
+      : 90;
+    const kalaBala = calculateKalaBala(p, birthHour, moonSunElongation);
     const chestaBala = calculateChestaBala(p);
     const naisargikaBala = NAISARGIKA_BALA[name];
-    const drikBala = calculateDrikBala(p);
+    const drikBala = calculateDrikBala(p, planets);
 
     const totalVirupas = Math.round(
       (sthanaBala + digBala + kalaBala + chestaBala + naisargikaBala + drikBala) * 10
@@ -321,5 +442,15 @@ export function calculateStrengthFacts(
     shadbala,
     bhavaBala,
     avasthas,
+    methodology: {
+      shadbala: 'classical_partial',
+      notes: [
+        'Sthana Bala uses Uchcha, Saptavargaja, Oja-Yugma, Kendradi and Drekkana sub-components.',
+        'Kala Bala currently includes Nathonnatha and Paksha only; Tribhaga, Varsha/Masa/Vara/Hora, Ayana and Yuddha require richer birth-context inputs.',
+        'Cheshta Bala uses exact retrograde=60 treatment for classical planets; the remaining direct-motion states are intentionally not guessed.',
+        'Drik Bala uses discrete Parashari graha-drishṭi contributions (+15 benefic / -15 malefic) and is sign/house based.',
+        'Bhava Bala remains an approximate house-strength layer and should not be represented as a full BPHS Bhava Bala computation.',
+      ],
+    },
   };
 }

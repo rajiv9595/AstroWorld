@@ -6,7 +6,7 @@
 
 import {
   computeCanonicalChart,
-  DEFAULT_BIRTH_PROFILE,
+  TEST_BENCHMARK_PROFILE,
   BirthProfile,
   getLiveDailyPanchanga,
 } from '../../shared/index.ts';
@@ -29,20 +29,7 @@ async function main() {
 
   try {
     // 1. Benchmark Chart Profile Computation
-    const benchmarkProfile: BirthProfile = {
-      name: 'Canonical Test Native',
-      year: 2005,
-      month: 8,
-      day: 17,
-      hour: 0,
-      minute: 2,
-      second: 0,
-      latitude: 16.93407,
-      longitude: 81.95522,
-      timezone: 'Asia/Kolkata',
-      cityName: 'Anaparthy, Andhra Pradesh, India',
-      gender: 'male',
-    };
+    const benchmarkProfile: BirthProfile = TEST_BENCHMARK_PROFILE;
 
     const canonical = computeCanonicalChart(benchmarkProfile);
 
@@ -74,6 +61,44 @@ async function main() {
       Boolean(canonical.vargas && canonical.vargas.D9 && canonical.vargas.D10 && canonical.vargas.D60),
       `Successfully generated D1, D9 Navamsha, D10 Dashamsha, D60 Shashtiamsha`
     );
+
+    // Test 4b: Reference-backed D9 golden vector for the benchmark.
+    const d9Expected: Record<string, string> = {
+      Sun: 'Aries',
+      Moon: 'Virgo',
+      Mars: 'Leo',
+      Mercury: 'Scorpio',
+      Jupiter: 'Cancer',
+      Venus: 'Aquarius',
+      Saturn: 'Libra',
+    };
+    for (const [planetName, expectedSign] of Object.entries(d9Expected)) {
+      const d9 = canonical.vargas.D9?.find((p: any) => p.name === planetName);
+      assert(
+        `D9 ${planetName}`,
+        Boolean(d9 && d9.sign === expectedSign),
+        `Expected ${expectedSign}, got ${d9?.sign}`
+      );
+    }
+
+    // Test 4c: Reference-backed D10 golden vector for the benchmark.
+    const d10Expected: Record<string, string> = {
+      Sun: 'Leo',
+      Moon: 'Taurus',
+      Mars: 'Virgo',
+      Mercury: 'Cancer',
+      Jupiter: 'Sagittarius',
+      Venus: 'Gemini',
+      Saturn: 'Gemini',
+    };
+    for (const [planetName, expectedSign] of Object.entries(d10Expected)) {
+      const d10 = canonical.vargas.D10?.find((p: any) => p.name === planetName);
+      assert(
+        `D10 ${planetName}`,
+        Boolean(d10 && d10.sign === expectedSign),
+        `Expected ${expectedSign}, got ${d10?.sign}`
+      );
+    }
 
     // Test 5: Vimshottari Dasha Hierarchy
     assert(
@@ -140,7 +165,7 @@ async function main() {
       console.error(`❌ Astrology Engine Verification Failed!`);
       process.exit(1);
     } else {
-      console.log(`🎉 All ${passed} Astrology Engine subsystems verified 100% operational and pure.`);
+      console.log(`🎉 All ${passed} Astrology Engine subsystem checks passed. Independent ephemeris accuracy is validated separately.`);
       process.exit(0);
     }
   } catch (err: any) {

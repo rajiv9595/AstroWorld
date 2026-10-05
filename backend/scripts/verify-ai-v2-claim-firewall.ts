@@ -163,6 +163,47 @@ async function runPhase3CSuite() {
     'Strictly rejected interpretive claim lacking evidence and rule lineage IDs'
   );
 
+  // Additional strict lineage checks introduced in AI V2 firewall-2.
+  const fakeRuleClaim = {
+    claimId: 'claim_fake_rule',
+    text: 'A verified career rule supports promotion.',
+    type: 'interpretive' as const,
+    strength: 'moderate' as const,
+    evidenceIds: [evidenceCareer.facts[0]?.id || 'fact_dasha_1'],
+    ruleIds: ['rule_that_was_not_applied'],
+    sourceIds: ['source_that_was_not_verified'],
+    relevance: 'high' as const,
+    allowed: true,
+  };
+  const fakeRuleSet = firewall.validate([fakeRuleClaim], planCareer, reasoningCareer, evidenceCareer);
+  assert(
+    fakeRuleSet.rejectedClaims.length === 1 &&
+      fakeRuleSet.rejectedClaims[0].failedChecks?.some(f => f.includes('rules that were not applied')) === true &&
+      fakeRuleSet.rejectedClaims[0].failedChecks?.some(f => f.includes('unverified source IDs')) === true,
+    'AI V2 Firewall-2: Rule/Source Lineage Rejection',
+    'Rejected claims that cite rule or source IDs not present in the applied reasoning lineage'
+  );
+
+  const substringEntityClaim = {
+    claimId: 'claim_substring_entity',
+    text: 'Moonlight is a verified astrological factor in the chart.',
+    type: 'factual' as const,
+    strength: 'moderate' as const,
+    evidenceIds: [evidenceCareer.facts[0]?.id || 'fact_dasha_1'],
+    ruleIds: [],
+    sourceIds: [],
+    relevance: 'high' as const,
+    allowed: true,
+    astrologicalEntities: ['Moonlight'],
+  };
+  const substringSet = firewall.validate([substringEntityClaim], planCareer, reasoningCareer, evidenceCareer);
+  assert(
+    substringSet.rejectedClaims.length === 1 &&
+      substringSet.rejectedClaims[0].failedChecks?.some(f => f.includes('Unverified astrological entity')) === true,
+    'AI V2 Firewall-2: Exact Entity Grounding',
+    'Rejected entity names that only partially match a verified planet'
+  );
+
   // ==========================================
   // 5. CERTAINTY CONTROL FIREWALL (STEP 7)
   // ==========================================

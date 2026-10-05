@@ -3,6 +3,7 @@
  * Strict evidence-based confluence and timing semantics (EXACT vs EVENT_WINDOW vs UNKNOWN).
  */
 
+import { ZODIAC_SIGNS } from './constants.ts';
 import {
   AshtakavargaFacts,
   PlanetPosition,
@@ -45,16 +46,17 @@ export function calculateTimingSignals(
       `Pratyantardasha Lord: ${activePd.pratyantarLord}`,
     ],
     evidenceIds: [
-      `DASHA_MD_${activeMd.lord}`,
-      `DASHA_AD_${activeAd.subLord}`,
-      `DASHA_PD_${activePd.pratyantarLord}`,
+      `EVID_DASHA_ACTIVE_${activeMd.lord}_${activeAd.subLord}`,
     ],
-    summary: `The native is progressing through the ${activeMd.lord} Mahadasha and ${activeAd.subLord} Antardasha window (${new Date(activeAd.startDateIso).toLocaleDateString()} to ${new Date(activeAd.endDateIso).toLocaleDateString()}). The themes governed by these planetary lords are highlighted during this temporal phase.`,
+    summary: `The native is progressing through the ${activeMd.lord} Mahadasha and ${activeAd.subLord} Antardasha window (${activeAd.startDateIso.slice(0, 10)} to ${activeAd.endDateIso.slice(0, 10)} UTC dates). The themes associated with these planetary lords are highlighted during this temporal phase.`,
   });
 
   // 2. Career & Professional Trajectory (Event Window)
   // Check if 10th house or 10th lord is activated by Dasha or Transit Jupiter/Saturn
-  const jupSav = ashtakavargaFacts.sav[transitJupiter.natalLagnaHouse - 1] || 28;
+  const transitJupiterSignIndex = ZODIAC_SIGNS.indexOf(transitJupiter.sign);
+  const jupSav = transitJupiterSignIndex >= 0
+    ? ashtakavargaFacts.sav[transitJupiterSignIndex]
+    : 28;
   const careerConfluence =
     ['Sun', 'Mercury', 'Jupiter', 'Saturn'].includes(activeMd.lord) ||
     ['Sun', 'Mercury', 'Jupiter', 'Saturn'].includes(activeAd.subLord || '');
@@ -70,30 +72,32 @@ export function calculateTimingSignals(
     activeFactors: [
       `Active Dasha: ${activeMd.lord}/${activeAd.subLord}`,
       `Transit Jupiter transiting natal house ${transitJupiter.natalLagnaHouse} (${transitJupiter.sign}) with ${jupSav} SAV bindus`,
-      `Transit Saturn in house ${transitSaturn.natalLagnaHouse} commanding structure`,
+      `Transit Saturn in house ${transitSaturn.natalLagnaHouse}`,
     ],
     evidenceIds: [
-      'TRANSIT_JUPITER_H' + transitJupiter.natalLagnaHouse,
-      'ASHTAKAVARGA_SAV_' + transitJupiter.sign,
+      'EVID_TRANSIT_JUPITER',
+      'EVID_ASHTAKAVARGA_SAV',
     ],
-    summary: `Professional timing indicates an active window governed by ${activeMd.lord} and ${activeAd.subLord}. With Jupiter energizing house ${transitJupiter.natalLagnaHouse} supported by ${jupSav} Ashtakavarga bindus, execution opportunities align over this bounded window.`,
+    summary: `The active Dasha window is accompanied by Jupiter transiting house ${transitJupiter.natalLagnaHouse} with ${jupSav} SAV bindus. This is classified as a bounded supported timing signal, not a guaranteed event.`,
   });
 
-  // 3. Exact Solar Transit Conjunction / Ingress (EXACT Timing Precision)
-  signals.push({
-    id: 'TIMING_EXACT_SOLAR_INGRESS',
-    title: `Canonical Exact Astronomical Ingress: Sun in ${transitSun.sign}`,
-    domain: 'GENERAL',
-    precision: 'EXACT',
-    exactTimestampUtc: transitFacts.queryDateIso,
-    confluenceBasis: 'DIRECT',
-    activeFactors: [
-      `Transit Sun exact longitude: ${transitSun.formattedDegree} in ${transitSun.sign}`,
-      `Transit Sun in house ${transitSun.natalLagnaHouse} relative to Lagna`,
-    ],
-    evidenceIds: ['EPHEMERIS_EXACT_SUN_' + transitSun.sign],
-    summary: `At the exact evaluated moment (${transitFacts.queryDateIso}), the Sun occupies ${transitSun.formattedDegree} in sidereal ${transitSun.sign}, delivering immediate solar vitality to natal house ${transitSun.natalLagnaHouse}.`,
-  });
+  // 3. Exact Solar Ingress (EXACT Timing Precision)
+  if (transitFacts.solarIngress) {
+    signals.push({
+      id: 'TIMING_EXACT_SOLAR_INGRESS',
+      title: `Next Sidereal Solar Ingress: Sun enters ${transitFacts.solarIngress.targetSign}`,
+      domain: 'GENERAL',
+      precision: 'EXACT',
+      exactTimestampUtc: transitFacts.solarIngress.timestampUtc,
+      confluenceBasis: 'DIRECT',
+      activeFactors: [
+        `Current Transit Sun: ${transitSun.formattedDegree} in ${transitSun.sign}`,
+        `Next sidereal sign boundary: ${transitFacts.solarIngress.targetSign}`,
+      ],
+      evidenceIds: ['EVID_TRANSIT_SUN_INGRESS_' + transitFacts.solarIngress.targetSign.toUpperCase()],
+      summary: `The next sidereal solar ingress into ${transitFacts.solarIngress.targetSign} is calculated at ${transitFacts.solarIngress.timestampUtc}.`,
+    });
+  }
 
   // 4. Relationships & Partnership Window
   const venOrJupActive =
@@ -110,10 +114,13 @@ export function calculateTimingSignals(
     confluenceBasis: venOrJupActive ? 'SUPPORTED' : 'CONTEXTUAL',
     activeFactors: [
       `Active Antardasha: ${activeAd.subLord}`,
-      `Venus natal dignity and house 7 connection`,
+      `Venus natal placement and dignity are available in the canonical chart evidence`,
     ],
-    evidenceIds: ['D1_VENUS_STATUS', 'DASHA_REL_WINDOW'],
-    summary: `Relational themes develop across the ongoing ${activeAd.subLord} antardasha window. Classical principles indicate collaborative bonds and reciprocal agreements evolve steadily within this period.`,
+    evidenceIds: [
+      'EVID_PLANET_VENUS_D1',
+      `EVID_DASHA_ACTIVE_${activeMd.lord}_${activeAd.subLord}`,
+    ],
+    summary: `Relational themes are highlighted across the ongoing ${activeAd.subLord} Antardasha window; this signal is contextual unless corroborated by additional relationship-specific evidence.`,
   });
 
   // 5. Unknown / Low-Evidence Long-Horizon Signal (Demonstrating strict UNKNOWN semantics)
@@ -124,7 +131,7 @@ export function calculateTimingSignals(
     precision: 'UNKNOWN',
     confluenceBasis: 'UNRESOLVED',
     activeFactors: ['Insufficient sub-period alignment beyond current 3-tier hierarchy'],
-    evidenceIds: ['LIMITATION_NO_FABRICATED_DATES'],
+    evidenceIds: ['EVID_LIMITATION_NO_FABRICATED_DATES'],
     summary: 'Classical Vedic astrology does not assign deterministic calendar dates to speculative long-term events without multi-system confluence (Dasha + Gochara + Ashtakavarga). Classified as UNKNOWN to prevent unfounded claims.',
   });
 

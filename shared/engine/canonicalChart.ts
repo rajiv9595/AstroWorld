@@ -46,7 +46,30 @@ export const DEFAULT_BIRTH_PROFILE: BirthProfile = {
 };
 
 // Aliased for canonical engine references
+/**
+ * Backward-compatible alias for callers that previously imported this symbol.
+ * This is demo data, NOT an astronomical golden/reference vector.
+ */
 export const GOLDEN_BENCHMARK_PROFILE = DEFAULT_BIRTH_PROFILE;
+
+/** Explicit name for the built-in demo chart. */
+export const DEFAULT_DEMO_PROFILE = DEFAULT_BIRTH_PROFILE;
+
+/** Stable non-production profile used by engine integrity tests. */
+export const TEST_BENCHMARK_PROFILE: BirthProfile = {
+  name: 'Canonical Test Native',
+  year: 2005,
+  month: 8,
+  day: 17,
+  hour: 0,
+  minute: 2,
+  second: 0,
+  latitude: 16.93407,
+  longitude: 81.95522,
+  timezone: 'Asia/Kolkata',
+  cityName: 'Anaparthy, Andhra Pradesh, India',
+  gender: 'male',
+};
 
 /**
  * Generate 12 whole sign houses and identify occupants and aspects.
@@ -164,7 +187,11 @@ export function computeCanonicalChart(
   );
 
   // 10. Strength (Shadbala, Bhava Bala, Avasthas)
-  const strength = calculateStrengthFacts(planets, ascendant.signIndex, profile.hour);
+  const strength = calculateStrengthFacts(
+    planets,
+    ascendant.signIndex,
+    profile.hour + profile.minute / 60 + (profile.second || 0) / 3600,
+  );
 
   // 11. Yogas and Doshas
   const { yogas, doshas } = calculateYogasAndDoshas(planets, ascendant.sign);
@@ -241,17 +268,33 @@ export function getLiveDailyPanchanga(
   longitude: number = 77.2090,
   timezone: string = 'Asia/Kolkata'
 ): PanchangaFacts {
+  const tz = timezone || 'Asia/Kolkata';
+  const localParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hour12: false,
+  }).formatToParts(date);
+  const local: Record<string, number> = {};
+  for (const part of localParts) {
+    if (part.type !== 'literal') local[part.type] = parseInt(part.value, 10);
+  }
+
   const profile: BirthProfile = {
     name: 'Today Live Transit',
-    year: date.getFullYear(),
-    month: date.getMonth() + 1,
-    day: date.getDate(),
-    hour: date.getHours(),
-    minute: date.getMinutes(),
-    second: date.getSeconds(),
+    year: local.year,
+    month: local.month,
+    day: local.day,
+    hour: local.hour === 24 ? 0 : local.hour,
+    minute: local.minute,
+    second: local.second,
     latitude,
     longitude,
-    timezone: timezone || 'Asia/Kolkata',
+    timezone: tz,
   };
 
   const chart = computeCanonicalChart(profile, date);

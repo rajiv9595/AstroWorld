@@ -251,6 +251,10 @@ export interface StrengthFacts {
   shadbala: ShadbalaFactor[];
   bhavaBala: BhavaBalaItem[];
   avasthas: PlanetaryAvasthas[];
+  methodology?: {
+    shadbala: 'classical_full' | 'classical_partial' | 'approximate';
+    notes: string[];
+  };
 }
 
 export interface YogaFact {
@@ -263,6 +267,8 @@ export interface YogaFact {
   bphsReference: string;
   classicalRule: string;
   effects: string;
+  interpretationStatus?: 'structural' | 'qualified';
+  schoolDependent?: boolean;
 }
 
 export interface DoshaFact {
@@ -273,6 +279,8 @@ export interface DoshaFact {
   description: string;
   mitigatingFactors: string[];
   remedies: string[];
+  schoolDependent?: boolean;
+  interpretationStatus?: 'structural' | 'qualified';
 }
 
 export interface CharaKaraka {
@@ -288,7 +296,10 @@ export interface CharaKaraka {
 export interface JaiminiFacts {
   charaKarakas: CharaKaraka[];
   atmakaraka: PlanetName;
+  karakaScheme?: 'seven_karaka' | 'eight_karaka';
+  /** Backward-compatible field: D1 Rashi sign occupied by the Atmakaraka. */
   karakamsaSign: ZodiacSign;
+  /** Standard Karakamsa: D9/Navamsha sign occupied by the Atmakaraka. */
   karakamsaNavamshaSign: ZodiacSign;
   arudhaLagna: {
     sign: ZodiacSign;
@@ -330,6 +341,10 @@ export interface TransitPlanet {
 export interface TransitFacts {
   queryDateIso: string;
   planets: TransitPlanet[];
+  solarIngress?: {
+    timestampUtc: string;
+    targetSign: ZodiacSign;
+  };
   sadeSati: {
     active: boolean;
     phase: 'RISING' | 'PEAK' | 'SETTING' | 'NONE';
