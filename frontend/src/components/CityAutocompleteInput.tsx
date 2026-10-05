@@ -14,7 +14,7 @@ interface CityAutocompleteInputProps {
     cityName: string;
     latitude: string;
     longitude: string;
-    timezone: string;
+    timezone?: string;
   }) => void;
   onRawChange?: (val: string) => void;
   placeholder?: string;
@@ -87,7 +87,7 @@ export const CityAutocompleteInput: React.FC<CityAutocompleteInputProps> = ({
       cityName: place.description,
       latitude: String(place.latitude.toFixed(4)),
       longitude: String(place.longitude.toFixed(4)),
-      timezone: place.timezone || 'Asia/Kolkata',
+      timezone: place.timezone || '',
     });
   };
 
@@ -150,7 +150,7 @@ export const CityAutocompleteInput: React.FC<CityAutocompleteInputProps> = ({
                 <div className="text-[10px] text-slate-400 font-mono mt-0.5 flex items-center gap-2">
                   <span>{place.latitude.toFixed(2)}°N, {place.longitude.toFixed(2)}°E</span>
                   <span>&bull;</span>
-                  <span>{place.timezone}</span>
+                  <span>{place.timezone || 'Timezone confirmation required'}</span>
                 </div>
               </div>
             </button>
