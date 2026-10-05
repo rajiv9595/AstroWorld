@@ -397,6 +397,7 @@ export function executeGetTransits(args: any): ToolExecutionResult {
       data: {
         queryDateIso: chart.transits.queryDateIso,
         planets: chart.transits.planets,
+        solarIngress: chart.transits.solarIngress,
         sadeSati: chart.transits.sadeSati,
       },
       provenance: {
