@@ -186,20 +186,20 @@ export class ClaimSetGenerator {
 
     if (reasoning.direction === 'supportive') {
       if (reasoning.strength === 'strong') {
-        return `The converging chart layers and classical rules strongly support positive development in ${domainStr}, reinforced by multi-layer confluence.`;
+        return `The converging chart layers and applied classical rules provide strong astrological support for constructive developments in ${domainStr}; this is an indication, not a guaranteed outcome.`;
       }
-      return `The astrological factors support constructive development in ${domainStr} during the active period.`;
+      return `The astrological factors provide supportive indications for constructive developments in ${domainStr} during the active period.`;
     }
 
     if (reasoning.direction === 'mixed') {
       const restCount = reasoning.restrictingFactors.length;
-      return `The astrological indications support growth in ${domainStr}, but operate alongside ${restCount} structural factor(s) requiring patience and discipline.`;
+      return `The astrological indications support constructive movement in ${domainStr}, but operate alongside ${restCount} structural factor(s) requiring patience and discipline.`;
     }
 
     if (reasoning.direction === 'challenging') {
       return `The active astrological factors present structural demands in ${domainStr}, emphasizing steady perseverance rather than hasty expansion.`;
     }
 
-    return `The astrological factors indicate a stable, neutral progression for the queried ${domainStr} timeframe.`;
+    return `The available astrological evidence is neutral for the queried ${domainStr} timeframe; no strong directional conclusion is established.`;
   }
 }
