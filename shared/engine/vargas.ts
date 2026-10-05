@@ -283,7 +283,11 @@ export function calculateVargaSignIndex(vargaCode: VargaCode, siderealLongitude:
       const span = 0.5;
       const part = Math.min(59, Math.floor(degInSign / span));
       const targetSignIndex = (sourceSignIndex + part) % 12;
-      const devataName = D60_DEVATA_NAMES[part % 60];
+      // BPHS reverses the named Shashtiamsha sequence for even signs.
+      // The occupied-sign calculation remains the source-sign-plus-amsha
+      // mapping; the reversal applies to the named amsha sequence.
+      const devataIndex = isOddSign ? part : (59 - part);
+      const devataName = D60_DEVATA_NAMES[devataIndex];
       return {
         signIndex: targetSignIndex,
         degreeInVargaSign: (degInSign % span) * 60,
