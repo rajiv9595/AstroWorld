@@ -4,6 +4,7 @@
  */
 
 import { SIGN_LORDS, ZODIAC_SIGNS } from './constants.ts';
+import { hasParashariSambandha } from './aspects.ts';
 import { DoshaFact, PlanetName, PlanetPosition, YogaFact, ZodiacSign } from './types.ts';
 
 export function calculateYogasAndDoshas(
@@ -140,9 +141,7 @@ export function calculateYogasAndDoshas(
   });
 
   // 4. Chandra-Mangala Yoga: Moon and Mars conjunct or mutual aspect
-  const isChandraMangala =
-    moon.sign === mars.sign ||
-    Math.abs(moon.houseNumber - mars.houseNumber) === 6;
+  const isChandraMangala = hasParashariSambandha(moon, mars);
   yogas.push({
     id: 'chandra_mangala',
     name: 'Chandra-Mangala Yoga (चन्द्र-मंगल योग)',
@@ -166,14 +165,17 @@ export function calculateYogasAndDoshas(
   };
   const lordHouse = (planet: PlanetName) => getPlanet(planet).houseNumber;
   const sambandha = (a: PlanetName, b: PlanetName): boolean => {
-    if (a === b) return true; // single planet owning both Kendra and Trikona = Yogakaraka structure
+    if (a === b) return true; // One planet owning both functional groups is a Yogakaraka structure.
     const pa = getPlanet(a);
     const pb = getPlanet(b);
-    const sameHouse = pa.houseNumber === pb.houseNumber;
-    const mutualAspect = ((pa.houseNumber - pb.houseNumber + 12) % 12) === 6;
-    const oneInOthersSign = SIGN_LORDS[pa.sign] === b || SIGN_LORDS[pb.sign] === a;
+
+    // Strict Parashari sambandha for this evaluator:
+    // 1) conjunction in the same whole-sign house,
+    // 2) a classical full graha drishti from either planet,
+    // 3) mutual sign exchange (Parivartana).
+    const aspectOrConjunction = hasParashariSambandha(pa, pb);
     const exchange = SIGN_LORDS[pa.sign] === b && SIGN_LORDS[pb.sign] === a;
-    return sameHouse || mutualAspect || oneInOthersSign || exchange;
+    return aspectOrConjunction || exchange;
   };
   const kendraLords = kendraHouses.map(getHouseLord);
   const trikonaLords = [5, 9].map(getHouseLord);
@@ -330,14 +332,17 @@ export function calculateYogasAndDoshas(
   // Are all 7 planets situated on one side of Rahu-Ketu axis?
   const rahuSignIdx = rahu.signIndex;
   const ketuSignIdx = ketu.signIndex;
-  let allOneSide = true;
-  for (const p of [sun, moon, mars, mercury, jupiter, venus, saturn]) {
-    const diff = ((p.signIndex - rahuSignIdx + 12) % 12);
-    if (diff > 6) {
-      allOneSide = false;
-      break;
-    }
-  }
+  const classicalPlanets = [sun, moon, mars, mercury, jupiter, venus, saturn];
+  const rahuDistances = classicalPlanets.map(
+    (p) => (p.signIndex - rahuSignIdx + 12) % 12,
+  );
+
+  // A school-dependent Kala Sarpa test must accept either orientation of the
+  // Rahu-Ketu half-axis; the previous one-direction test produced false
+  // negatives when all seven grahas occupied the opposite half.
+  const allWithinFirstHalf = rahuDistances.every((diff) => diff <= 6);
+  const allWithinSecondHalf = rahuDistances.every((diff) => diff >= 6);
+  const allOneSide = allWithinFirstHalf || allWithinSecondHalf;
 
   doshas.push({
     id: 'kala_sarpa',
