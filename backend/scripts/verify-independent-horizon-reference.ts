@@ -35,6 +35,7 @@ type SolarReferenceCase = {
   latitude: number;
   longitude: number;
   civilDate: string; // Gregorian local civil date whose sunrise/sunset is requested.
+  startUtc: string; // Search anchor known to precede the requested event.
   event: Event;
   expectedLocalDate: string;
   expectedLocalTime: string; // Existing Swiss vector, rounded to seconds.
@@ -47,6 +48,7 @@ const CASES: SolarReferenceCase[] = [
     latitude: 16.93407,
     longitude: 81.95522,
     civilDate: '2005-08-17',
+    startUtc: '2005-08-16T18:30:00.000Z',
     event: 'RISE',
     expectedLocalDate: '2005-08-17',
     expectedLocalTime: '05:46:03',
@@ -57,6 +59,7 @@ const CASES: SolarReferenceCase[] = [
     latitude: 16.93407,
     longitude: 81.95522,
     civilDate: '2005-08-17',
+    startUtc: '2005-08-17T06:30:00.000Z',
     event: 'SET',
     expectedLocalDate: '2005-08-17',
     expectedLocalTime: '18:26:12',
@@ -67,6 +70,7 @@ const CASES: SolarReferenceCase[] = [
     latitude: 28.6139,
     longitude: 77.209,
     civilDate: '2024-03-10',
+    startUtc: '2024-03-09T18:30:00.000Z',
     event: 'RISE',
     expectedLocalDate: '2024-03-10',
     expectedLocalTime: '06:36:19',
@@ -77,6 +81,7 @@ const CASES: SolarReferenceCase[] = [
     latitude: 28.6139,
     longitude: 77.209,
     civilDate: '2024-03-10',
+    startUtc: '2024-03-10T06:30:00.000Z',
     event: 'SET',
     expectedLocalDate: '2024-03-10',
     expectedLocalTime: '18:26:46',
@@ -87,6 +92,7 @@ const CASES: SolarReferenceCase[] = [
     latitude: 40.7128,
     longitude: -74.006,
     civilDate: '2024-03-10',
+    startUtc: '2024-03-10T05:00:00.000Z',
     event: 'RISE',
     expectedLocalDate: '2024-03-10',
     expectedLocalTime: '07:14:55',
@@ -97,6 +103,7 @@ const CASES: SolarReferenceCase[] = [
     latitude: 40.7128,
     longitude: -74.006,
     civilDate: '2024-03-10',
+    startUtc: '2024-03-10T16:00:00.000Z',
     event: 'SET',
     expectedLocalDate: '2024-03-10',
     expectedLocalTime: '18:57:54',
@@ -107,6 +114,7 @@ const CASES: SolarReferenceCase[] = [
     latitude: 40.7128,
     longitude: -74.006,
     civilDate: '2024-11-03',
+    startUtc: '2024-11-03T04:00:00.000Z',
     event: 'RISE',
     expectedLocalDate: '2024-11-03',
     expectedLocalTime: '06:29:22',
@@ -117,6 +125,7 @@ const CASES: SolarReferenceCase[] = [
     latitude: 40.7128,
     longitude: -74.006,
     civilDate: '2024-11-03',
+    startUtc: '2024-11-03T17:00:00.000Z',
     event: 'SET',
     expectedLocalDate: '2024-11-03',
     expectedLocalTime: '16:49:16',
@@ -127,6 +136,7 @@ const CASES: SolarReferenceCase[] = [
     latitude: -33.8688,
     longitude: 151.2093,
     civilDate: '2024-12-21',
+    startUtc: '2024-12-20T13:00:00.000Z',
     event: 'RISE',
     expectedLocalDate: '2024-12-21',
     expectedLocalTime: '05:40:52',
@@ -137,6 +147,7 @@ const CASES: SolarReferenceCase[] = [
     latitude: -33.8688,
     longitude: 151.2093,
     civilDate: '2024-12-21',
+    startUtc: '2024-12-21T01:00:00.000Z',
     event: 'SET',
     expectedLocalDate: '2024-12-21',
     expectedLocalTime: '20:05:37',
@@ -195,8 +206,9 @@ function noaaSolarEventUtc(
   }
 
   const totalDays = isLeapYear(year) ? 366 : 365;
-  // NOAA/GML fractional-year equation evaluated at local solar-noon phase.
-  const gamma = (2 * Math.PI / totalDays) * (dayOfYear(year, month, day) - 1 + 0.5);
+  // NOAA/GML fractional-year equation evaluated at 12:00 local time,
+  // so (hour - 12) / 24 = 0 and only (day_of_year - 1) remains.
+  const gamma = (2 * Math.PI / totalDays) * (dayOfYear(year, month, day) - 1);
 
   const eqTimeMinutes =
     229.18 *
@@ -323,11 +335,7 @@ async function main(): Promise<void> {
           throw new Error('NOAA reference reports no solar event.');
         }
 
-        const expectedStartUtc = new Date(
-          testCase.event === 'RISE'
-            ? testCase.civilDate + 'T00:00:00.000Z'
-            : testCase.civilDate + 'T06:00:00.000Z',
-        );
+        const expectedStartUtc = new Date(testCase.startUtc);
 
         const swissActual = swiss.getHorizonEvent(
           expectedStartUtc,
