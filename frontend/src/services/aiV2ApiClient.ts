@@ -1,9 +1,12 @@
 /**
  * ASTROWORLD AI V2 — Typed Production API Client
- * Authoritative client for canonical consultation API, persistent memory, and conversation history.
+ *
+ * Authentication is provided by the backend's HttpOnly session cookie.
+ * This client never sends a user id as an authorization credential.
  */
 
 import { BirthProfile } from '../engine/types.ts';
+import { authWriteHeaders } from '../lib/supabase.ts';
 
 export interface ClientConsultRequest {
   userMessage: string;
@@ -73,30 +76,25 @@ export interface ClientApiError {
 
 export class AIApiClient {
   private baseUrl: string;
-  private userId: string;
 
-  constructor(baseUrl: string = '', userId: string = 'default_user') {
+  constructor(baseUrl: string = '') {
     this.baseUrl = baseUrl;
-    this.userId = userId;
   }
 
-  public setUserId(userId: string) {
-    this.userId = userId || 'default_user';
+  public setUserId(_userId: string): void {
+    // Backward-compatible no-op. Authorization is never derived from client user ids.
   }
 
   public getUserId(): string {
-    return this.userId;
+    return '';
   }
 
-  /**
-   * Translates HTTP status and error codes to user-friendly messages.
-   */
-  public static mapErrorToUserMessage(statusCode: number, errorCode?: string): string {
+  public static mapErrorToUserMessage(statusCode: number): string {
     switch (statusCode) {
       case 400:
         return 'That question could not be processed. Please rephrase or provide more details.';
       case 401:
-        return 'Your consultation session has expired. Please refresh or sign in again.';
+        return 'Your consultation session has expired. Please sign in again.';
       case 403:
         return 'This consultation thread is not accessible from your account.';
       case 404:
@@ -119,48 +117,52 @@ export class AIApiClient {
     }
   }
 
-  /**
-   * Executes a hardened consultation query via POST /api/ai-v2/v1/consult
-   */
+  private async parseResponse(res: Response): Promise<any> {
+    return res.json().catch(() => null);
+  }
+
   public async consult(
     req: ClientConsultRequest,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): Promise<ClientConsultResponse> {
-    const idempotencyKey = req.idempotencyKey || `idem_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    const idempotencyKey =
+      req.idempotencyKey || ('idem_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9));
 
-    const headers: Record<string, string> = {
+    const headers: Record<string, string> = authWriteHeaders({
       'Content-Type': 'application/json',
-      'x-user-id': this.userId,
       'idempotency-key': idempotencyKey,
-    };
+    });
 
     const payload = {
       conversationId: req.conversationId,
       userMessage: req.userMessage,
       birthProfile: req.birthProfile,
       idempotencyKey,
-      clientTurnId: req.clientTurnId || `turn_${Date.now()}`,
+      clientTurnId: req.clientTurnId || ('turn_' + Date.now()),
       executionMode: req.executionMode || 'production',
       consultationContext: req.consultationContext,
       locale: req.locale || 'en-US',
       timezone: req.timezone || req.birthProfile.timezone,
     };
 
-    const res = await fetch(`${this.baseUrl}/api/ai-v2/v1/consult`, {
+    const res = await fetch(this.baseUrl + '/api/ai-v2/v1/consult', {
       method: 'POST',
+      credentials: 'include',
       headers,
       body: JSON.stringify(payload),
       signal: abortSignal,
     });
 
-    const data = await res.json().catch(() => null);
+    const data = await this.parseResponse(res);
 
     if (!res.ok || !data?.success) {
       const statusCode = res.status;
       const errorCode = data?.errorCode || 'API_ERROR';
-      const userMessage = data?.userMessage || AIApiClient.mapErrorToUserMessage(statusCode, errorCode);
-      const isRetryable = statusCode === 429 || statusCode === 502 || statusCode === 503 || statusCode === 504;
-      const retryAfterSeconds = data?.retryAfterSeconds || (res.headers.get('Retry-After') ? Number(res.headers.get('Retry-After')) : undefined);
+      const userMessage = data?.userMessage || AIApiClient.mapErrorToUserMessage(statusCode);
+      const isRetryable = [429, 502, 503, 504].includes(statusCode);
+      const retryAfterSeconds =
+        data?.retryAfterSeconds ||
+        (res.headers.get('Retry-After') ? Number(res.headers.get('Retry-After')) : undefined);
 
       const err: ClientApiError = {
         errorCode,
@@ -176,91 +178,70 @@ export class AIApiClient {
     return data as ClientConsultResponse;
   }
 
-  /**
-   * Fetches the user's active memories via GET /api/ai-v2/memory
-   */
   public async listMemories(): Promise<UserMemoryItem[]> {
-    const res = await fetch(`${this.baseUrl}/api/ai-v2/memory`, {
-      headers: { 'x-user-id': this.userId },
+    const res = await fetch(this.baseUrl + '/api/ai-v2/memory', {
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
     });
 
-    if (!res.ok) {
-      throw new Error(`Failed to list memories (HTTP ${res.status})`);
-    }
-
-    const data = await res.json();
-    return data?.memories || [];
+    if (!res.ok) throw new Error('Failed to list memories (HTTP ' + res.status + ').');
+    const data = await this.parseResponse(res);
+    return Array.isArray(data?.memories) ? data.memories : [];
   }
 
-  /**
-   * Fetches a formatted human-readable memory summary via GET /api/ai-v2/memory/summary
-   */
   public async getMemorySummary(): Promise<string> {
-    const res = await fetch(`${this.baseUrl}/api/ai-v2/memory/summary`, {
-      headers: { 'x-user-id': this.userId },
+    const res = await fetch(this.baseUrl + '/api/ai-v2/memory/summary', {
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
     });
 
-    if (!res.ok) {
-      return '';
-    }
-
-    const data = await res.json();
+    if (!res.ok) return '';
+    const data = await this.parseResponse(res);
     return data?.summary || '';
   }
 
-  /**
-   * Deletes a specific memory record via DELETE /api/ai-v2/memory/:id
-   */
   public async deleteMemory(memoryId: string): Promise<boolean> {
-    const res = await fetch(`${this.baseUrl}/api/ai-v2/memory/${encodeURIComponent(memoryId)}`, {
+    const res = await fetch(this.baseUrl + '/api/ai-v2/memory/' + encodeURIComponent(memoryId), {
       method: 'DELETE',
-      headers: { 'x-user-id': this.userId },
+      credentials: 'include',
+      headers: authWriteHeaders({ Accept: 'application/json' }),
     });
 
     return res.ok;
   }
 
-  /**
-   * Clears all stored memories for the user via DELETE /api/ai-v2/memory
-   */
   public async clearAllMemories(): Promise<number> {
-    const res = await fetch(`${this.baseUrl}/api/ai-v2/memory`, {
+    const res = await fetch(this.baseUrl + '/api/ai-v2/memory', {
       method: 'DELETE',
-      headers: { 'x-user-id': this.userId },
+      credentials: 'include',
+      headers: authWriteHeaders({ Accept: 'application/json' }),
     });
 
-    if (!res.ok) {
-      throw new Error(`Failed to clear memories (HTTP ${res.status})`);
-    }
-
-    const data = await res.json();
-    return data?.clearedCount || 0;
+    if (!res.ok) throw new Error('Failed to clear memories (HTTP ' + res.status + ').');
+    const data = await this.parseResponse(res);
+    return Number(data?.clearedCount || 0);
   }
 
-  /**
-   * Lists previous consultation threads via GET /api/ai-v2/conversations
-   */
   public async listConversations(): Promise<ConversationSummary[]> {
-    const res = await fetch(`${this.baseUrl}/api/ai-v2/conversations`, {
-      headers: { 'x-user-id': this.userId },
+    const res = await fetch(this.baseUrl + '/api/ai-v2/conversations', {
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
     });
 
-    if (!res.ok) {
-      return [];
-    }
-
-    const data = await res.json();
-    return data?.conversations || [];
+    if (!res.ok) return [];
+    const data = await this.parseResponse(res);
+    return Array.isArray(data?.conversations) ? data.conversations : [];
   }
 
-  /**
-   * Deletes a specific conversation thread via DELETE /api/ai-v2/conversations/:id
-   */
   public async deleteConversation(conversationId: string): Promise<boolean> {
-    const res = await fetch(`${this.baseUrl}/api/ai-v2/conversations/${encodeURIComponent(conversationId)}`, {
-      method: 'DELETE',
-      headers: { 'x-user-id': this.userId },
-    });
+    const res = await fetch(
+      this.baseUrl + '/api/ai-v2/conversations/' + encodeURIComponent(conversationId),
+      {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: authWriteHeaders({ Accept: 'application/json' }),
+      },
+    );
 
     return res.ok;
   }

@@ -4,6 +4,7 @@
  */
 
 import { ReadinessCheckResult } from './productionTypes.ts';
+import { isSupabaseConfigured } from '../../services/supabaseService.ts';
 
 export class HealthCheckService {
   public static checkLiveness(): { status: 'ok'; timestamp: string; uptimeSeconds: number } {
@@ -23,7 +24,11 @@ export class HealthCheckService {
       ? dependencies.hasGeminiKey
       : Boolean(process.env.GEMINI_API_KEY);
 
-    const astrologyEngineOperational = true; // Deterministic Swiss/Astronomy engine is compiled and available
+    const astrologyEngineOperational = true;
+    const databaseConfigured = isSupabaseConfigured;
+    const corsConfigured =
+      process.env.NODE_ENV !== 'production' ||
+      Boolean((process.env.CORS_ORIGINS || process.env.PUBLIC_WEB_ORIGIN || '').trim());
     const memorySubsystemOperational = dependencies.isMemoryStoreConnected !== undefined
       ? dependencies.isMemoryStoreConnected
       : true;
@@ -33,6 +38,8 @@ export class HealthCheckService {
 
     const allReady =
       astrologyEngineOperational &&
+      databaseConfigured &&
+      corsConfigured &&
       memorySubsystemOperational &&
       conversationStateOperational;
 
@@ -41,6 +48,8 @@ export class HealthCheckService {
       checks: {
         geminiConfigured,
         astrologyEngineOperational,
+        databaseConfigured,
+        corsConfigured,
         memorySubsystemOperational,
         conversationStateOperational,
       },

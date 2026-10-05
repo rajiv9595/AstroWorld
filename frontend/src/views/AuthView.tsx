@@ -24,6 +24,8 @@ import {
   Star,
 } from 'lucide-react';
 
+import { signInWithSupabase, signUpWithSupabase, resetPasswordWithSupabase } from '../lib/supabase.ts';
+
 interface AuthViewProps {
   onSuccess: (user: { id: string; name: string; email: string }) => void;
   onBackToHome: () => void;
@@ -80,29 +82,21 @@ export const AuthView: React.FC<AuthViewProps> = ({
     // 2. Forgot Password Flow
     if (mode === 'forgot') {
       setLoading(true);
-      try {
-        const res = await fetch('/api/auth/forgot-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: cleanEmail }),
-        });
-        const data = await res.json();
-        setLoading(false);
-        if (data.success) {
-          setSuccessMessage(data.message || `Password reset link sent to ${cleanEmail}. Please check your inbox.`);
-        } else {
-          setErrorMessage(data.error || 'Failed to send reset link. Please try again.');
-        }
-      } catch {
-        setLoading(false);
-        setErrorMessage('Failed to connect to server. Please try again.');
+      const result = await resetPasswordWithSupabase(cleanEmail);
+      setLoading(false);
+      if (result.success) {
+        setSuccessMessage(result.message);
+      } else {
+        setErrorMessage(result.message);
       }
       return;
     }
 
     // 3. Password Length Check
-    if (!password || password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters long.');
+    if (!password || (mode === 'signup' && password.length < 8)) {
+      setErrorMessage(mode === 'signup'
+        ? 'Password must be at least 8 characters long.'
+        : 'Please enter your password.');
       return;
     }
 
@@ -119,95 +113,42 @@ export const AuthView: React.FC<AuthViewProps> = ({
       }
 
       setLoading(true);
-      try {
-        const res = await fetch('/api/auth/signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: cleanName,
-            email: cleanEmail,
-            password,
-          }),
-        });
-        const data = await res.json();
-        setLoading(false);
+      const result = await signUpWithSupabase(cleanEmail, password, cleanName, rememberMe);
+      setLoading(false);
 
-        if (!res.ok || !data.success || !data.user) {
-          setErrorMessage(data.error || 'Failed to create account. Please try again.');
-          return;
-        }
-
-        setSuccessMessage('Account created successfully! Logging you in...');
-        if (rememberMe) {
-          localStorage.setItem('astroworld_user', JSON.stringify(data.user));
-        }
-        setTimeout(() => {
-          onSuccess(data.user);
-        }, 500);
-      } catch {
-        setLoading(false);
-        setErrorMessage('Network error occurred during registration. Please try again.');
+      if (!result.success || !result.user) {
+        setErrorMessage(result.message || 'Failed to create account. Please try again.');
+        return;
       }
+
+      if (result.authenticated === false) {
+        setMode('login');
+        setPassword('');
+        setConfirmPassword('');
+        setSuccessMessage(result.message || 'Account created. Please sign in to continue.');
+        return;
+      }
+
+      setSuccessMessage('Account created successfully! Opening AstroWorld...');
+      localStorage.setItem('astroworld_user', JSON.stringify(result.user));
+      setTimeout(() => onSuccess(result.user!), 300);
       return;
     }
 
     // 5. Sign In Flow
     if (mode === 'login') {
       setLoading(true);
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: cleanEmail,
-            password,
-          }),
-        });
-        const data = await res.json();
-        setLoading(false);
-
-        if (!res.ok || !data.success || !data.user) {
-          setErrorMessage(data.error || 'Invalid email or password. Please try again.');
-          return;
-        }
-
-        setSuccessMessage('Welcome back! Loading your profile...');
-        if (rememberMe) {
-          localStorage.setItem('astroworld_user', JSON.stringify(data.user));
-        }
-        setTimeout(() => {
-          onSuccess(data.user);
-        }, 400);
-      } catch {
-        setLoading(false);
-        setErrorMessage('Failed to connect to authentication service. Please try again.');
-      }
-    }
-  };
-
-  // One-click Guest Demo Login
-  const handleGuestLogin = async () => {
-    setLoading(true);
-    setErrorMessage(null);
-    try {
-      const res = await fetch('/api/auth/guest-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      const data = await res.json();
+      const result = await signInWithSupabase(cleanEmail, password, rememberMe);
       setLoading(false);
-      if (data.success && data.user) {
-        setSuccessMessage('Entering as Guest...');
-        localStorage.setItem('astroworld_user', JSON.stringify(data.user));
-        setTimeout(() => {
-          onSuccess(data.user);
-        }, 400);
-      } else {
-        setErrorMessage(data.error || 'Failed to start guest session.');
+
+      if (!result.success || !result.user) {
+        setErrorMessage(result.message || 'Invalid email or password. Please try again.');
+        return;
       }
-    } catch {
-      setLoading(false);
-      setErrorMessage('Network error starting guest session.');
+
+      setSuccessMessage('Welcome back! Loading your profile...');
+      localStorage.setItem('astroworld_user', JSON.stringify(result.user));
+      setTimeout(() => onSuccess(result.user!), 300);
     }
   };
 
@@ -466,27 +407,6 @@ export const AuthView: React.FC<AuthViewProps> = ({
               )}
             </button>
           </form>
-
-          {/* Social / Guest Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200"></div>
-            </div>
-            <div className="relative flex justify-center text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              <span className="bg-white px-3">Or continue with</span>
-            </div>
-          </div>
-
-          {/* Guest Demo Login */}
-          <button
-            type="button"
-            onClick={handleGuestLogin}
-            disabled={loading}
-            className="w-full py-2.5 px-4 rounded-xl border border-slate-300 hover:border-orange-400 hover:bg-[#FAF7F2] text-[#162058] text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-          >
-            <Sparkles size={14} className="text-amber-500" />
-            <span>Instant Guest Access (Demo)</span>
-          </button>
 
           {/* Mode Switcher */}
           <div className="text-center text-xs text-slate-600 pt-3">

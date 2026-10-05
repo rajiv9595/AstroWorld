@@ -9,13 +9,13 @@
     "shared"
   ],
   "scripts": {
-    "dev": "tsx watch backend/src/server.ts",
+    "dev": "tsx watch server.ts",
     "dev:frontend": "npm --workspace=@astroworld/frontend run dev",
-    "dev:backend": "tsx watch backend/src/server.ts",
+    "dev:backend": "npm --workspace=@astroworld/backend run dev",
     "build": "npm --workspace=@astroworld/frontend run build",
     "build:frontend": "npm --workspace=@astroworld/frontend run build",
     "build:backend": "npm --workspace=@astroworld/backend run build",
-    "start": "tsx backend/src/server.ts",
+    "start": "tsx server.ts",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

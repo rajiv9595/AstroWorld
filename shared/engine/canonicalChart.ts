@@ -8,11 +8,14 @@ import * as Astronomy from 'astronomy-engine';
 import {
   birthProfileToUtcDate,
   calculateAscendant,
+  formatDMS,
+  getNakshatraAndPada,
+  normalizeDegrees,
   calculateLahiriAyanamsha,
   calculatePlanetaryPositions,
 } from './astronomy.ts';
 import { calculateAshtakavarga } from './ashtakavarga.ts';
-import { SIGN_LORDS, ZODIAC_SIGNS } from './constants.ts';
+import { SIGN_LORDS, ZODIAC_SIGNS, SANSKRIT_PLANET_NAMES } from './constants.ts';
 import { calculateVimshottariDasha } from './dasha.ts';
 import { enrichPlanetaryDignity } from './dignity.ts';
 import { calculateJaiminiFacts } from './jaimini.ts';
@@ -27,7 +30,9 @@ import {
   HouseInfo,
   PanchangaFacts,
   PlanetName,
+  PlanetPosition,
 } from './types.ts';
+import type { SiderealEphemerisProvider, SiderealEphemerisSnapshot } from './ephemeris.ts';
 import { generateAllShodashavargas } from './vargas.ts';
 import { calculateYogasAndDoshas } from './yogas.ts';
 
@@ -46,7 +51,30 @@ export const DEFAULT_BIRTH_PROFILE: BirthProfile = {
 };
 
 // Aliased for canonical engine references
+/**
+ * Backward-compatible alias for callers that previously imported this symbol.
+ * This is demo data, NOT an astronomical golden/reference vector.
+ */
 export const GOLDEN_BENCHMARK_PROFILE = DEFAULT_BIRTH_PROFILE;
+
+/** Explicit name for the built-in demo chart. */
+export const DEFAULT_DEMO_PROFILE = DEFAULT_BIRTH_PROFILE;
+
+/** Stable non-production profile used by engine integrity tests. */
+export const TEST_BENCHMARK_PROFILE: BirthProfile = {
+  name: 'Canonical Test Native',
+  year: 2005,
+  month: 8,
+  day: 17,
+  hour: 0,
+  minute: 2,
+  second: 0,
+  latitude: 16.93407,
+  longitude: 81.95522,
+  timezone: 'Asia/Kolkata',
+  cityName: 'Anaparthy, Andhra Pradesh, India',
+  gender: 'male',
+};
 
 /**
  * Generate 12 whole sign houses and identify occupants and aspects.
@@ -114,34 +142,133 @@ function buildHouses(
   return houses;
 }
 
+
+/**
+ * Convert a runtime ephemeris snapshot into the canonical Ascendant shape.
+ */
+function ascendantFromEphemerisSnapshot(snapshot: SiderealEphemerisSnapshot): ReturnType<typeof calculateAscendant> {
+  const siderealLongitude = normalizeDegrees(snapshot.ascendantSiderealLongitude);
+  const signIndex = Math.floor(siderealLongitude / 30);
+  const sign = ZODIAC_SIGNS[signIndex];
+  const degreeInSign = siderealLongitude % 30;
+  const nakInfo = getNakshatraAndPada(siderealLongitude);
+
+  return {
+    tropicalLongitude: normalizeDegrees(siderealLongitude + snapshot.ayanamsha.degrees),
+    siderealLongitude,
+    sign,
+    signIndex,
+    degreeInSign,
+    formattedDegree: formatDMS(degreeInSign),
+    nakshatra: nakInfo.nakshatra,
+    nakshatraNumber: nakInfo.nakshatraNumber,
+    nakshatraLord: nakInfo.nakshatraLord,
+    pada: nakInfo.pada,
+  };
+}
+
+/**
+ * Convert a runtime ephemeris snapshot into canonical D1 PlanetPosition facts.
+ * Dignity is deliberately left to the existing canonical dignity engine.
+ */
+function planetsFromEphemerisSnapshot(
+  snapshot: SiderealEphemerisSnapshot,
+  ascendantSignIndex: number,
+): PlanetPosition[] {
+  const sun = snapshot.planets.find((p) => p.name === 'Sun');
+  const sunSiderealLongitude = sun
+    ? normalizeDegrees(sun.siderealLongitude)
+    : undefined;
+
+  return snapshot.planets.map((planet) => {
+    const siderealLongitude = normalizeDegrees(planet.siderealLongitude);
+    const signIndex = Math.floor(siderealLongitude / 30);
+    const sign = ZODIAC_SIGNS[signIndex];
+    const degreeInSign = siderealLongitude % 30;
+    const speed = planet.longitudeSpeed ?? 0;
+    const nakInfo = getNakshatraAndPada(siderealLongitude);
+
+    let combust = false;
+    if (sunSiderealLongitude !== undefined && planet.name !== 'Sun' && planet.name !== 'Rahu' && planet.name !== 'Ketu') {
+      const diff = Math.min(
+        Math.abs(siderealLongitude - sunSiderealLongitude),
+        360 - Math.abs(siderealLongitude - sunSiderealLongitude),
+      );
+      const combustionOrbs: Record<string, number> = {
+        Moon: 12.0,
+        Mars: 17.0,
+        Mercury: speed < 0 ? 12.0 : 14.0,
+        Jupiter: 11.0,
+        Venus: speed < 0 ? 8.0 : 10.0,
+        Saturn: 15.0,
+      };
+      combust = diff <= (combustionOrbs[planet.name] || 10.0);
+    }
+
+    return {
+      name: planet.name,
+      sanskritName: SANSKRIT_PLANET_NAMES[planet.name],
+      tropicalLongitude: normalizeDegrees(siderealLongitude + snapshot.ayanamsha.degrees),
+      siderealLongitude,
+      sign,
+      signIndex,
+      degreeInSign,
+      formattedDegree: formatDMS(degreeInSign),
+      houseNumber: ((signIndex - ascendantSignIndex + 12) % 12) + 1,
+      nakshatra: nakInfo.nakshatra,
+      nakshatraNumber: nakInfo.nakshatraNumber,
+      nakshatraLord: nakInfo.nakshatraLord,
+      pada: nakInfo.pada,
+      speed,
+      retrograde: speed < 0,
+      combust,
+      dignity: 'NEUTRAL',
+      dignityScore: 0,
+      signLord: SIGN_LORDS[sign],
+      naturalRelationshipToLord: 'NEUTRAL',
+    };
+  });
+}
+
 /**
  * Compute the complete canonical astrological dataset for a birth profile.
+ * An optional precomputed ephemeris snapshot can be injected by a runtime
+ * provider; when absent, the validated Astronomy Engine path is unchanged.
  */
 export function computeCanonicalChart(
   profile: BirthProfile = GOLDEN_BENCHMARK_PROFILE,
-  evaluationDateUtc: Date = new Date()
+  evaluationDateUtc: Date = new Date(),
+  ephemerisSnapshot?: SiderealEphemerisSnapshot,
+  ephemerisProvider?: SiderealEphemerisProvider,
+  birthUtcDateOverride?: Date,
 ): AIInterpretationContext {
-  // 1. Precise astronomical time conversion
-  const birthUtcDate = birthProfileToUtcDate(profile);
+  // 1. Precise astronomical time conversion.
+  // Live astronomical views may already have an exact UTC instant; bypass civil
+  // time reverse-resolution in that case, including DST-fold ambiguity.
+  const birthUtcDate = birthUtcDateOverride ?? birthProfileToUtcDate(profile);
   const astroTime = new Astronomy.AstroTime(birthUtcDate);
 
   // 2. Lahiri Ayanamsha (Chitra Paksha)
-  const ayanamsha = calculateLahiriAyanamsha(astroTime);
+  const ayanamsha = ephemerisSnapshot?.ayanamsha.degrees ?? calculateLahiriAyanamsha(astroTime);
 
   // 3. Ascendant (Lagna)
-  const ascendant = calculateAscendant(
-    astroTime,
-    profile.latitude,
-    profile.longitude,
-    ayanamsha
-  );
+  const ascendant = ephemerisSnapshot
+    ? ascendantFromEphemerisSnapshot(ephemerisSnapshot)
+    : calculateAscendant(
+        astroTime,
+        profile.latitude,
+        profile.longitude,
+        ayanamsha,
+      );
 
   // 4. D1 Planetary Positions
-  const rawPlanets = calculatePlanetaryPositions(
-    astroTime,
-    ayanamsha,
-    ascendant.signIndex
-  );
+  const rawPlanets = ephemerisSnapshot
+    ? planetsFromEphemerisSnapshot(ephemerisSnapshot, ascendant.signIndex)
+    : calculatePlanetaryPositions(
+        astroTime,
+        ayanamsha,
+        ascendant.signIndex,
+      );
 
   // 5. Canonical Dignities
   const planets = enrichPlanetaryDignity(rawPlanets);
@@ -153,18 +280,28 @@ export function computeCanonicalChart(
   const vargas = generateAllShodashavargas(ascendant.siderealLongitude, planets);
 
   // 8. Panchanga
-  const panchanga = calculatePanchanga(planets, birthUtcDate, ayanamsha);
+  const panchanga = calculatePanchanga(
+    planets,
+    birthUtcDate,
+    ayanamsha,
+    undefined,
+    ephemerisProvider,
+  );
 
   // 9. Vimshottari Dasha
   const moon = planets.find((p) => p.name === 'Moon')!;
   const dasha = calculateVimshottariDasha(
     moon.siderealLongitude,
     birthUtcDate,
-    evaluationDateUtc
+    evaluationDateUtc,
   );
 
   // 10. Strength (Shadbala, Bhava Bala, Avasthas)
-  const strength = calculateStrengthFacts(planets, ascendant.signIndex, profile.hour);
+  const strength = calculateStrengthFacts(
+    planets,
+    ascendant.signIndex,
+    profile.hour + profile.minute / 60 + (profile.second || 0) / 3600,
+  );
 
   // 11. Yogas and Doshas
   const { yogas, doshas } = calculateYogasAndDoshas(planets, ascendant.sign);
@@ -180,7 +317,8 @@ export function computeCanonicalChart(
     planets,
     ascendant.signIndex,
     ashtakavarga,
-    evaluationDateUtc
+    evaluationDateUtc,
+    ephemerisProvider,
   );
 
   // 15. Timing and Predictions
@@ -206,12 +344,14 @@ export function computeCanonicalChart(
     jaimini,
     ashtakavarga,
     transits,
-    timingSignals
+    timingSignals,
+    ephemerisSnapshot,
   );
 
   return {
     schemaVersion: '1.0',
     generatedAtIso: new Date().toISOString(),
+    ephemeris: ephemerisSnapshot,
     birthProfile: profile,
     ascendant,
     planets,
@@ -241,19 +381,35 @@ export function getLiveDailyPanchanga(
   longitude: number = 77.2090,
   timezone: string = 'Asia/Kolkata'
 ): PanchangaFacts {
+  const tz = timezone || 'Asia/Kolkata';
+  const localParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hour12: false,
+  }).formatToParts(date);
+  const local: Record<string, number> = {};
+  for (const part of localParts) {
+    if (part.type !== 'literal') local[part.type] = parseInt(part.value, 10);
+  }
+
   const profile: BirthProfile = {
     name: 'Today Live Transit',
-    year: date.getFullYear(),
-    month: date.getMonth() + 1,
-    day: date.getDate(),
-    hour: date.getHours(),
-    minute: date.getMinutes(),
-    second: date.getSeconds(),
+    year: local.year,
+    month: local.month,
+    day: local.day,
+    hour: local.hour === 24 ? 0 : local.hour,
+    minute: local.minute,
+    second: local.second,
     latitude,
     longitude,
-    timezone: timezone || 'Asia/Kolkata',
+    timezone: tz,
   };
 
-  const chart = computeCanonicalChart(profile, date);
+  const chart = computeCanonicalChart(profile, date, undefined, undefined, date);
   return chart.panchanga;
 }

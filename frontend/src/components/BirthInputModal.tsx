@@ -10,6 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, X, Sparkles, ShieldCheck } from 'lucide-react';
 import { BirthProfile } from '../engine/types.ts';
+import { birthProfileToUtcDate } from '../engine/astronomy.ts';
 import { CityAutocompleteInput } from './CityAutocompleteInput.tsx';
 import { VedicDatePicker } from './VedicDatePicker.tsx';
 import { VedicTimePicker } from './VedicTimePicker.tsx';
@@ -59,8 +60,10 @@ export const BirthInputModal: React.FC<BirthInputModalProps> = ({
         setLongitude(currentProfile.longitude !== undefined ? String(currentProfile.longitude) : '77.2090');
         setTimezone(currentProfile.timezone || 'Asia/Kolkata');
         setGender(currentProfile.gender || 'male');
-      } else if (isOnboarding && currentProfile?.name) {
-        setName(currentProfile.name);
+      } else if (isOnboarding) {
+        // Never seed a first-time native profile from the built-in demo chart.
+        // Exact birthplace/timezone data must come from the user or resolver.
+        setName('');
         setDay('');
         setMonth('');
         setYear('');
@@ -68,9 +71,10 @@ export const BirthInputModal: React.FC<BirthInputModalProps> = ({
         setMinute('');
         setSecond('0');
         setCityName('');
-        setLatitude('28.6139');
-        setLongitude('77.2090');
-        setTimezone('Asia/Kolkata');
+        setLatitude('');
+        setLongitude('');
+        setTimezone('');
+        setGender('male');
       }
       setValidationError(null);
     }
@@ -114,6 +118,22 @@ export const BirthInputModal: React.FC<BirthInputModalProps> = ({
       return;
     }
 
+    const parsedLatitude = Number(latitude);
+    const parsedLongitude = Number(longitude);
+
+    if (!Number.isFinite(parsedLatitude) || parsedLatitude < -90 || parsedLatitude > 90) {
+      setValidationError('Please enter a valid latitude between -90 and 90.');
+      return;
+    }
+    if (!Number.isFinite(parsedLongitude) || parsedLongitude < -180 || parsedLongitude > 180) {
+      setValidationError('Please enter a valid longitude between -180 and 180.');
+      return;
+    }
+    if (!timezone.trim()) {
+      setValidationError('Please confirm a valid IANA timezone for the birthplace (for example, Asia/Kolkata).');
+      return;
+    }
+
     const payload: BirthProfile = {
       name: name.trim(),
       day: parsedDay,
@@ -122,12 +142,19 @@ export const BirthInputModal: React.FC<BirthInputModalProps> = ({
       hour: parsedHour,
       minute: parsedMinute,
       second: parsedSecond,
-      latitude: parseFloat(latitude) || 28.6139,
-      longitude: parseFloat(longitude) || 77.2090,
-      timezone: timezone || 'Asia/Kolkata',
-      cityName: cityName.trim() || 'India',
+      latitude: parsedLatitude,
+      longitude: parsedLongitude,
+      timezone: timezone.trim(),
+      cityName: cityName.trim() || undefined,
       gender,
     };
+
+    try {
+      birthProfileToUtcDate(payload);
+    } catch (error) {
+      setValidationError(error instanceof Error ? error.message : 'Please verify the birth date, time, and timezone.');
+      return;
+    }
 
     onSave(payload);
     onClose();

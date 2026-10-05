@@ -66,14 +66,7 @@ import {
 export default function App() {
   // Authentication State
 
-  const [currentUser, setCurrentUser] = useState<{ id?: string; name: string; email: string } | null>(() => {
-    try {
-      const saved = localStorage.getItem('astroworld_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string } | null>(null);
 
   const [authRedirectReason, setAuthRedirectReason] = useState<string>(
     'Please sign in or create a free account to generate and access your detailed Kundli.'
@@ -96,6 +89,9 @@ export default function App() {
       const user = await getCurrentSupabaseUser();
       if (user) {
         setCurrentUser(user);
+      } else {
+        setCurrentUser(null);
+        setUserCharts([]);
       }
     };
     syncSession();
@@ -105,8 +101,7 @@ export default function App() {
   useEffect(() => {
     const loadCharts = async () => {
       if (currentUser?.id || currentUser?.email) {
-        const uId = currentUser.id || currentUser.email;
-        const charts = await fetchUserCharts(uId);
+        const charts = await fetchUserCharts(currentUser.id);
         setUserCharts(charts);
         if (charts.length > 0) {
           const latest = charts[0];
@@ -185,8 +180,7 @@ export default function App() {
     const autoStyle = detectRegionalChartStyle(newProfile);
     setChartStyle(autoStyle);
     if (currentUser) {
-      const uId = currentUser.id || currentUser.email;
-      const saved = await saveUserChart(uId, newProfile, autoStyle);
+      const saved = await saveUserChart(currentUser.id, newProfile, autoStyle);
       setUserCharts((prev) => [saved, ...prev.filter((c) => c.name !== newProfile.name)]);
     }
     setActiveTab('overview');
@@ -194,9 +188,9 @@ export default function App() {
   };
 
   // Successful Login / Signup Callback
-  const handleAuthSuccess = async (user: { id?: string; name: string; email: string }) => {
+  const handleAuthSuccess = async (user: { id: string; name: string; email: string }) => {
     setCurrentUser(user);
-    const uId = user.id || user.email;
+    const uId = user.id;
 
     if (pendingProfile) {
       setProfile(pendingProfile);

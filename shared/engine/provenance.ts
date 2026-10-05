@@ -20,6 +20,7 @@ import {
   VimshottariDashaFacts,
   YogaFact,
 } from './types.ts';
+import type { SiderealEphemerisSnapshot } from './ephemeris.ts';
 
 export function buildEvidencePool(
   ascendant: AscendantInfo,
@@ -34,10 +35,22 @@ export function buildEvidencePool(
   jaimini: JaiminiFacts,
   ashtakavarga: AshtakavargaFacts,
   transits: TransitFacts,
-  timingSignals: TimingSignal[]
+  timingSignals: TimingSignal[],
+  ephemerisSnapshot?: SiderealEphemerisSnapshot,
 ): EvidenceRecord[] {
   const pool: EvidenceRecord[] = [];
 
+  if (ephemerisSnapshot) {
+    pool.push({
+      evidenceId: 'EVID_EPHEMERIS_PROVIDER',
+      category: 'ASTRONOMY',
+      sourceSystem: ephemerisSnapshot.model,
+      ruleReference: 'Runtime ephemeris provider contract',
+      factPath: 'ephemeris',
+      factValue: ephemerisSnapshot.source + ' / ' + ephemerisSnapshot.ayanamsha.name + ' ' + ephemerisSnapshot.ayanamsha.degrees.toFixed(9) + '°',
+      description: 'Natal astronomical positions were supplied by the ' + ephemerisSnapshot.source + ' provider for ' + ephemerisSnapshot.calculationDateUtc + '.',
+    });
+  }
   // 1. Ascendant
   pool.push({
     evidenceId: 'EVID_LAGNA_POSITION',
@@ -125,6 +138,28 @@ export function buildEvidencePool(
       factPath: `transits.planets.${tp.planet}`,
       factValue: `${tp.sign} (${tp.formattedDegree}), House ${tp.natalLagnaHouse} from Lagna, House ${tp.chandraLagnaHouse} from Moon`,
       description: `Transit ${tp.planet} is transiting ${tp.sign} in house ${tp.natalLagnaHouse} from Lagna with ${tp.ashtakavargaBindus} SAV bindus.`,
+    });
+  }
+
+  pool.push({
+    evidenceId: 'EVID_LIMITATION_NO_FABRICATED_DATES',
+    category: 'TRANSIT',
+    sourceSystem: 'AstroWorld Safety/Provenance Layer',
+    ruleReference: 'No unsupported deterministic event dates',
+    factPath: 'timingSignals.unknown',
+    factValue: 'UNKNOWN',
+    description: 'Long-horizon speculative event dates remain unknown unless independently supported by sufficient Dasha, transit, and other evidence-backed confluence.',
+  });
+
+  if (transits.solarIngress) {
+    pool.push({
+      evidenceId: `EVID_TRANSIT_SUN_INGRESS_${transits.solarIngress.targetSign.toUpperCase()}`,
+      category: 'TRANSIT',
+      sourceSystem: 'Gochara Transit Engine',
+      ruleReference: 'Sidereal solar longitude boundary search',
+      factPath: 'transits.solarIngress',
+      factValue: `Next sidereal solar ingress into ${transits.solarIngress.targetSign} at ${transits.solarIngress.timestampUtc}`,
+      description: `The next sidereal solar ingress into ${transits.solarIngress.targetSign} is computed by a forward bracket and bisection on the 30° sidereal boundary.`,
     });
   }
 
