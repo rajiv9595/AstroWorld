@@ -220,20 +220,23 @@ export function calculateVargaSignIndex(vargaCode: VargaCode, siderealLongitude:
       // 20-25°: Saturn (Capricorn, 9)
       // 25-30°: Mars (Scorpio, 7)
       let targetSignIndex = 0;
+      let bandStart = 0;
+      let bandEnd = 30;
       if (isOddSign) {
-        if (degInSign < 5.0) targetSignIndex = 0; // Aries
-        else if (degInSign < 10.0) targetSignIndex = 10; // Aquarius
-        else if (degInSign < 18.0) targetSignIndex = 8; // Sagittarius
-        else if (degInSign < 25.0) targetSignIndex = 2; // Gemini
-        else targetSignIndex = 6; // Libra
+        if (degInSign < 5.0) { targetSignIndex = 0; bandStart = 0; bandEnd = 5; } // Aries
+        else if (degInSign < 10.0) { targetSignIndex = 10; bandStart = 5; bandEnd = 10; } // Aquarius
+        else if (degInSign < 18.0) { targetSignIndex = 8; bandStart = 10; bandEnd = 18; } // Sagittarius
+        else if (degInSign < 25.0) { targetSignIndex = 2; bandStart = 18; bandEnd = 25; } // Gemini
+        else { targetSignIndex = 6; bandStart = 25; bandEnd = 30; } // Libra
       } else {
-        if (degInSign < 5.0) targetSignIndex = 1; // Taurus
-        else if (degInSign < 12.0) targetSignIndex = 5; // Virgo
-        else if (degInSign < 20.0) targetSignIndex = 11; // Pisces
-        else if (degInSign < 25.0) targetSignIndex = 9; // Capricorn
-        else targetSignIndex = 7; // Scorpio
+        if (degInSign < 5.0) { targetSignIndex = 1; bandStart = 0; bandEnd = 5; } // Taurus
+        else if (degInSign < 12.0) { targetSignIndex = 5; bandStart = 5; bandEnd = 12; } // Virgo
+        else if (degInSign < 20.0) { targetSignIndex = 11; bandStart = 12; bandEnd = 20; } // Pisces
+        else if (degInSign < 25.0) { targetSignIndex = 9; bandStart = 20; bandEnd = 25; } // Capricorn
+        else { targetSignIndex = 7; bandStart = 25; bandEnd = 30; } // Scorpio
       }
-      return { signIndex: targetSignIndex, degreeInVargaSign: degInSign };
+      const degreeInVargaSign = ((degInSign - bandStart) / (bandEnd - bandStart)) * 30;
+      return { signIndex: targetSignIndex, degreeInVargaSign };
     }
 
     case 'D40': {
