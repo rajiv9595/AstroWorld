@@ -57,14 +57,17 @@ export function parseCookies(header: string | undefined): Record<string, string>
   return cookies;
 }
 
-function getRequestAccessToken(req: Request): string | undefined {
+function getRequestCredential(req: Request): { token?: string; cookieBased: boolean } {
   const authorization = req.headers.authorization;
   if (authorization?.startsWith('Bearer ')) {
     const token = authorization.slice('Bearer '.length).trim();
-    if (token) return token;
+    if (token) return { token, cookieBased: false };
   }
 
-  return parseCookies(req.headers.cookie)[AUTH_ACCESS_COOKIE];
+  return {
+    token: parseCookies(req.headers.cookie)[AUTH_ACCESS_COOKIE],
+    cookieBased: true,
+  };
 }
 
 function setCookie(
@@ -169,8 +172,8 @@ function requireCsrfForUnsafeRequest(req: Request): boolean {
   return !['GET', 'HEAD', 'OPTIONS'].includes(req.method.toUpperCase());
 }
 
-function csrfIsValid(req: Request): boolean {
-  if (!requireCsrfForUnsafeRequest(req)) return true;
+function csrfIsValid(req: Request, cookieBased: boolean): boolean {
+  if (!cookieBased || !requireCsrfForUnsafeRequest(req)) return true;
 
   const cookies = parseCookies(req.headers.cookie);
   const cookieToken = cookies[AUTH_CSRF_COOKIE];
@@ -197,7 +200,9 @@ export async function authenticateRequest(
   next: NextFunction,
 ): Promise<void> {
   try {
-    if (!csrfIsValid(req)) {
+    const credential = getRequestCredential(req);
+
+    if (!csrfIsValid(req, credential.cookieBased)) {
       res.status(403).json({
         success: false,
         errorCode: 'AUTHORIZATION_ERROR',
@@ -206,7 +211,7 @@ export async function authenticateRequest(
       return;
     }
 
-    const accessToken = getRequestAccessToken(req);
+    const accessToken = credential.token;
     const cookies = parseCookies(req.headers.cookie);
 
     if (!accessToken) {
