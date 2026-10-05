@@ -15,6 +15,18 @@ import {
 } from './types.ts';
 
 // 60 classical Shashtiamsha Devata Names according to BPHS (Santhanam tradition)
+/** Explicit D60 convention used by AstroWorld.
+ * This is a sign-based Parashari/PVR-style occupied-sign mapping: each 0°30'
+ * amsha advances one sign from the source Rashi. D60 traditions differ, so
+ * callers must not present this convention as universally canonical.
+ */
+export const D60_CONVENTION = {
+  name: 'Parashari PVR occupied-sign method',
+  intervalDegrees: 0.5,
+  mapping: 'source-sign-plus-amsha-index',
+  boundaryRule: '[start, end)',
+} as const;
+
 export const D60_DEVATA_NAMES: string[] = [
   'Ghora', 'Rakshasa', 'Deva', 'Kubera', 'Yaksha', 'Kinnara', 'Bhrashta', 'Kulaghna',
   'Garala', 'Vahni', 'Maya', 'Purishaka', 'Apampathi', 'Marutwan', 'Kala', 'Sarpa',
