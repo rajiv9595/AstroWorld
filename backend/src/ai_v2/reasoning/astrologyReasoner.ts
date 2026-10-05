@@ -67,6 +67,7 @@ export class AstrologyReasoner {
       plan,
       evidence,
       primaryFactors,
+      supportingFactors,
       restrictingFactors
     );
 
@@ -452,7 +453,7 @@ export class AstrologyReasoner {
         stepSequence: ['Ambiguity/insufficient evidence gate triggered.'],
         executionDurationMs: Date.now() - startTime,
       },
-      version: 'ai-v2-reasoning-1',
+      version: 'ai-v2-reasoning-2',
       createdAtIso: new Date().toISOString(),
       verified: true,
     };
