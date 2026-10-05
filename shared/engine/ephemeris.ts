@@ -142,13 +142,6 @@ export const astronomyEngineEphemerisProvider: SiderealEphemerisProvider = {
   },
 };
 
-export const astronomyEngineEphemerisProvider: SiderealEphemerisProvider = {
-  source: 'astronomy-engine',
-  model: 'Astronomy Engine + Analytical Lahiri Ayanamsha',
-  getSnapshot(dateUtc, location) {
-    return createAstronomyEngineSnapshot(dateUtc, location);
-  },
-};
 
 /**
  * Resolve a validated ephemeris source name without loading any optional native
