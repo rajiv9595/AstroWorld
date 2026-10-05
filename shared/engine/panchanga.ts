@@ -6,7 +6,7 @@
 
 // @ts-ignore astronomy-engine has cjs/esm export
 import * as Astronomy from 'astronomy-engine';
-import { formatDMS, normalizeDegrees, calculateLahiriAyanamsha } from './astronomy.ts';
+import { formatDMS, normalizeDegrees, calculateLahiriAyanamsha, localDateTimeToUtcDate } from './astronomy.ts';
 import { NAKSHATRAS, ZODIAC_SIGNS, SANSKRIT_SIGNS } from './constants.ts';
 import { PanchangaFacts, PlanetName, PlanetPosition } from './types.ts';
 
@@ -231,12 +231,14 @@ export function formatLocalTime(date: Date, timezone: string): string {
 export function calculatePanchanga(
   planets: PlanetPosition[],
   birthDateUtc: Date,
-  ayanamsaDeg: number
+  ayanamsaDeg: number,
+  observer?: { latitude: number; longitude: number; timezone?: string },
 ): PanchangaFacts {
   const sun = planets.find((p) => p.name === 'Sun') || planets[0];
   const moon = planets.find((p) => p.name === 'Moon') || planets[1];
+  const timezone = observer?.timezone || 'Asia/Kolkata';
 
-  // 1. Tithi: (Moon - Sun) % 360 / 12
+  // 1. Tithi: Moon-Sun elongation, 12° per tithi.
   const elongation = normalizeDegrees(moon.siderealLongitude - sun.siderealLongitude);
   const tithiIndex = Math.min(29, Math.floor(elongation / 12.0));
   const tithiNum = tithiIndex + 1;
@@ -244,24 +246,33 @@ export function calculatePanchanga(
   const paksha = tithiNum <= 15 ? 'Shukla' : 'Krishna';
   const tithiCompletedPercent = ((elongation % 12.0) / 12.0) * 100;
 
-  // 2. Vara: Day of the week
-  const dayOfWeek = birthDateUtc.getUTCDay(); // 0=Sun .. 6=Sat
+  // 2. Vara: use the civil weekday in the requested timezone, not UTC.
+  const weekdayName = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    weekday: 'long',
+  }).format(birthDateUtc);
+  const weekdayIndexByName: Record<string, number> = {
+    Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3,
+    Thursday: 4, Friday: 5, Saturday: 6,
+  };
+  const dayOfWeek = weekdayIndexByName[weekdayName] ?? birthDateUtc.getUTCDay();
   const varaInfo = VARA_NAMES[dayOfWeek];
 
-  // 3. Nakshatra: Moon's sidereal position
+  // 3. Nakshatra: use exact 360/27 boundaries rather than rounded table starts.
   const moonNakSpan = 360.0 / 27.0;
   const nakIndex = Math.min(26, Math.floor(moon.siderealLongitude / moonNakSpan));
   const nak = NAKSHATRAS[nakIndex];
-  const nakElapsed = moon.siderealLongitude - nak.startDegree;
+  const exactNakStart = nakIndex * moonNakSpan;
+  const nakElapsed = moon.siderealLongitude - exactNakStart;
   const pada = Math.min(4, Math.floor(nakElapsed / (moonNakSpan / 4)) + 1);
   const nakCompletedPercent = (nakElapsed / moonNakSpan) * 100;
 
-  // 4. Nithya Yoga: (Sun + Moon) % 360 / 13°20'
+  // 4. Nithya Yoga: (Sun + Moon) % 360 / 13°20'.
   const sumDegrees = normalizeDegrees(sun.siderealLongitude + moon.siderealLongitude);
   const yogaIndex = Math.min(26, Math.floor(sumDegrees / moonNakSpan));
   const yogaObj = NITHYA_YOGAS[yogaIndex];
 
-  // 5. Karana: Elongation divided by 6°
+  // 5. Karana: each 6° half-tithi maps to the fixed/movable 60-slot sequence.
   const karanaIndex = Math.min(59, Math.floor(elongation / 6.0));
   const karanaNum = karanaIndex + 1;
   let karanaName = '';
@@ -274,9 +285,31 @@ export function calculatePanchanga(
     karanaName = FIXED_KARANAS[karanaNum]?.name || 'Naga';
     karanaType = 'Sthira';
   } else {
-    // 7 repeating movable karanas
     karanaName = MOVABLE_KARANAS[(karanaNum - 2) % 7].name;
     karanaType = 'Chara';
+  }
+
+  let sunriseUtc = '';
+  let sunsetUtc = '';
+  if (observer) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+    }).formatToParts(birthDateUtc);
+    const local: Record<string, number> = {};
+    for (const part of parts) {
+      if (part.type !== 'literal') local[part.type] = parseInt(part.value, 10);
+    }
+    const localMidnightUtc = localDateTimeToUtcDate(
+      local.year, local.month, local.day, 0, 0, 0, timezone,
+    );
+    const observerSite = new Astronomy.Observer(observer.latitude, observer.longitude, 0);
+    const rise = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observerSite, +1, localMidnightUtc, 1);
+    const set = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observerSite, -1, localMidnightUtc, 1);
+    sunriseUtc = rise ? rise.date.toISOString() : '';
+    sunsetUtc = set ? set.date.toISOString() : '';
   }
 
   return {
@@ -307,8 +340,8 @@ export function calculatePanchanga(
       name: karanaName,
       type: karanaType,
     },
-    sunriseUtc: '06:00:00Z',
-    sunsetUtc: '18:15:00Z',
+    sunriseUtc,
+    sunsetUtc,
     ayanamsa: {
       type: 'lahiri',
       valueDegrees: ayanamsaDeg,
@@ -316,7 +349,6 @@ export function calculatePanchanga(
     },
   };
 }
-
 /**
  * Choghadiya Sequence definitions
  */
