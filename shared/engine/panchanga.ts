@@ -9,6 +9,7 @@ import * as Astronomy from 'astronomy-engine';
 import { formatDMS, normalizeDegrees, calculateLahiriAyanamsha, localDateTimeToUtcDate } from './astronomy.ts';
 import { NAKSHATRAS, ZODIAC_SIGNS, SANSKRIT_SIGNS } from './constants.ts';
 import { PanchangaFacts, PlanetName, PlanetPosition } from './types.ts';
+import { astronomyEngineEphemerisProvider, SiderealEphemerisProvider } from './ephemeris.ts';
 
 export const TITHI_NAMES: string[] = [
   'Pratipada',
@@ -234,6 +235,7 @@ export function calculatePanchanga(
   birthDateUtc: Date,
   ayanamsaDeg: number,
   observer?: { latitude: number; longitude: number; timezone?: string },
+  ephemerisProvider?: SiderealEphemerisProvider,
 ): PanchangaFacts {
   const sun = planets.find((p) => p.name === 'Sun') || planets[0];
   const moon = planets.find((p) => p.name === 'Moon') || planets[1];
@@ -306,12 +308,33 @@ export function calculatePanchanga(
     const localMidnightUtc = localDateTimeToUtcDate(
       local.year, local.month, local.day, 0, 0, 0, timezone,
     );
-    const observerSite = new Astronomy.Observer(observer.latitude, observer.longitude, 0);
     const localMiddayUtc = new Date(localMidnightUtc.getTime() + 12 * 3600 * 1000);
-    const rise = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observerSite, +1, localMidnightUtc, 1);
-    const set = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observerSite, -1, localMiddayUtc, 1);
-    sunriseUtc = rise ? rise.date.toISOString() : '';
-    sunsetUtc = set ? set.date.toISOString() : '';
+    const rise = ephemerisProvider
+      ? ephemerisProvider.getHorizonEvent(
+          localMidnightUtc,
+          'Sun',
+          'RISE',
+          { latitude: observer.latitude, longitude: observer.longitude },
+        )
+      : (() => {
+          const observerSite = new Astronomy.Observer(observer.latitude, observer.longitude, 0);
+          const result = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observerSite, +1, localMidnightUtc, 1);
+          return result ? result.date : null;
+        })();
+    const set = ephemerisProvider
+      ? ephemerisProvider.getHorizonEvent(
+          localMiddayUtc,
+          'Sun',
+          'SET',
+          { latitude: observer.latitude, longitude: observer.longitude },
+        )
+      : (() => {
+          const observerSite = new Astronomy.Observer(observer.latitude, observer.longitude, 0);
+          const result = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observerSite, -1, localMiddayUtc, 1);
+          return result ? result.date : null;
+        })();
+    sunriseUtc = rise ? rise.toISOString() : '';
+    sunsetUtc = set ? set.toISOString() : '';
   }
 
   return {
@@ -405,29 +428,33 @@ export const AMRITA_KAAL_CONVENTION = {
   note: 'Anuradha is retained as printed at 28–34 ghatikas; printed traditions differ on this row.',
 } as const;
 
-function moonSiderealLongitudeAt(date: Date): number {
-  const astroTime = new Astronomy.AstroTime(date);
-  const ayanamsa = calculateLahiriAyanamsha(astroTime);
-  const tropicalMoon = Astronomy.Ecliptic(
-    Astronomy.GeoVector(Astronomy.Body.Moon, astroTime, true)
-  ).elon;
-  return normalizeDegrees(tropicalMoon - ayanamsa);
+function moonSiderealLongitudeAt(
+  date: Date,
+  provider: SiderealEphemerisProvider = astronomyEngineEphemerisProvider,
+): number {
+  const moon = provider.getPlanetaryPositions(date).find((p) => p.name === 'Moon');
+  if (!moon) throw new Error('Ephemeris provider returned no Moon position.');
+  return normalizeDegrees(moon.siderealLongitude);
 }
 
-function findNakshatraTransition(date: Date, direction: -1 | 1): Date {
+function findNakshatraTransition(
+  date: Date,
+  direction: -1 | 1,
+  provider: SiderealEphemerisProvider = astronomyEngineEphemerisProvider,
+): Date {
   const span = 360 / 27;
-  const currentIndex = Math.min(26, Math.floor(moonSiderealLongitudeAt(date) / span));
+  const currentIndex = Math.min(26, Math.floor(moonSiderealLongitudeAt(date, provider) / span));
   let edge = date;
   let sample = date;
   for (let i = 0; i < 16; i++) {
     sample = new Date(sample.getTime() + direction * 6 * 3600 * 1000);
-    const idx = Math.min(26, Math.floor(moonSiderealLongitudeAt(sample) / span));
+    const idx = Math.min(26, Math.floor(moonSiderealLongitudeAt(sample, provider) / span));
     if (idx !== currentIndex) {
       let lo = direction < 0 ? sample : edge;
       let hi = direction < 0 ? edge : sample;
       for (let j = 0; j < 45; j++) {
         const mid = new Date((lo.getTime() + hi.getTime()) / 2);
-        const idxMid = Math.min(26, Math.floor(moonSiderealLongitudeAt(mid) / span));
+        const idxMid = Math.min(26, Math.floor(moonSiderealLongitudeAt(mid, provider) / span));
         if (idxMid === currentIndex) {
           if (direction < 0) hi = mid;
           else lo = mid;
@@ -460,20 +487,27 @@ export function calculateComprehensiveDailyPanchanga(
   latitude: number = 28.6139,
   longitude: number = 77.2090,
   timezone: string = 'Asia/Kolkata',
-  cityName: string = 'New Delhi, India'
+  cityName: string = 'New Delhi, India',
+  ephemerisProvider: SiderealEphemerisProvider = astronomyEngineEphemerisProvider,
 ): ComprehensiveDailyPanchanga {
   const observer = new Astronomy.Observer(latitude, longitude, 0);
 
   // Astronomy AstroTime
   const astroTime = new Astronomy.AstroTime(date);
-  const ayanamsaDeg = calculateLahiriAyanamsha(astroTime);
+  const ayanamsaDeg = ephemerisProvider.getAyanamsa(date);
 
   // Sun and Moon positions
-  const sunEcliptic = Astronomy.Ecliptic(Astronomy.GeoVector(Astronomy.Body.Sun, astroTime, true));
-  const moonEcliptic = Astronomy.Ecliptic(Astronomy.GeoVector(Astronomy.Body.Moon, astroTime, true));
+  const providerPositions = ephemerisProvider.getPlanetaryPositions(date);
+  const sunPosition = providerPositions.find((p) => p.name === 'Sun');
+  const moonPosition = providerPositions.find((p) => p.name === 'Moon');
+  if (!sunPosition || !moonPosition) {
+    throw new Error('Ephemeris provider returned incomplete Sun/Moon positions for Panchanga.');
+  }
 
-  const sunTropLon = normalizeDegrees(sunEcliptic.elon);
-  const moonTropLon = normalizeDegrees(moonEcliptic.elon);
+  const sunSidLon = normalizeDegrees(sunPosition.siderealLongitude);
+  const moonSidLon = normalizeDegrees(moonPosition.siderealLongitude);
+  const sunTropLon = normalizeDegrees(sunSidLon + ayanamsaDeg);
+  const moonTropLon = normalizeDegrees(moonSidLon + ayanamsaDeg);
 
   const sunSidLon = normalizeDegrees(sunTropLon - ayanamsaDeg);
   const moonSidLon = normalizeDegrees(moonTropLon - ayanamsaDeg);
@@ -536,6 +570,7 @@ export function calculateComprehensiveDailyPanchanga(
     date,
     ayanamsaDeg,
     { latitude, longitude, timezone },
+    ephemerisProvider,
   );
 
   // Precise Sunrise & Sunset calculations
@@ -578,19 +613,44 @@ export function calculateComprehensiveDailyPanchanga(
     timezone,
   );
 
-  const sunRiseResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, +1, startOfDayUtc, 1);
-  const sunSetResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, -1, localMiddayUtc, 1);
-  const nextSunRiseResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, +1, nextDayUtc, 1);
+  const sunRiseDate = ephemerisProvider.getHorizonEvent(
+    startOfDayUtc,
+    'Sun',
+    'RISE',
+    { latitude, longitude },
+  );
+  const sunSetDate = ephemerisProvider.getHorizonEvent(
+    localMiddayUtc,
+    'Sun',
+    'SET',
+    { latitude, longitude },
+  );
+  const nextSunRiseDate = ephemerisProvider.getHorizonEvent(
+    nextDayUtc,
+    'Sun',
+    'RISE',
+    { latitude, longitude },
+  );
 
-  const sunriseDate = sunRiseResult ? sunRiseResult.date : new Date(startOfDayUtc.getTime() + 6 * 3600 * 1000);
-  const sunsetDate = sunSetResult ? sunSetResult.date : new Date(startOfDayUtc.getTime() + 18 * 3600 * 1000);
-  const nextSunriseDate = nextSunRiseResult ? nextSunRiseResult.date : new Date(sunriseDate.getTime() + 24 * 3600 * 1000);
+  const sunriseDate = sunRiseDate || new Date(startOfDayUtc.getTime() + 6 * 3600 * 1000);
+  const sunsetDate = sunSetDate || new Date(startOfDayUtc.getTime() + 18 * 3600 * 1000);
+  const nextSunriseDate = nextSunRiseDate || new Date(sunriseDate.getTime() + 24 * 3600 * 1000);
 
   // Moonrise & Moonset
-  const moonRiseResult = Astronomy.SearchRiseSet(Astronomy.Body.Moon, observer, +1, startOfDayUtc, 1);
-  const moonSetResult = Astronomy.SearchRiseSet(Astronomy.Body.Moon, observer, -1, localMiddayUtc, 1);
-  const moonriseStr = moonRiseResult ? formatLocalTime(moonRiseResult.date, timezone) : 'No Moonrise';
-  const moonsetStr = moonSetResult ? formatLocalTime(moonSetResult.date, timezone) : 'No Moonset';
+  const moonRiseDate = ephemerisProvider.getHorizonEvent(
+    startOfDayUtc,
+    'Moon',
+    'RISE',
+    { latitude, longitude },
+  );
+  const moonSetDate = ephemerisProvider.getHorizonEvent(
+    localMiddayUtc,
+    'Moon',
+    'SET',
+    { latitude, longitude },
+  );
+  const moonriseStr = moonRiseDate ? formatLocalTime(moonRiseDate, timezone) : 'No Moonrise';
+  const moonsetStr = moonSetDate ? formatLocalTime(moonSetDate, timezone) : 'No Moonset';
 
   // Durations
   const dayMs = Math.max(1000, sunsetDate.getTime() - sunriseDate.getTime());
@@ -654,8 +714,8 @@ export function calculateComprehensiveDailyPanchanga(
   for (let i = 0; i < 4 && cursor.getTime() < nextDayUtc.getTime(); i++) {
     const span = 360 / 27;
     const nakIndex = Math.min(26, Math.floor(moonSiderealLongitudeAt(cursor) / span));
-    const starStart = findNakshatraTransition(cursor, -1);
-    const starEnd = findNakshatraTransition(cursor, 1);
+    const starStart = findNakshatraTransition(cursor, -1, ephemerisProvider);
+    const starEnd = findNakshatraTransition(cursor, 1, ephemerisProvider);
     const amrita = getAmritaWindowForNakshatra(nakIndex, starStart, starEnd);
     if (amrita.end.getTime() > startOfDayUtc.getTime() && amrita.start.getTime() < nextDayUtc.getTime()) {
       amritaWindows.push({
