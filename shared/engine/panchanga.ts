@@ -178,6 +178,7 @@ export interface ComprehensiveDailyPanchanga {
     ayanamsa: string;
   };
   muhurats: {
+    amritKaalWindows: Array<{ start: string; end: string }>;
     abhijit: { start: string; end: string; status: 'Highly Auspicious' | 'Avoid'; description: string };
     brahma: { start: string; end: string; status: 'Highly Auspicious'; description: string };
     amritKaal: { start: string; end: string; status: 'Auspicious'; description: string };
