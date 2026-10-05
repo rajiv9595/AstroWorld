@@ -8,6 +8,7 @@
 
 import { getParashariAspectHouses, hasParashariAspect } from '../../shared/engine/aspects.ts';
 import { calculateYogasAndDoshas } from '../../shared/engine/yogas.ts';
+import { calculateVimshottariDasha } from '../../shared/engine/dasha.ts';
 import type { PlanetName, PlanetPosition, ZodiacSign } from '../../shared/engine/types.ts';
 
 type Check = { name: string; pass: boolean; detail: string };
@@ -141,6 +142,25 @@ expect(
   calculateYogasAndDoshas(mixedHalfPlanets, 'Aries').doshas.find(d => d.id === 'kala_sarpa')?.present,
   false,
 );
+
+const dashaBirth = new Date('2005-08-16T18:32:00.000Z');
+const dashaAtBirth = calculateVimshottariDasha(257.8637656115666, dashaBirth, dashaBirth);
+const activeAtBirth = dashaAtBirth.mahadashas
+  .filter(md => md.period.activeNow)
+  .map(md => md.period.path);
+expect('Vimshottari has exactly one active Mahadasha at birth', activeAtBirth.length, 1);
+
+let preBirthRejected = false;
+try {
+  calculateVimshottariDasha(
+    257.8637656115666,
+    dashaBirth,
+    new Date(dashaBirth.getTime() - 1),
+  );
+} catch {
+  preBirthRejected = true;
+}
+expect('Vimshottari rejects an evaluation date before birth', preBirthRejected, true);
 
 let passed = 0;
 for (const c of checks) {
