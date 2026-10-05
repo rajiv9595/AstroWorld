@@ -48,7 +48,7 @@ export function calculateTimingSignals(
     evidenceIds: [
       `EVID_DASHA_ACTIVE_${activeMd.lord}_${activeAd.subLord}`,
     ],
-    summary: `The native is progressing through the ${activeMd.lord} Mahadasha and ${activeAd.subLord} Antardasha window (${new Date(activeAd.startDateIso).toLocaleDateString()} to ${new Date(activeAd.endDateIso).toLocaleDateString()}). The themes governed by these planetary lords are highlighted during this temporal phase.`,
+    summary: `The native is progressing through the ${activeMd.lord} Mahadasha and ${activeAd.subLord} Antardasha window (${activeAd.startDateIso.slice(0, 10)} to ${activeAd.endDateIso.slice(0, 10)} UTC dates). The themes associated with these planetary lords are highlighted during this temporal phase.`,
   });
 
   // 2. Career & Professional Trajectory (Event Window)
@@ -72,13 +72,13 @@ export function calculateTimingSignals(
     activeFactors: [
       `Active Dasha: ${activeMd.lord}/${activeAd.subLord}`,
       `Transit Jupiter transiting natal house ${transitJupiter.natalLagnaHouse} (${transitJupiter.sign}) with ${jupSav} SAV bindus`,
-      `Transit Saturn in house ${transitSaturn.natalLagnaHouse} commanding structure`,
+      `Transit Saturn in house ${transitSaturn.natalLagnaHouse}`,
     ],
     evidenceIds: [
       'EVID_TRANSIT_JUPITER',
       'EVID_ASHTAKAVARGA_SAV',
     ],
-    summary: `Professional timing indicates an active window governed by ${activeMd.lord} and ${activeAd.subLord}. With Jupiter energizing house ${transitJupiter.natalLagnaHouse} supported by ${jupSav} Ashtakavarga bindus, execution opportunities align over this bounded window.`,
+    summary: `The active Dasha window is accompanied by Jupiter transiting house ${transitJupiter.natalLagnaHouse} with ${jupSav} SAV bindus. This is classified as a bounded supported timing signal, not a guaranteed event.`,
   });
 
   // 3. Exact Solar Ingress (EXACT Timing Precision)
@@ -114,13 +114,13 @@ export function calculateTimingSignals(
     confluenceBasis: venOrJupActive ? 'SUPPORTED' : 'CONTEXTUAL',
     activeFactors: [
       `Active Antardasha: ${activeAd.subLord}`,
-      `Venus natal dignity and house 7 connection`,
+      `Venus natal placement and dignity are available in the canonical chart evidence`,
     ],
     evidenceIds: [
       'EVID_PLANET_VENUS_D1',
       `EVID_DASHA_ACTIVE_${activeMd.lord}_${activeAd.subLord}`,
     ],
-    summary: `Relational themes develop across the ongoing ${activeAd.subLord} antardasha window. Classical principles indicate collaborative bonds and reciprocal agreements evolve steadily within this period.`,
+    summary: `Relational themes are highlighted across the ongoing ${activeAd.subLord} Antardasha window; this signal is contextual unless corroborated by additional relationship-specific evidence.`,
   });
 
   // 5. Unknown / Low-Evidence Long-Horizon Signal (Demonstrating strict UNKNOWN semantics)
