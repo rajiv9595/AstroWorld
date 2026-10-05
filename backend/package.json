@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch src/main.ts",
     "build": "tsc --noEmit",
-    "start": "tsx src/server.ts",
+    "start": "tsx src/main.ts",
     "test:astrology": "tsx scripts/verify-astrology-engine.ts",
     "test:ai-v2-boundary": "tsx scripts/verify-ai-v2-boundary.ts",
     "test:ai-v2-tools": "tsx scripts/verify-ai-v2-tools.ts",
