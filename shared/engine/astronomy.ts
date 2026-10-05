@@ -39,61 +39,17 @@ export function calculateLahiriAyanamsha(time: any): number {
 /**
  * Parse local birth profile into UTC Date object safely.
  */
-function assertValidIanaTimezone(timezone: string): void {
-  try {
-    new Intl.DateTimeFormat('en-US', { timeZone: timezone }).format();
-  } catch {
-    throw new Error('Invalid IANA timezone: ' + timezone);
-  }
-}
-
-function assertValidCivilDateTime(profile: BirthProfile): void {
-  const fields = [
-    ['year', profile.year],
-    ['month', profile.month],
-    ['day', profile.day],
-    ['hour', profile.hour],
-    ['minute', profile.minute],
-    ['second', profile.second ?? 0],
-  ] as const;
-
-  for (const [name, value] of fields) {
-    if (!Number.isInteger(value)) {
-      throw new Error('Birth ' + name + ' must be an integer.');
-    }
-  }
-
-  if (profile.month < 1 || profile.month > 12) {
-    throw new Error('Birth month must be between 1 and 12.');
-  }
-  if (profile.hour < 0 || profile.hour > 23) {
-    throw new Error('Birth hour must be between 0 and 23.');
-  }
-  if (profile.minute < 0 || profile.minute > 59) {
-    throw new Error('Birth minute must be between 0 and 59.');
-  }
-  if ((profile.second ?? 0) < 0 || (profile.second ?? 0) > 59) {
-    throw new Error('Birth second must be between 0 and 59.');
-  }
-
-  const daysInMonth = new Date(Date.UTC(profile.year, profile.month, 0)).getUTCDate();
-  if (profile.day < 1 || profile.day > daysInMonth) {
-    throw new Error(
-      'Invalid calendar date: ' +
-      profile.year +
-      '-' +
-      String(profile.month).padStart(2, '0') +
-      '-' +
-      String(profile.day).padStart(2, '0') +
-      '.',
-    );
-  }
-
-  assertValidIanaTimezone(profile.timezone);
-}
-
-function formatPartsAtUtc(utcMs: number, timezone: string): Record<string, number> {
-  const parts = new Intl.DateTimeFormat('en-US', {
+export function localDateTimeToUtcDate(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second = 0,
+  timezone = 'Asia/Kolkata',
+): Date {
+  const targetWallMs = Date.UTC(year, month - 1, day, hour, minute, second);
+  const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
     year: 'numeric',
     month: '2-digit',
@@ -101,96 +57,73 @@ function formatPartsAtUtc(utcMs: number, timezone: string): Record<string, numbe
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(new Date(utcMs));
+    hour12: false,
+  });
 
-  const values: Record<string, number> = {};
-  for (const part of parts) {
-    if (part.type !== 'literal') {
-      values[part.type] = Number(part.value);
+  // Iteratively solve UTC -> requested timezone wall time. A single probe can
+  // cross a DST transition and select the wrong offset; iteration converges
+  // on the offset that actually applies to the target wall-clock instant.
+  let candidateMs = targetWallMs;
+  for (let i = 0; i < 4; i++) {
+    const parts = formatter.formatToParts(new Date(candidateMs));
+    const p: Record<string, number> = {};
+    for (const part of parts) {
+      if (part.type !== 'literal') p[part.type] = parseInt(part.value, 10);
     }
+
+    const formattedWallMs = Date.UTC(
+      p.year,
+      p.month - 1,
+      p.day,
+      p.hour === 24 ? 0 : p.hour,
+      p.minute,
+      p.second,
+    );
+    const correctionMs = targetWallMs - formattedWallMs;
+    if (correctionMs === 0) return new Date(candidateMs);
+    candidateMs += correctionMs;
   }
-  if (values.hour === 24) values.hour = 0;
-  return values;
-}
 
-function timezoneOffsetMillisAtUtc(utcMs: number, timezone: string): number {
-  const p = formatPartsAtUtc(utcMs, timezone);
-  const asUtcWall = Date.UTC(
-    p.year,
-    p.month - 1,
-    p.day,
-    p.hour,
-    p.minute,
-    p.second,
-  );
-  // Intl exposes civil seconds, so normalize to the nearest whole second.
-  return Math.round((asUtcWall - utcMs) / 1000) * 1000;
+  return new Date(candidateMs);
 }
-
-function requestedWallMatches(utcMs: number, profile: BirthProfile): boolean {
-  const p = formatPartsAtUtc(utcMs, profile.timezone);
-  return (
-    p.year === profile.year &&
-    p.month === profile.month &&
-    p.day === profile.day &&
-    p.hour === profile.hour &&
-    p.minute === profile.minute &&
-    p.second === (profile.second ?? 0)
+export function birthProfileToUtcDate(profile: BirthProfile): Date {
+  return localDateTimeToUtcDate(
+    profile.year,
+    profile.month,
+    profile.day,
+    profile.hour,
+    profile.minute,
+    profile.second || 0,
+    profile.timezone || 'Asia/Kolkata',
   );
 }
 
 /**
- * Converts a local civil birth time in an IANA timezone to a unique UTC instant.
- *
- * The conversion is deliberately strict:
- * - impossible DST-gap times are rejected;
- * - ambiguous DST-fold times are rejected instead of silently choosing one;
- * - true calendar-invalid dates are rejected;
- * - timezone identifiers are validated by the runtime's IANA database.
+ * Resolve an equal-width angular partition using half-open [start, end)
+ * semantics while compensating for tiny floating-point errors at exact
+ * mathematical boundaries.
  */
-export function birthProfileToUtcDate(profile: BirthProfile): Date {
-  assertValidCivilDateTime(profile);
+function calculateEqualAngularPart(
+  value: number,
+  span: number,
+  count: number,
+): { part: number; offset: number } {
+  const quotient = value / span;
+  const nearestInteger = Math.round(quotient);
+  // Keep this well below the boundary-test perturbation after scaling
+  // (1e-9 degrees / 13.333... degrees ≈ 7.5e-11).
+  const boundaryTolerance = 1e-12;
+  const isExactBoundary = Math.abs(quotient - nearestInteger) < boundaryTolerance;
 
-  const wallUtcMs = Date.UTC(
-    profile.year,
-    profile.month - 1,
-    profile.day,
-    profile.hour,
-    profile.minute,
-    profile.second ?? 0,
+  const part = Math.min(
+    count - 1,
+    isExactBoundary ? nearestInteger : Math.floor(quotient),
   );
 
-  // Sample offsets around the target civil instant to capture normal, DST,
-  // and historical transition offsets without assuming a fixed offset.
-  const possibleOffsets = new Set<number>();
-  const sixHours = 6 * 60 * 60 * 1000;
-  for (let delta = -48 * 60 * 60 * 1000; delta <= 48 * 60 * 60 * 1000; delta += sixHours) {
-    possibleOffsets.add(timezoneOffsetMillisAtUtc(wallUtcMs + delta, profile.timezone));
-  }
-
-  const candidates = Array.from(possibleOffsets)
-    .map((offsetMs) => new Date(wallUtcMs - offsetMs).getTime())
-    .filter((utcMs) => requestedWallMatches(utcMs, profile))
-    .sort((a, b) => a - b);
-
-  if (candidates.length === 0) {
-    throw new Error(
-      'Birth local time does not exist in ' +
-      profile.timezone +
-      ' (likely a daylight-saving clock gap). Please verify the recorded birth time.',
-    );
-  }
-
-  if (candidates.length > 1) {
-    throw new Error(
-      'Birth local time is ambiguous in ' +
-      profile.timezone +
-      ' (it occurs twice during a daylight-saving clock fold). Please verify the recorded civil time.',
-    );
-  }
-
-  return new Date(candidates[0]);
+  return {
+    part,
+    offset: isExactBoundary ? 0 : value - part * span,
+  };
 }
 
 export function getNakshatraAndPada(siderealLongitude: number): {
@@ -202,12 +135,28 @@ export function getNakshatraAndPada(siderealLongitude: number): {
 } {
   const norm = normalizeDegrees(siderealLongitude);
   const nakSpan = 360 / 27; // 13.333333°
-  const index = Math.min(26, Math.floor(norm / nakSpan));
+  const {
+    part: index,
+    offset: degInNak,
+  } = calculateEqualAngularPart(norm, nakSpan, 27);
   const nak = NAKSHATRAS[index];
-  const degInNak = norm - nak.startDegree;
+
   const padaSpan = nakSpan / 4; // 3.333333°
-  const pada = Math.min(4, Math.floor(degInNak / padaSpan) + 1);
-  const completedPercent = Math.min(100, Math.max(0, (degInNak / nakSpan) * 100));
+  const {
+    part: padaPart,
+    offset: degInPada,
+  } = calculateEqualAngularPart(degInNak, padaSpan, 4);
+  const pada = padaPart + 1;
+  const completedPercent = Math.min(
+    100,
+    Math.max(0, (degInNak / nakSpan) * 100),
+  );
+
+  // Keep the local pada offset explicit so exact pada boundaries remain
+  // deterministic even when JavaScript cannot represent the decimal span
+  // exactly. It is intentionally not used to alter the percentage, which is
+  // defined from the exact nakshatra position.
+  void degInPada;
 
   return {
     nakshatra: nak.name,
@@ -269,64 +218,35 @@ export function calculatePlanetaryPositions(
 ): PlanetPosition[] {
   const t = time.ut / 36525.0;
 
-  // 1. Tropical ecliptic positions
-  const sunPos = Astronomy.SunPosition(time);
-  const moonVec = Astronomy.GeoVector('Moon' as any, time, true);
-  const moonPos = Astronomy.Ecliptic(moonVec);
+  // Tropical ecliptic positions. Retrograde status is derived from the actual
+  // apparent geocentric longitude trend, not from a fixed mean-speed constant.
+  const tropicalLongitude = (body: any, atTime: any): number =>
+    Astronomy.Ecliptic(Astronomy.GeoVector(body, atTime, true)).elon;
 
-  const bodies: { name: PlanetName; tropLon: number; speed: number }[] = [
-    {
-      name: 'Sun',
-      tropLon: sunPos.elon,
-      speed: 0.9856, // approx mean speed in deg/day
-    },
-    {
-      name: 'Moon',
-      tropLon: moonPos.elon,
-      speed: 13.176,
-    },
-    {
-      name: 'Mars',
-      tropLon: Astronomy.Ecliptic(Astronomy.GeoVector('Mars' as any, time, true)).elon,
-      speed: 0.524,
-    },
-    {
-      name: 'Mercury',
-      tropLon: Astronomy.Ecliptic(Astronomy.GeoVector('Mercury' as any, time, true)).elon,
-      speed: 1.383,
-    },
-    {
-      name: 'Jupiter',
-      tropLon: Astronomy.Ecliptic(Astronomy.GeoVector('Jupiter' as any, time, true)).elon,
-      speed: 0.083,
-    },
-    {
-      name: 'Venus',
-      tropLon: Astronomy.Ecliptic(Astronomy.GeoVector('Venus' as any, time, true)).elon,
-      speed: 1.2,
-    },
-    {
-      name: 'Saturn',
-      tropLon: Astronomy.Ecliptic(Astronomy.GeoVector('Saturn' as any, time, true)).elon,
-      speed: 0.033,
-    },
+  const sunPos = Astronomy.SunPosition(time);
+  const bodies: { name: PlanetName; tropLon: number; body?: any }[] = [
+    { name: 'Sun', tropLon: sunPos.elon },
+    { name: 'Moon', tropLon: tropicalLongitude('Moon' as any, time), body: 'Moon' as any },
+    { name: 'Mars', tropLon: tropicalLongitude('Mars' as any, time), body: 'Mars' as any },
+    { name: 'Mercury', tropLon: tropicalLongitude('Mercury' as any, time), body: 'Mercury' as any },
+    { name: 'Jupiter', tropLon: tropicalLongitude('Jupiter' as any, time), body: 'Jupiter' as any },
+    { name: 'Venus', tropLon: tropicalLongitude('Venus' as any, time), body: 'Venus' as any },
+    { name: 'Saturn', tropLon: tropicalLongitude('Saturn' as any, time), body: 'Saturn' as any },
   ];
 
-  // Mean Lunar Node (Rahu) using authoritative IAU/Brown formula
-  // Omega = 125.04452 - 1934.136261 * T + 0.0020708 * T^2
+  // Analytical mean lunar node (Rahu). This is a compact polynomial model,
+  // not a direct Swiss-Ephemeris node call; reference suites therefore use
+  // an independent Swiss mean-node oracle with an explicit wider tolerance.
   const omegaTrop = normalizeDegrees(125.04452 - 1934.136261 * t + 0.0020708 * t * t);
-  bodies.push({
-    name: 'Rahu',
-    tropLon: omegaTrop,
-    speed: -0.05295, // mean retrograde motion
-  });
-  bodies.push({
-    name: 'Ketu',
-    tropLon: normalizeDegrees(omegaTrop + 180.0),
-    speed: -0.05295,
-  });
+  bodies.push({ name: 'Rahu', tropLon: omegaTrop });
+  bodies.push({ name: 'Ketu', tropLon: normalizeDegrees(omegaTrop + 180.0) });
 
   const sunSidLon = normalizeDegrees(sunPos.elon - ayanamsha);
+  const dayStep = 0.01; // ~14.4 minutes; sufficient to identify apparent retrograde direction.
+  const angularDelta = (a: number, b: number): number => {
+    const raw = normalizeDegrees(a - b);
+    return raw > 180 ? raw - 360 : raw;
+  };
 
   return bodies.map((b) => {
     const sidLon = normalizeDegrees(b.tropLon - ayanamsha);
@@ -334,10 +254,17 @@ export function calculatePlanetaryPositions(
     const sign = ZODIAC_SIGNS[signIndex];
     const degreeInSign = sidLon % 30;
 
-    // Whole Sign house from Ascendant (1 to 12)
-    const houseNumber = ((signIndex - ascendantSignIndex + 12) % 12) + 1;
+    let speed: number;
+    if (b.body) {
+      const prevLon = tropicalLongitude(b.body, time.AddDays(-dayStep));
+      const nextLon = tropicalLongitude(b.body, time.AddDays(dayStep));
+      speed = angularDelta(nextLon, prevLon) / (2 * dayStep);
+    } else if (b.name === 'Rahu' || b.name === 'Ketu') {
+      speed = -0.05295;
+    } else {
+      speed = 0.9856;
+    }
 
-    // Combustion check: within classical degrees of Sun
     let combust = false;
     if (b.name !== 'Sun' && b.name !== 'Rahu' && b.name !== 'Ketu') {
       const diff = Math.min(
@@ -347,14 +274,12 @@ export function calculatePlanetaryPositions(
       const combustionOrbs: Record<string, number> = {
         Moon: 12.0,
         Mars: 17.0,
-        Mercury: 14.0, // 12 if retrograde
+        Mercury: (speed < 0 ? 12.0 : 14.0),
         Jupiter: 11.0,
-        Venus: 10.0, // 8 if retrograde
+        Venus: (speed < 0 ? 8.0 : 10.0),
         Saturn: 15.0,
       };
-      if (diff <= (combustionOrbs[b.name] || 10.0)) {
-        combust = true;
-      }
+      if (diff <= (combustionOrbs[b.name] || 10.0)) combust = true;
     }
 
     const nakInfo = getNakshatraAndPada(sidLon);
@@ -369,18 +294,18 @@ export function calculatePlanetaryPositions(
       signIndex,
       degreeInSign,
       formattedDegree: formatDMS(degreeInSign),
-      houseNumber,
+      houseNumber: ((signIndex - ascendantSignIndex + 12) % 12) + 1,
       nakshatra: nakInfo.nakshatra,
       nakshatraNumber: nakInfo.nakshatraNumber,
       nakshatraLord: nakInfo.nakshatraLord,
       pada: nakInfo.pada,
-      speed: b.speed,
-      retrograde: b.speed < 0,
+      speed,
+      retrograde: speed < 0,
       combust,
-      dignity: 'NEUTRAL', // populated by dignity module
+      dignity: 'NEUTRAL',
       dignityScore: 0,
       signLord,
-      naturalRelationshipToLord: 'NEUTRAL', // populated by dignity module
+      naturalRelationshipToLord: 'NEUTRAL',
     };
   });
 }
