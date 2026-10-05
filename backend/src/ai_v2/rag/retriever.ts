@@ -73,6 +73,10 @@ export class ClassicalRAGRetriever {
     const scoredRecords: Array<{ record: KnowledgeRecord; score: number }> = [];
 
     for (const record of this.knowledgeBase) {
+      // Never retrieve unverified classical material into the reasoning path.
+      // A source must be explicitly verified before it can influence claims.
+      if (!record.verified) continue;
+
       // Filter by tradition if requested
       if (traditionFilter && record.metadata.tradition !== traditionFilter && record.metadata.tradition !== 'classical') {
         continue;
