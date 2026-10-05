@@ -171,8 +171,9 @@ export function calculateYogasAndDoshas(
     const pb = getPlanet(b);
     const sameHouse = pa.houseNumber === pb.houseNumber;
     const mutualAspect = ((pa.houseNumber - pb.houseNumber + 12) % 12) === 6;
+    const oneInOthersSign = SIGN_LORDS[pa.sign] === b || SIGN_LORDS[pb.sign] === a;
     const exchange = SIGN_LORDS[pa.sign] === b && SIGN_LORDS[pb.sign] === a;
-    return sameHouse || mutualAspect || exchange;
+    return sameHouse || mutualAspect || oneInOthersSign || exchange;
   };
   const kendraLords = kendraHouses.map(getHouseLord);
   const trikonaLords = [5, 9].map(getHouseLord);
@@ -259,18 +260,31 @@ export function calculateYogasAndDoshas(
   });
 
   // 7. Amala Yoga: Benefic in 10th from Lagna or Moon
-  const isAmala =
-    jupiter.houseNumber === 10 ||
-    venus.houseNumber === 10 ||
-    mercury.houseNumber === 10 ||
-    jupHouseFromMoon === 10;
+  const venusHouseFromMoon = ((venus.houseNumber - moonHouse + 12) % 12) + 1;
+  const mercuryHouseFromMoon = ((mercury.houseNumber - moonHouse + 12) % 12) + 1;
+  const amalaPlanets = new Set<PlanetName>();
+  if ([jupiter.houseNumber, venus.houseNumber, mercury.houseNumber].includes(10)) {
+    if (jupiter.houseNumber === 10) amalaPlanets.add('Jupiter');
+    if (venus.houseNumber === 10) amalaPlanets.add('Venus');
+    if (mercury.houseNumber === 10) amalaPlanets.add('Mercury');
+  }
+  if ([jupHouseFromMoon, venusHouseFromMoon, mercuryHouseFromMoon].includes(10)) {
+    if (jupHouseFromMoon === 10) amalaPlanets.add('Jupiter');
+    if (venusHouseFromMoon === 10) amalaPlanets.add('Venus');
+    if (mercuryHouseFromMoon === 10) amalaPlanets.add('Mercury');
+  }
+  const amalaFormingPlanets = Array.from(amalaPlanets);
+  const amalaHouses = Array.from(new Set([
+    ...amalaFormingPlanets.map(p => getPlanet(p).houseNumber),
+  ]));
+  const isAmala = amalaFormingPlanets.length > 0;
   yogas.push({
     id: 'amala_yoga',
     name: 'Amala Yoga (अमल योग)',
     category: 'MISCELLANEOUS',
     present: isAmala,
-    formingPlanets: ['Jupiter'],
-    housesInvolved: [10],
+    formingPlanets: amalaFormingPlanets,
+    housesInvolved: amalaHouses.length > 0 ? amalaHouses : [10],
     bphsReference: 'BPHS, Ch. 36, Verse 21',
     classicalRule: 'A natural benefic (Jupiter, Venus, Mercury) occupying the 10th house from Lagna or Moon.',
     effects: 'Brings spotless professional reputation, benevolent leadership, enduring honor, and virtuous conduct throughout career.',
