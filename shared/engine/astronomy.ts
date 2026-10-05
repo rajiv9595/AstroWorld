@@ -39,49 +39,158 @@ export function calculateLahiriAyanamsha(time: any): number {
 /**
  * Parse local birth profile into UTC Date object safely.
  */
-export function birthProfileToUtcDate(profile: BirthProfile): Date {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const isoLocal = `${profile.year}-${pad(profile.month)}-${pad(profile.day)}T${pad(profile.hour)}:${pad(profile.minute)}:${pad(profile.second || 0)}`;
+function assertValidIanaTimezone(timezone: string): void {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: timezone }).format();
+  } catch {
+    throw new Error('Invalid IANA timezone: ' + timezone);
+  }
+}
 
-  // Create formatted string for target timezone
-  // For Asia/Kolkata (+05:30) or any valid IANA timezone
-  const d = new Date(isoLocal + 'Z'); // parse as UTC first
-  
-  // Use Intl.DateTimeFormat to determine the timezone offset in minutes at that historical moment
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: profile.timezone || 'Asia/Kolkata',
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: 'numeric',
-    second: 'numeric',
-    hour12: false,
-  });
+function assertValidCivilDateTime(profile: BirthProfile): void {
+  const fields = [
+    ['year', profile.year],
+    ['month', profile.month],
+    ['day', profile.day],
+    ['hour', profile.hour],
+    ['minute', profile.minute],
+    ['second', profile.second ?? 0],
+  ] as const;
 
-  const parts = formatter.formatToParts(d);
-  const p: Record<string, number> = {};
-  for (const part of parts) {
-    if (part.type !== 'literal') {
-      p[part.type] = parseInt(part.value, 10);
+  for (const [name, value] of fields) {
+    if (!Number.isInteger(value)) {
+      throw new Error('Birth ' + name + ' must be an integer.');
     }
   }
 
-  // Calculate timezone offset difference
-  const formattedUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour === 24 ? 0 : p.hour, p.minute, p.second);
-  const offsetMs = formattedUtc - d.getTime();
+  if (profile.month < 1 || profile.month > 12) {
+    throw new Error('Birth month must be between 1 and 12.');
+  }
+  if (profile.hour < 0 || profile.hour > 23) {
+    throw new Error('Birth hour must be between 0 and 23.');
+  }
+  if (profile.minute < 0 || profile.minute > 59) {
+    throw new Error('Birth minute must be between 0 and 59.');
+  }
+  if ((profile.second ?? 0) < 0 || (profile.second ?? 0) > 59) {
+    throw new Error('Birth second must be between 0 and 59.');
+  }
 
-  // The local wall clock time in ms:
+  const daysInMonth = new Date(Date.UTC(profile.year, profile.month, 0)).getUTCDate();
+  if (profile.day < 1 || profile.day > daysInMonth) {
+    throw new Error(
+      'Invalid calendar date: ' +
+      profile.year +
+      '-' +
+      String(profile.month).padStart(2, '0') +
+      '-' +
+      String(profile.day).padStart(2, '0') +
+      '.',
+    );
+  }
+
+  assertValidIanaTimezone(profile.timezone);
+}
+
+function formatPartsAtUtc(utcMs: number, timezone: string): Record<string, number> {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(utcMs));
+
+  const values: Record<string, number> = {};
+  for (const part of parts) {
+    if (part.type !== 'literal') {
+      values[part.type] = Number(part.value);
+    }
+  }
+  if (values.hour === 24) values.hour = 0;
+  return values;
+}
+
+function timezoneOffsetMillisAtUtc(utcMs: number, timezone: string): number {
+  const p = formatPartsAtUtc(utcMs, timezone);
+  const asUtcWall = Date.UTC(
+    p.year,
+    p.month - 1,
+    p.day,
+    p.hour,
+    p.minute,
+    p.second,
+  );
+  // Intl exposes civil seconds, so normalize to the nearest whole second.
+  return Math.round((asUtcWall - utcMs) / 1000) * 1000;
+}
+
+function requestedWallMatches(utcMs: number, profile: BirthProfile): boolean {
+  const p = formatPartsAtUtc(utcMs, profile.timezone);
+  return (
+    p.year === profile.year &&
+    p.month === profile.month &&
+    p.day === profile.day &&
+    p.hour === profile.hour &&
+    p.minute === profile.minute &&
+    p.second === (profile.second ?? 0)
+  );
+}
+
+/**
+ * Converts a local civil birth time in an IANA timezone to a unique UTC instant.
+ *
+ * The conversion is deliberately strict:
+ * - impossible DST-gap times are rejected;
+ * - ambiguous DST-fold times are rejected instead of silently choosing one;
+ * - true calendar-invalid dates are rejected;
+ * - timezone identifiers are validated by the runtime's IANA database.
+ */
+export function birthProfileToUtcDate(profile: BirthProfile): Date {
+  assertValidCivilDateTime(profile);
+
   const wallUtcMs = Date.UTC(
     profile.year,
     profile.month - 1,
     profile.day,
     profile.hour,
     profile.minute,
-    profile.second || 0
+    profile.second ?? 0,
   );
 
-  return new Date(wallUtcMs - offsetMs);
+  // Sample offsets around the target civil instant to capture normal, DST,
+  // and historical transition offsets without assuming a fixed offset.
+  const possibleOffsets = new Set<number>();
+  const sixHours = 6 * 60 * 60 * 1000;
+  for (let delta = -48 * 60 * 60 * 1000; delta <= 48 * 60 * 60 * 1000; delta += sixHours) {
+    possibleOffsets.add(timezoneOffsetMillisAtUtc(wallUtcMs + delta, profile.timezone));
+  }
+
+  const candidates = Array.from(possibleOffsets)
+    .map((offsetMs) => new Date(wallUtcMs - offsetMs).getTime())
+    .filter((utcMs) => requestedWallMatches(utcMs, profile))
+    .sort((a, b) => a - b);
+
+  if (candidates.length === 0) {
+    throw new Error(
+      'Birth local time does not exist in ' +
+      profile.timezone +
+      ' (likely a daylight-saving clock gap). Please verify the recorded birth time.',
+    );
+  }
+
+  if (candidates.length > 1) {
+    throw new Error(
+      'Birth local time is ambiguous in ' +
+      profile.timezone +
+      ' (it occurs twice during a daylight-saving clock fold). Please verify the recorded civil time.',
+    );
+  }
+
+  return new Date(candidates[0]);
 }
 
 export function getNakshatraAndPada(siderealLongitude: number): {
