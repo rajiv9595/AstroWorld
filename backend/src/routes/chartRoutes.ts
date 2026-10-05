@@ -1,15 +1,15 @@
 import { Router, Request, Response } from 'express';
 import { supabase } from '../services/supabaseService.ts';
+import { authenticateRequest, getAuthenticatedUser } from '../middleware/authMiddleware.ts';
 
 export const chartRouter = Router();
 
-// Fetch User Saved Charts
-chartRouter.get('/:userId', async (req: Request, res: Response) => {
+chartRouter.use(authenticateRequest);
+
+// Fetch authenticated user's saved charts
+chartRouter.get('/', async (req: Request, res: Response) => {
   try {
-    const { userId } = req.params;
-    if (!userId) {
-      return res.status(400).json({ success: false, error: 'UserId required' });
-    }
+    const { userId } = getAuthenticatedUser(req);
 
     const { data, error } = await supabase
       .from('kundli_charts')
@@ -19,7 +19,7 @@ chartRouter.get('/:userId', async (req: Request, res: Response) => {
 
     if (error) {
       console.error('[Supabase Fetch Charts Error]:', error.message);
-      return res.status(500).json({ success: false, error: error.message });
+      return res.status(500).json({ success: false, error: 'Failed to fetch saved charts.' });
     }
 
     const charts = (data || []).map((r: any) => ({
@@ -41,25 +41,27 @@ chartRouter.get('/:userId', async (req: Request, res: Response) => {
     }));
 
     return res.json({ success: true, charts });
-  } catch (err: any) {
-    console.error('Fetch charts error:', err);
-    return res.status(500).json({ success: false, error: 'Failed to fetch charts' });
+  } catch (err) {
+    console.error('[Charts GET] unexpected error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch saved charts.' });
   }
 });
 
-// Save / Insert User Chart
+// Save authenticated user's chart
 chartRouter.post('/', async (req: Request, res: Response) => {
   try {
-    const { userId, chart } = req.body;
-    if (!userId || !chart || !chart.name) {
-      return res.status(400).json({ success: false, error: 'Valid chart payload and userId required' });
+    const { userId } = getAuthenticatedUser(req);
+    const chart = req.body?.chart;
+
+    if (!chart || typeof chart !== 'object' || !String(chart.name || '').trim()) {
+      return res.status(400).json({ success: false, error: 'A valid chart payload is required.' });
     }
 
     const { data, error } = await supabase
       .from('kundli_charts')
       .insert({
         user_id: userId,
-        name: chart.name,
+        name: String(chart.name).trim(),
         year: chart.year,
         month: chart.month,
         day: chart.day,
@@ -75,58 +77,67 @@ chartRouter.post('/', async (req: Request, res: Response) => {
       .select()
       .single();
 
-    if (error) {
-      console.error('[Supabase Save Chart Error]:', error.message);
-      return res.status(500).json({ success: false, error: error.message });
+    if (error || !data) {
+      console.error('[Supabase Save Chart Error]:', error?.message);
+      return res.status(500).json({ success: false, error: 'Failed to save chart.' });
     }
 
-    const savedChart = {
-      id: data.id,
-      userId: data.user_id,
-      name: data.name,
-      year: data.year,
-      month: data.month,
-      day: data.day,
-      hour: data.hour,
-      minute: data.minute,
-      second: data.second ?? 0,
-      latitude: Number(data.latitude),
-      longitude: Number(data.longitude),
-      timezone: data.timezone,
-      cityName: data.city_name,
-      chartStyle: data.chart_style,
-      createdAt: data.created_at,
-    };
-
-    return res.json({ success: true, chart: savedChart });
-  } catch (err: any) {
-    console.error('Save chart error:', err);
-    return res.status(500).json({ success: false, error: 'Failed to save chart' });
+    return res.status(201).json({
+      success: true,
+      chart: {
+        id: data.id,
+        userId: data.user_id,
+        name: data.name,
+        year: data.year,
+        month: data.month,
+        day: data.day,
+        hour: data.hour,
+        minute: data.minute,
+        second: data.second ?? 0,
+        latitude: Number(data.latitude),
+        longitude: Number(data.longitude),
+        timezone: data.timezone,
+        cityName: data.city_name,
+        chartStyle: data.chart_style,
+        createdAt: data.created_at,
+      },
+    });
+  } catch (err) {
+    console.error('[Charts POST] unexpected error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to save chart.' });
   }
 });
 
-// Delete User Chart
-chartRouter.delete('/:userId/:chartId', async (req: Request, res: Response) => {
+// Delete authenticated user's chart
+chartRouter.delete('/:chartId', async (req: Request, res: Response) => {
   try {
-    const { userId, chartId } = req.params;
-    if (!userId || !chartId) {
-      return res.status(400).json({ success: false, error: 'userId and chartId required' });
+    const { userId } = getAuthenticatedUser(req);
+    const chartId = req.params.chartId;
+
+    if (!chartId) {
+      return res.status(400).json({ success: false, error: 'chartId is required.' });
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('kundli_charts')
       .delete()
       .eq('id', chartId)
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .select('id')
+      .maybeSingle();
 
     if (error) {
       console.error('[Supabase Delete Chart Error]:', error.message);
-      return res.status(500).json({ success: false, error: error.message });
+      return res.status(500).json({ success: false, error: 'Failed to delete chart.' });
+    }
+
+    if (!data) {
+      return res.status(404).json({ success: false, error: 'Saved chart not found.' });
     }
 
     return res.json({ success: true });
-  } catch (err: any) {
-    console.error('Delete chart error:', err);
-    return res.status(500).json({ success: false, error: 'Failed to delete chart' });
+  } catch (err) {
+    console.error('[Charts DELETE] unexpected error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to delete chart.' });
   }
 });
