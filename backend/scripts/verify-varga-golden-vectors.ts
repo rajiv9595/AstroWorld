@@ -49,8 +49,8 @@ for (const [code, expected] of Object.entries(vectors) as [VargaCode, Record<str
 const below = calculateVargaSignIndex('D60', 10.499999999);
 const above = calculateVargaSignIndex('D60', 10.500000001);
 assert(below.signIndex !== above.signIndex, 'D60 must change sign across a 0.5° boundary');
-assert(below.specialAmsha === 'Vahni', `D60 below-boundary devata mismatch: ${below.specialAmsha}`);
-assert(above.specialAmsha === 'Maya', `D60 above-boundary devata mismatch: ${above.specialAmsha}`);
+assert(below.specialAmsha === 'Heramba', `D60 below-boundary devata mismatch: ${below.specialAmsha}`);
+assert(above.specialAmsha === 'Brahma', `D60 above-boundary devata mismatch: ${above.specialAmsha}`);
 
 console.log('✅ D60 boundary sensitivity check passed');
 console.log(`Profile basis: ${TEST_BENCHMARK_PROFILE.cityName}`);
