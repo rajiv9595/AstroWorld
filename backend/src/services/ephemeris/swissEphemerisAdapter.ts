@@ -10,6 +10,9 @@
  *   an explicit licensing/deployment decision for the AstroWorld deployment.
  */
 
+import {
+  validateHorizonLocation,
+} from '../../../../shared/engine/ephemeris.ts';
 import type {
   EphemerisHorizonBody,
   EphemerisHorizonEvent,
@@ -193,6 +196,7 @@ function calculateSwissHorizonEvent(
   location: { latitude: number; longitude: number },
 ): Date | null {
   validateDate(startDateUtc, 'Swiss Ephemeris horizon-event calculation');
+  validateHorizonLocation(location, 'Swiss Ephemeris horizon-event calculation');
   const swiss = getLoadedSwissModule();
   swiss.setSiderealMode(swiss.SiderealMode.Lahiri);
 
