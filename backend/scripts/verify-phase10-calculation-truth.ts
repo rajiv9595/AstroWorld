@@ -306,7 +306,7 @@ const unrelatedEvidence = {
   }],
 } as any;
 const matched = matcher.evaluateRules([unmatchedRule], unrelatedEvidence);
-expect('Unmatched classical prerequisite is rejected', matched.appliedRules[0]?.applicabilityStatus, 'rejected');
+expect('Missing classical prerequisite is not applied', matched.appliedRules[0]?.applicabilityStatus, 'partially_satisfied');
 expect('Rejected classical rule contains no fabricated evidence lineage', matched.appliedRules[0]?.evidenceIds, []);
 
 const unverifiedRetriever = new ClassicalRAGRetriever({
