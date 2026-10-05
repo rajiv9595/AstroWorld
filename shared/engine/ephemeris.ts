@@ -46,13 +46,31 @@ export interface SiderealEphemerisSnapshot {
   calculationDateUtc: string;
 }
 
+function validateEphemerisDate(dateUtc: Date, label: string): void {
+  if (!(dateUtc instanceof Date) || Number.isNaN(dateUtc.getTime())) {
+    throw new Error(`${label} requires a valid UTC Date.`);
+  }
+}
+
+export type EphemerisHorizonBody = 'Sun' | 'Moon';
+export type EphemerisHorizonEvent = 'RISE' | 'SET';
+
 export interface SiderealEphemerisProvider {
   readonly source: EphemerisSource;
   readonly model: string;
+  initialize?: () => Promise<void>;
+  getAyanamsa(dateUtc: Date): number;
+  getPlanetaryPositions(dateUtc: Date): SiderealPlanetaryPosition[];
   getSnapshot(
     dateUtc: Date,
     location: { latitude: number; longitude: number },
-  ): SiderealEphemerisSnapshot | Promise<SiderealEphemerisSnapshot>;
+  ): SiderealEphemerisSnapshot;
+  getHorizonEvent(
+    startDateUtc: Date,
+    body: EphemerisHorizonBody,
+    event: EphemerisHorizonEvent,
+    location: { latitude: number; longitude: number },
+  ): Date | null;
 }
 
 
@@ -65,9 +83,7 @@ export function createAstronomyEngineSnapshot(
   dateUtc: Date,
   location: { latitude: number; longitude: number },
 ): SiderealEphemerisSnapshot {
-  if (!(dateUtc instanceof Date) || Number.isNaN(dateUtc.getTime())) {
-    throw new Error('Astronomy Engine requires a valid UTC Date.');
-  }
+  validateEphemerisDate(dateUtc, 'Astronomy Engine');
 
   const astroTime = new Astronomy.AstroTime(dateUtc);
   const ayanamsha = calculateLahiriAyanamsha(astroTime);
@@ -100,10 +116,32 @@ export function createAstronomyEngineSnapshot(
 export const astronomyEngineEphemerisProvider: SiderealEphemerisProvider = {
   source: 'astronomy-engine',
   model: 'Astronomy Engine + Analytical Lahiri Ayanamsha',
+  getAyanamsa(dateUtc) {
+    validateEphemerisDate(dateUtc, 'Astronomy Engine ayanamsa calculation');
+    return calculateLahiriAyanamsha(new Astronomy.AstroTime(dateUtc));
+  },
+  getPlanetaryPositions(dateUtc) {
+    return createAstronomyEngineSnapshot(dateUtc, { latitude: 0, longitude: 0 }).planets;
+  },
   getSnapshot(dateUtc, location) {
     return createAstronomyEngineSnapshot(dateUtc, location);
   },
+  getHorizonEvent(startDateUtc, body, event, location) {
+    validateEphemerisDate(startDateUtc, 'Astronomy Engine horizon-event calculation');
+    const observer = new Astronomy.Observer(location.latitude, location.longitude, 0);
+    const bodyMap = { Sun: Astronomy.Body.Sun, Moon: Astronomy.Body.Moon } as const;
+    const direction = event === 'RISE' ? 1 : -1;
+    const result = Astronomy.SearchRiseSet(
+      bodyMap[body],
+      observer,
+      direction,
+      startDateUtc,
+      1,
+    );
+    return result ? result.date : null;
+  },
 };
+
 
 /**
  * Resolve a validated ephemeris source name without loading any optional native

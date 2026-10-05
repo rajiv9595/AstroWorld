@@ -24,14 +24,32 @@ import type {
   SiderealEphemerisProvider,
   EphemerisSource,
 } from '../../../../shared/index.ts';
-import { createSwissEphemerisSnapshot } from './swissEphemerisAdapter.ts';
+import { createSwissEphemerisProvider } from './swissEphemerisAdapter.ts';
 
 function swissEphemerisProvider(): SiderealEphemerisProvider {
+  let delegate: SiderealEphemerisProvider | null = null;
+
   return {
     source: 'swiss-ephemeris',
     model: 'Swiss Ephemeris / Lahiri sidereal / apparent geocentric ecliptic longitude',
+    async initialize() {
+      delegate ??= await createSwissEphemerisProvider();
+    },
+    getAyanamsa(dateUtc) {
+      if (!delegate) throw new Error('Swiss Ephemeris provider is not initialized.');
+      return delegate.getAyanamsa(dateUtc);
+    },
+    getPlanetaryPositions(dateUtc) {
+      if (!delegate) throw new Error('Swiss Ephemeris provider is not initialized.');
+      return delegate.getPlanetaryPositions(dateUtc);
+    },
     getSnapshot(dateUtc, location) {
-      return createSwissEphemerisSnapshot(dateUtc, location);
+      if (!delegate) throw new Error('Swiss Ephemeris provider is not initialized.');
+      return delegate.getSnapshot(dateUtc, location);
+    },
+    getHorizonEvent(startDateUtc, body, event, location) {
+      if (!delegate) throw new Error('Swiss Ephemeris provider is not initialized.');
+      return delegate.getHorizonEvent(startDateUtc, body, event, location);
     },
   };
 }
@@ -55,16 +73,16 @@ export function getConfiguredEphemerisProvider(): SiderealEphemerisProvider {
 /**
  * Canonical backend chart path with an explicit runtime astronomical source.
  *
- * Only the natal astronomical snapshot is provider-injected in Phase 5B.
- * Downstream rule engines continue to consume the canonical D1 facts. Existing
- * Panchanga sunrise/search and transit-event internals are intentionally not
- * silently re-pointed here; those require their own provider contracts.
+ * Phase 5C initializes the selected provider before the canonical chart path
+ * consumes its temporal planetary and horizon-event primitives. Downstream rule
+ * engines continue to consume canonical D1 facts.
  */
 export async function computeCanonicalChartWithConfiguredEphemeris(
   profile: BirthProfile,
   evaluationDateUtc: Date = new Date(),
 ) {
   const provider = getConfiguredEphemerisProvider();
+  if (provider.initialize) await provider.initialize();
   const birthUtcDate = birthProfileToUtcDate(profile);
   let snapshot;
   try {

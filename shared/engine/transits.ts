@@ -3,11 +3,7 @@
  * Real-time or arbitrary date transit calculations, Parashari aspects, and labeled Western overlays.
  */
 
-// @ts-ignore astronomy-engine has cjs/esm export
-import * as Astronomy from 'astronomy-engine';
 import {
-  calculateLahiriAyanamsha,
-  calculatePlanetaryPositions,
   formatDMS,
   normalizeDegrees,
 } from './astronomy.ts';
@@ -20,6 +16,7 @@ import {
   TransitPlanet,
   ZodiacSign,
 } from './types.ts';
+import { astronomyEngineEphemerisProvider, SiderealEphemerisProvider } from './ephemeris.ts';
 
 /**
  * Determine Parashari aspects cast by a transiting planet onto a natal planet.
@@ -123,11 +120,13 @@ export function classifySadeSati(
   return { active: false, phase: 'NONE' };
 }
 
-function calculateSiderealSunLongitude(date: Date): number {
-  const astroTime = new Astronomy.AstroTime(date);
-  const ayanamsha = calculateLahiriAyanamsha(astroTime);
-  const tropical = Astronomy.SunPosition(astroTime).elon;
-  return normalizeDegrees(tropical - ayanamsha);
+function calculateSiderealSunLongitude(
+  date: Date,
+  provider: SiderealEphemerisProvider,
+): number {
+  const sun = provider.getPlanetaryPositions(date).find((p) => p.name === 'Sun');
+  if (!sun) throw new Error('Ephemeris provider returned no Sun position.');
+  return normalizeDegrees(sun.siderealLongitude);
 }
 
 /**
@@ -135,11 +134,14 @@ function calculateSiderealSunLongitude(date: Date): number {
  * The search uses a forward bracket followed by bisection on the exact
  * 30-degree zodiac boundary in sidereal longitude.
  */
-export function findNextSiderealSolarIngress(startDateUtc: Date): {
+export function findNextSiderealSolarIngress(
+  startDateUtc: Date,
+  provider: SiderealEphemerisProvider = astronomyEngineEphemerisProvider,
+): {
   timestampUtc: Date;
   targetSignIndex: number;
 } {
-  const startLon = calculateSiderealSunLongitude(startDateUtc);
+  const startLon = calculateSiderealSunLongitude(startDateUtc, provider);
   const currentSign = Math.floor(startLon / 30);
   const targetSignIndex = (currentSign + 1) % 12;
   const targetLon = (targetSignIndex * 30);
@@ -148,14 +150,14 @@ export function findNextSiderealSolarIngress(startDateUtc: Date): {
   const forwardDelta = (lon: number) => (lon - startLon + 360) % 360;
   let hi = new Date(startDateUtc.getTime() + Math.max(2, targetDelta / 0.75) * 86400000);
   let guard = 0;
-  while (forwardDelta(calculateSiderealSunLongitude(hi)) < targetDelta && guard++ < 12) {
+  while (forwardDelta(calculateSiderealSunLongitude(hi, provider)) < targetDelta && guard++ < 12) {
     hi = new Date(hi.getTime() + 7 * 86400000);
   }
 
   let lo = startDateUtc;
   for (let i = 0; i < 55; i++) {
     const mid = new Date((lo.getTime() + hi.getTime()) / 2);
-    const midDelta = forwardDelta(calculateSiderealSunLongitude(mid));
+    const midDelta = forwardDelta(calculateSiderealSunLongitude(mid, provider));
     if (midDelta >= targetDelta) hi = mid;
     else lo = mid;
   }
@@ -173,35 +175,39 @@ export function calculateTransits(
   natalPlanets: PlanetPosition[],
   natalAscendantSignIndex: number,
   ashtakavarga: AshtakavargaFacts,
-  targetDateUtc: Date = new Date()
+  targetDateUtc: Date = new Date(),
+  ephemerisProvider: SiderealEphemerisProvider = astronomyEngineEphemerisProvider,
 ): TransitFacts {
-  const time = new Astronomy.AstroTime(targetDateUtc);
-  const ayanamsha = calculateLahiriAyanamsha(time);
-
-  // Compute transit positions
-  const transitPlanetsRaw = calculatePlanetaryPositions(time, ayanamsha, natalAscendantSignIndex);
+  // Compute transit positions from the selected provider. The default path
+  // remains the validated Astronomy Engine calculation.
+  const transitPlanetsRaw = ephemerisProvider.getPlanetaryPositions(targetDateUtc);
 
   const natalMoon = natalPlanets.find((p) => p.name === 'Moon')!;
   const natalMoonSignIndex = natalMoon.signIndex;
 
   const transitPlanets: TransitPlanet[] = transitPlanetsRaw.map((tp) => {
+    const siderealLongitude = normalizeDegrees(tp.siderealLongitude);
+    const signIndex = Math.floor(siderealLongitude / 30);
+    const sign = ZODIAC_SIGNS[signIndex];
+    const degreeInSign = siderealLongitude % 30;
+    const retrograde = (tp.longitudeSpeed ?? 0) < 0;
     // Natal-relative house from Lagna (1-12)
-    const natalLagnaHouse = ((tp.signIndex - natalAscendantSignIndex + 12) % 12) + 1;
+    const natalLagnaHouse = ((signIndex - natalAscendantSignIndex + 12) % 12) + 1;
     // Chandra-relative house from Moon (1-12)
-    const chandraLagnaHouse = ((tp.signIndex - natalMoonSignIndex + 12) % 12) + 1;
+    const chandraLagnaHouse = ((signIndex - natalMoonSignIndex + 12) % 12) + 1;
 
     // Ashtakavarga bindus in the transit sign
-    const bindus = ashtakavarga.sav[tp.signIndex];
+    const bindus = ashtakavarga.sav[signIndex];
 
-    const aspectsToNatal = getParashariAspects(tp.name, tp.signIndex, tp.siderealLongitude, natalPlanets);
+    const aspectsToNatal = getParashariAspects(tp.name, signIndex, siderealLongitude, natalPlanets);
 
     return {
       planet: tp.name,
-      siderealLongitude: tp.siderealLongitude,
-      sign: tp.sign,
-      degreeInSign: tp.degreeInSign,
-      formattedDegree: formatDMS(tp.degreeInSign),
-      retrograde: tp.retrograde,
+      siderealLongitude,
+      sign,
+      degreeInSign,
+      formattedDegree: formatDMS(degreeInSign),
+      retrograde,
       natalLagnaHouse,
       chandraLagnaHouse,
       ashtakavargaBindus: bindus,
@@ -209,7 +215,7 @@ export function calculateTransits(
     };
   });
 
-  const solarIngress = findNextSiderealSolarIngress(targetDateUtc);
+  const solarIngress = findNextSiderealSolarIngress(targetDateUtc, ephemerisProvider);
 
   // Sade Sati Analysis
   const transitSaturn = transitPlanets.find((p) => p.planet === 'Saturn')!;
