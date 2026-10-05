@@ -135,9 +135,9 @@ async function main() {
       swissChart.ephemeris?.source === 'swiss-ephemeris' &&
         swissChart.transits.planets.length === 9 &&
         Boolean(swissChart.transits.solarIngress?.timestampUtc) &&
-        Boolean(swissChart.panchanga.sunriseUtc) &&
-        Boolean(swissChart.panchanga.sunsetUtc),
-      'Canonical D1 + Panchanga + Transit calculations consume the Swiss provider',
+        Boolean(swissChart.panchanga.tithi.name) &&
+        Boolean(swissChart.panchanga.nakshatra.name),
+      'Canonical D1 + Panchanga limb values + Transit calculations consume the Swiss provider',
     );
 
     const swissIngress = findNextSiderealSolarIngress(EVAL_DATE, swissProvider);
