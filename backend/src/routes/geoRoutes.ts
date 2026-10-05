@@ -51,7 +51,7 @@ async function resolveGoogleTimezone(
     const response = await fetch(url);
     if (!response.ok) return undefined;
 
-    const data = await response.json();
+    const data = (await response.json()) as { status?: string; timeZoneId?: string };
     if (data.status === 'OK' && typeof data.timeZoneId === 'string' && data.timeZoneId.trim()) {
       return data.timeZoneId.trim();
     }
@@ -124,7 +124,7 @@ geoRouter.get('/autocomplete', async (req: Request, res: Response) => {
           encodeURIComponent(googlePlacesKey);
 
         const gRes = await fetch(googleUrl);
-        const gData = await gRes.json();
+        const gData = (await gRes.json()) as { status?: string; predictions?: any[] };
 
         if (gData.status === 'OK' && Array.isArray(gData.predictions)) {
           const topPredictions = gData.predictions.slice(0, 6);
@@ -139,7 +139,7 @@ geoRouter.get('/autocomplete', async (req: Request, res: Response) => {
                   encodeURIComponent(googlePlacesKey);
 
                 const dRes = await fetch(detailUrl);
-                const dData = await dRes.json();
+                const dData = (await dRes.json()) as { result?: any };
                 const loc = dData.result?.geometry?.location;
 
                 const latitude = Number(loc?.lat);
@@ -177,7 +177,7 @@ geoRouter.get('/autocomplete', async (req: Request, res: Response) => {
 
     const photonRes = await fetch(photonUrl);
     if (photonRes.ok) {
-      const photonData = await photonRes.json();
+      const photonData = (await photonRes.json()) as { features?: any[] };
 
       if (Array.isArray(photonData.features)) {
         const suggestions = (
