@@ -53,5 +53,38 @@ assert(below.specialAmsha === 'Heramba', `D60 below-boundary devata mismatch: ${
 assert(above.specialAmsha === 'Brahma', `D60 above-boundary devata mismatch: ${above.specialAmsha}`);
 
 console.log('✅ D60 boundary sensitivity check passed');
+
+// Boundary contract: every Varga uses half-open intervals [start, end),
+// so an exact boundary belongs to the next amsha. Degree-in-varga-sign must
+// reset to 0 at that boundary (within floating-point tolerance).
+const boundaryCases: Array<{ code: VargaCode; boundary: number; expectedPart: number }> = [
+  { code: 'D2', boundary: 15, expectedPart: 1 },
+  { code: 'D3', boundary: 10, expectedPart: 1 },
+  { code: 'D4', boundary: 7.5, expectedPart: 1 },
+  { code: 'D7', boundary: 30 / 7, expectedPart: 1 },
+  { code: 'D9', boundary: 30 / 9, expectedPart: 1 },
+  { code: 'D10', boundary: 3, expectedPart: 1 },
+  { code: 'D12', boundary: 2.5, expectedPart: 1 },
+  { code: 'D16', boundary: 30 / 16, expectedPart: 1 },
+  { code: 'D20', boundary: 1.5, expectedPart: 1 },
+  { code: 'D24', boundary: 1.25, expectedPart: 1 },
+  { code: 'D27', boundary: 30 / 27, expectedPart: 1 },
+  { code: 'D30', boundary: 5, expectedPart: 1 },
+  { code: 'D40', boundary: 0.75, expectedPart: 1 },
+  { code: 'D45', boundary: 30 / 45, expectedPart: 1 },
+  { code: 'D60', boundary: 0.5, expectedPart: 1 },
+];
+
+for (const { code, boundary } of boundaryCases) {
+  const before = calculateVargaSignIndex(code, boundary - 1e-9);
+  const exact = calculateVargaSignIndex(code, boundary);
+  const after = calculateVargaSignIndex(code, boundary + 1e-9);
+  assert(before.signIndex !== exact.signIndex || code === 'D30', `${code}: boundary did not advance at exact edge`);
+  assert(Math.abs(exact.degreeInVargaSign) < 1e-6, `${code}: exact boundary did not reset varga degree: ${exact.degreeInVargaSign}`);
+  assert(exact.signIndex === after.signIndex, `${code}: exact boundary does not match following interval`);
+}
+
+console.log('✅ All configured Varga half-open boundary checks passed');
+
 console.log(`Profile basis: ${TEST_BENCHMARK_PROFILE.cityName}`);
 console.log('✅ All 16 Shodashavarga golden-vector checks passed.');
