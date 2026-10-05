@@ -139,7 +139,7 @@ export function calculateTransits(
     // Ashtakavarga bindus in the transit sign
     const bindus = ashtakavarga.sav[tp.signIndex];
 
-    const aspectsToNatal = getParashariAspects(tp.name, tp.signIndex, natalPlanets);
+    const aspectsToNatal = getParashariAspects(tp.name, tp.signIndex, tp.siderealLongitude, natalPlanets);
 
     return {
       planet: tp.name,
