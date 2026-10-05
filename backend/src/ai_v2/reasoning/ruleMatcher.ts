@@ -73,7 +73,7 @@ export class RulePrerequisiteMatcher {
         } else {
           const hasVargaEvidence = evidence.facts.some(
             f => f.category === 'varga' &&
-              new RegExp(`(^|\\\\s)${varga}(\\\\s|$)`, 'i').test(f.entity)
+              f.entity.split(/\\s+/).some(part => part.toLowerCase() === varga.toLowerCase())
           ) ||
             evidence.toolResults.some(
               r => r.toolName === 'get_divisional_chart' && r.success && r.data?.vargaCode === varga
