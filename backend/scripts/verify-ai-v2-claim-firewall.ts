@@ -184,6 +184,26 @@ async function runPhase3CSuite() {
     'Rejected claims that cite rule or source IDs not present in the applied reasoning lineage'
   );
 
+  const substringEntityClaim = {
+    claimId: 'claim_substring_entity',
+    text: 'Moonlight is a verified astrological factor in the chart.',
+    type: 'factual' as const,
+    strength: 'moderate' as const,
+    evidenceIds: [evidenceCareer.facts[0]?.id || 'fact_dasha_1'],
+    ruleIds: [],
+    sourceIds: [],
+    relevance: 'high' as const,
+    allowed: true,
+    astrologicalEntities: ['Moonlight'],
+  };
+  const substringSet = firewall.validate([substringEntityClaim], planCareer, reasoningCareer, evidenceCareer);
+  assert(
+    substringSet.rejectedClaims.length === 1 &&
+      substringSet.rejectedClaims[0].failedChecks?.some(f => f.includes('Unverified astrological entity')) === true,
+    'AI V2 Firewall-2: Exact Entity Grounding',
+    'Rejected entity names that only partially match a verified planet'
+  );
+
   // ==========================================
   // 5. CERTAINTY CONTROL FIREWALL (STEP 7)
   // ==========================================
