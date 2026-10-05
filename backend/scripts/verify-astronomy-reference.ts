@@ -44,7 +44,7 @@ const REFERENCE: ReferenceVector[] = [
       Mercury: 332.647599557872, Jupiter: 227.27610565027965, Venus: 355.7531823713323,
       Saturn: 250.98677727502135,
     },
-    nodePositionsDeg: { Rahu: 233.58653516349506, Ketu: 53.58653516349506 },
+    nodePositionsDeg: { Rahu: 233.5815434612041, Ketu: 53.58154346120409 },
   },
   {
     label: 'Anaparthy — 2000-01-01 00:00 UTC',
@@ -58,7 +58,7 @@ const REFERENCE: ReferenceVector[] = [
       Mercury: 247.25860135926806, Jupiter: 1.37986875141131, Venus: 217.10821741787453,
       Saturn: 16.552636092487752,
     },
-    nodePositionsDeg: { Rahu: 101.21004983806004, Ketu: 281.21004983806004 },
+    nodePositionsDeg: { Rahu: 101.21391957635842, Ketu: 281.2139195763584 },
   },
   {
     label: 'Anaparthy — 2024-02-29 00:00 UTC (leap day)',
@@ -72,7 +72,7 @@ const REFERENCE: ReferenceVector[] = [
       Mercury: 316.2460069721165, Jupiter: 16.951180472099413, Venus: 291.0618677721009,
       Saturn: 315.5977076400617,
     },
-    nodePositionsDeg: { Rahu: 353.5582948704579, Ketu: 173.5582948704579 },
+    nodePositionsDeg: { Rahu: 353.5595218635826, Ketu: 173.55952186358263 },
   },
   {
     label: 'Anaparthy — 2030-07-01 12:00 UTC',
@@ -86,7 +86,7 @@ const REFERENCE: ReferenceVector[] = [
       Mercury: 83.98909338207324, Jupiter: 203.75230971273257, Venus: 46.44232830134532,
       Saturn: 39.41900537771398,
     },
-    nodePositionsDeg: { Rahu: 230.91437167191663, Ketu: 50.91437167191663 },
+    nodePositionsDeg: { Rahu: 230.90957323623547, Ketu: 50.90957323623547 },
   },
 ];
 
@@ -114,7 +114,7 @@ function assertClose(
 
 async function main() {
   console.log('🌌 AstroWorld independent astronomical reference verification');
-  console.log('Reference: Swiss Ephemeris 2.10.03, Lahiri / Chitrapaksha, non-nutated planets; Swiss mean node for Rahu/Ketu');
+  console.log('Reference: Swiss Ephemeris 2.10.03, Lahiri / Chitrapaksha, non-nutated planets and direct sidereal Swiss mean node for Rahu/Ketu');
 
   for (const ref of REFERENCE) {
     const astroTime = new Astronomy.AstroTime(new Date(ref.utcDate));
