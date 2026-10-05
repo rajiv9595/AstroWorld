@@ -461,10 +461,33 @@ export function calculateComprehensiveDailyPanchanga(
     },
   ];
 
-  const basePanchanga = calculatePanchanga(dummyPlanets, date, ayanamsaDeg);
+  const basePanchanga = calculatePanchanga(
+    dummyPlanets,
+    date,
+    ayanamsaDeg,
+    { latitude, longitude, timezone },
+  );
 
   // Precise Sunrise & Sunset calculations
-  const startOfDayUtc = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0));
+  const localDateParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  }).formatToParts(date);
+  const localDay: Record<string, number> = {};
+  for (const part of localDateParts) {
+    if (part.type !== 'literal') localDay[part.type] = parseInt(part.value, 10);
+  }
+  const startOfDayUtc = localDateTimeToUtcDate(
+    localDay.year,
+    localDay.month,
+    localDay.day,
+    0,
+    0,
+    0,
+    timezone,
+  );
   const sunRiseResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, +1, startOfDayUtc, 1);
   const sunSetResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, -1, startOfDayUtc, 1);
 
@@ -492,7 +515,16 @@ export function calculateComprehensiveDailyPanchanga(
 
   const dayPartMs = dayMs / 8;
   const nightPartMs = nightMs / 8;
-  const dayOfWeek = date.getDay(); // 0=Sun .. 6=Sat
+  const weekdayName = new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'long' }).format(date);
+  const dayOfWeek = ({
+    Sunday: 0,
+    Monday: 1,
+    Tuesday: 2,
+    Wednesday: 3,
+    Thursday: 4,
+    Friday: 5,
+    Saturday: 6,
+  } as Record<string, number>)[weekdayName] ?? date.getUTCDay();
 
   // Rahu Kaal, Yamaganda, Gulika Kaal portions (1-indexed 1..8)
   const rahuPortions = [8, 2, 7, 5, 6, 4, 3]; // Sun=8th, Mon=2nd, Tue=7th, Wed=5th, Thu=6th, Fri=4th, Sat=3rd
@@ -639,6 +671,7 @@ export function calculateComprehensiveDailyPanchanga(
   };
 
   const formattedDateStr = date.toLocaleDateString('en-US', {
+    timeZone: timezone,
     weekday: 'long',
     year: 'numeric',
     month: 'long',
