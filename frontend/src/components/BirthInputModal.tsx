@@ -60,8 +60,10 @@ export const BirthInputModal: React.FC<BirthInputModalProps> = ({
         setLongitude(currentProfile.longitude !== undefined ? String(currentProfile.longitude) : '77.2090');
         setTimezone(currentProfile.timezone || 'Asia/Kolkata');
         setGender(currentProfile.gender || 'male');
-      } else if (isOnboarding && currentProfile?.name) {
-        setName(currentProfile.name);
+      } else if (isOnboarding) {
+        // Never seed a first-time native profile from the built-in demo chart.
+        // Exact birthplace/timezone data must come from the user or resolver.
+        setName('');
         setDay('');
         setMonth('');
         setYear('');
@@ -69,9 +71,10 @@ export const BirthInputModal: React.FC<BirthInputModalProps> = ({
         setMinute('');
         setSecond('0');
         setCityName('');
-        setLatitude('28.6139');
-        setLongitude('77.2090');
-        setTimezone('Asia/Kolkata');
+        setLatitude('');
+        setLongitude('');
+        setTimezone('');
+        setGender('male');
       }
       setValidationError(null);
     }
