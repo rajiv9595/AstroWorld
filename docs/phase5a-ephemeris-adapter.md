@@ -47,7 +47,7 @@ The Swiss adapter contract checks independently established Lahiri/Swiss vectors
 - 17 Aug 2005, 00:02 IST, Anaparthy
 - 1 Jul 2030, 12:00 UTC, Anaparthy
 
-with sub-arcsecond comparison tolerances.
+with a 5-arcsecond Lahiri-offset tolerance and sub-arcsecond tolerances for the actual planetary and Ascendant coordinates.
 
 ## Phase 5A exit criteria
 
