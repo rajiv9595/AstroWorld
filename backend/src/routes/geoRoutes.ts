@@ -62,6 +62,46 @@ async function resolveGoogleTimezone(
   return undefined;
 }
 
+
+/**
+ * Resolve an IANA timezone for one selected coordinate.
+ * This endpoint is intentionally separate from autocomplete so a typing
+ * session does not trigger a fan-out of timezone requests.
+ */
+geoRouter.get('/timezone', async (req: Request, res: Response) => {
+  try {
+    const latitude = Number(req.query.latitude);
+    const longitude = Number(req.query.longitude);
+
+    if (!isValidCoordinatePair(latitude, longitude)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Valid latitude and longitude are required.',
+      });
+    }
+
+    const timezone = await resolveGoogleTimezone(latitude, longitude);
+    if (!timezone) {
+      return res.status(404).json({
+        success: false,
+        error: 'Timezone could not be resolved for these coordinates.',
+      });
+    }
+
+    return res.json({
+      success: true,
+      timezone,
+      source: 'google_time_zone_api',
+    });
+  } catch (error) {
+    console.error('Geo timezone error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Unable to resolve timezone right now.',
+    });
+  }
+});
+
 geoRouter.get('/autocomplete', async (req: Request, res: Response) => {
   try {
     const query = String(req.query.q || '').trim();
@@ -107,15 +147,12 @@ geoRouter.get('/autocomplete', async (req: Request, res: Response) => {
 
                 if (!isValidCoordinatePair(latitude, longitude)) return null;
 
-                const timezone = await resolveGoogleTimezone(latitude, longitude);
-
                 return {
                   id: p.place_id,
                   description: p.description,
                   cityName: p.structured_formatting?.main_text || p.description.split(',')[0],
                   latitude,
                   longitude,
-                  timezone,
                 };
               } catch {
                 return null;
@@ -155,8 +192,6 @@ geoRouter.get('/autocomplete', async (req: Request, res: Response) => {
 
                 const p = f.properties;
                 const parts = [p.name, p.state, p.country].filter(Boolean);
-                const timezone = await resolveGoogleTimezone(latitude, longitude);
-
                 return {
                   id: 'geo_' + idx + '_' + String(p.osm_id || Math.floor(latitude * 10000) + '_' + Math.floor(longitude * 10000)),
                   description: parts.join(', '),
@@ -165,7 +200,6 @@ geoRouter.get('/autocomplete', async (req: Request, res: Response) => {
                   country: p.country,
                   latitude: Number(latitude.toFixed(6)),
                   longitude: Number(longitude.toFixed(6)),
-                  timezone,
                 };
               }),
           )
