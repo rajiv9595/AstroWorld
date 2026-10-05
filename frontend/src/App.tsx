@@ -188,7 +188,7 @@ export default function App() {
   };
 
   // Successful Login / Signup Callback
-  const handleAuthSuccess = async (user: { id?: string; name: string; email: string }) => {
+  const handleAuthSuccess = async (user: { id: string; name: string; email: string }) => {
     setCurrentUser(user);
     const uId = user.id;
 
