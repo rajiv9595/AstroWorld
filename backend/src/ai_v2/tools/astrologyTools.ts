@@ -361,7 +361,7 @@ export async function executeGetTransits(args: any): Promise<ToolExecutionResult
 
   try {
     const evalDate = args?.targetDateIso ? new Date(args.targetDateIso) : new Date();
-    const chart = computeCanonicalChart(validation.data, evalDate);
+    const chart = await computeCanonicalChartWithConfiguredEphemeris(validation.data, evalDate);
 
     return {
       success: true,
