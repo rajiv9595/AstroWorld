@@ -1,0 +1,33 @@
+name: Phase 10 Correctness Audit Repair
+
+on:
+  push:
+    branches:
+      - astroworld/phase10-correctness-audit-repair-v2
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'shared/**'
+      - '.github/workflows/phase10-audit-repair.yml'
+
+jobs:
+  audit-repair:
+    name: phase10-audit-repair
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Backend build
+        run: npm --workspace=@astroworld/backend run build
+      - name: Phase 10 audit-repair regression
+        run: npm --workspace=@astroworld/backend run test:phase10:audit-repair
+      - name: Phase 10 calculation truth regression
+        run: npm --workspace=@astroworld/backend run test:phase10:calculation-truth
+      - name: Phase 10 source integrity regression
+        run: npm --workspace=@astroworld/backend run test:phase10:source-integrity
