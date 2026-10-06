@@ -147,12 +147,17 @@ export const astronomyEngineEphemerisProvider: SiderealEphemerisProvider = {
     const observer = new Astronomy.Observer(location.latitude, location.longitude, 0);
     const bodyMap = { Sun: Astronomy.Body.Sun, Moon: Astronomy.Body.Moon } as const;
     const direction = event === 'RISE' ? 1 : -1;
+    // A lunar event can legitimately occur a little more than 24 hours
+    // after an arbitrary UTC anchor (the lunar day is ~24h50m). Searching only
+    // one day therefore creates false "no event" states for otherwise valid
+    // Moonrise/Moonset requests. The daily Panchanga consumer separately filters
+    // the returned event back to the requested local civil day.
     const result = Astronomy.SearchRiseSet(
       bodyMap[body],
       observer,
       direction,
       startDateUtc,
-      1,
+      2,
     );
     return result ? result.date : null;
   },
