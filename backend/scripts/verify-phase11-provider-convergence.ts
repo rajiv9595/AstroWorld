@@ -7,7 +7,7 @@
  */
 
 import { AstrologyToolRegistry } from '../src/ai_v2/tools/toolRegistry.ts';
-import { TEST_BENCHMARK_PROFILE } from '../../../shared/index.ts';
+import { TEST_BENCHMARK_PROFILE } from '../../shared/index.ts';
 import { computeCanonicalChartWithConfiguredEphemeris as computeConfiguredChart } from '../src/services/ephemeris/providerRuntime.ts';
 
 function assert(condition: boolean, message: string): void {
