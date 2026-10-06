@@ -149,8 +149,25 @@ export class ClassicalRAGRetriever {
       }
 
       // 5. Active Yoga Evidence Match
-      for (const yName of activeYogas) {
-        if (meta.yogaSubjects?.some(ys => yName.includes(ys.toLowerCase()))) {
+      // Use stable verified yoga identifiers; descriptive variants must not
+      // activate a classical rule by substring coincidence.
+      const activeYogaKeys = evidencePacket?.derivedFacts
+        ?.filter(f => f.type === 'Yoga' && f.verified)
+        ?.map(f => f.id
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '')
+          .replace(/^yoga/, '')
+          .replace(/yoga$/, ''))
+        || [];
+      for (const yogaSubject of meta.yogaSubjects || []) {
+        const expectedYogaKey = yogaSubject
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '')
+          .replace(/^yoga/, '')
+          .replace(/yoga$/, '');
+        if (activeYogaKeys.includes(expectedYogaKey)) {
           score += 3.0;
         }
       }
