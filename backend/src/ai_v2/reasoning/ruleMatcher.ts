@@ -37,6 +37,28 @@ export class RulePrerequisiteMatcher {
     };
   }
 
+  private hasExactVargaCode(text: string, varga: string): boolean {
+    const normalizedVarga = varga.trim().toUpperCase();
+    return new RegExp(
+      `(^|[^A-Z0-9])${normalizedVarga}([^A-Z0-9]|$)`,
+      'i',
+    ).test(text);
+  }
+
+  /**
+   * Normalizes stable yoga identifiers such as "yoga_gajakesari_yoga" and
+   * "gajakesari" to the same canonical key, without accepting descriptive
+   * variants like "Gajakesari-like variant".
+   */
+  private normalizeYogaKey(value: string): string {
+    return value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '')
+      .replace(/^yoga/, '')
+      .replace(/yoga$/, '');
+  }
+
   /**
    * Evaluates a single classical rule against verified evidence facts.
    */
@@ -53,7 +75,7 @@ export class RulePrerequisiteMatcher {
     if (meta.planetarySubjects && meta.planetarySubjects.length > 0) {
       for (const planet of meta.planetarySubjects) {
         const matchingFact = evidence.facts.find(
-          f => f.entity.toLowerCase() === planet.toLowerCase() || f.entity.toLowerCase().includes(planet.toLowerCase())
+          f => f.entity.trim().toLowerCase() === planet.trim().toLowerCase()
         );
         if (matchingFact) {
           satisfiedPrerequisites.push(`Verified presence and placement of ${planet} (${matchingFact.value})`);
@@ -70,11 +92,18 @@ export class RulePrerequisiteMatcher {
         if (varga === 'D1') {
           satisfiedPrerequisites.push('Verified D1 Rasi chart facts present');
         } else {
-          const hasVargaEvidence = evidence.facts.some(f => f.category === 'varga' && f.entity.includes(varga)) ||
-            evidence.toolResults.some(r => r.toolName === 'get_divisional_chart' && r.success && r.data?.vargaCode === varga);
+          const hasVargaEvidence = evidence.facts.some(
+            f => f.category === 'varga' && this.hasExactVargaCode(f.entity, varga),
+          ) || evidence.toolResults.some(
+            r => r.toolName === 'get_divisional_chart' &&
+              r.success &&
+              r.provenance?.verified &&
+              typeof r.data?.vargaCode === 'string' &&
+              r.data.vargaCode.toUpperCase() === varga.toUpperCase(),
+          );
 
           const matchingVargaFacts = evidence.facts.filter(
-            f => f.category === 'varga' && f.entity.toLowerCase().includes(varga.toLowerCase()),
+            f => f.category === 'varga' && this.hasExactVargaCode(f.entity, varga),
           );
           if (hasVargaEvidence) {
             satisfiedPrerequisites.push(`Verified ${varga} divisional chart computed`);
@@ -89,8 +118,9 @@ export class RulePrerequisiteMatcher {
     // 3. Yoga Precondition Check
     if (meta.yogaSubjects && meta.yogaSubjects.length > 0) {
       for (const yogaName of meta.yogaSubjects) {
+        const expectedYogaKey = this.normalizeYogaKey(yogaName);
         const matchingYoga = evidence.derivedFacts.find(
-          f => f.type === 'Yoga' && f.description.toLowerCase().includes(yogaName.toLowerCase())
+          f => f.type === 'Yoga' && this.normalizeYogaKey(f.id) === expectedYogaKey
         );
         if (matchingYoga) {
           satisfiedPrerequisites.push(`Verified classical formation of ${yogaName} in chart`);
