@@ -4,24 +4,10 @@
  * Pure, structured, verifiable data responses only — zero prose or interpretation.
  */
 
-import {
-  computeCanonicalChart,
-  calculateLahiriAyanamsha,
-  calculatePlanetaryPositions,
-  calculateAscendant,
-  birthProfileToUtcDate,
-  generateAllShodashavargas,
-  calculateVimshottariDasha,
-  calculateTransits,
-  calculateYogasAndDoshas,
-  calculateStrengthFacts,
-  calculateAshtakavarga,
-  calculateJaiminiFacts,
-  calculatePanchanga,
-  VargaCode,
-} from '../../../../shared/index.ts';
+import { VargaCode } from '../../../../shared/index.ts';
 
 import { validateBirthProfile, VALID_VARGA_CODES } from '../schemas/birthProfile.ts';
+import { computeCanonicalChartWithConfiguredEphemeris } from '../../services/ephemeris/providerRuntime.ts';
 
 export interface ToolExecutionResult<T = any> {
   success: boolean;
@@ -39,7 +25,7 @@ export interface ToolExecutionResult<T = any> {
 /**
  * 1. get_birth_chart (D1 Rashi)
  */
-export function executeGetBirthChart(args: any): ToolExecutionResult {
+export async function executeGetBirthChart(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -56,7 +42,7 @@ export function executeGetBirthChart(args: any): ToolExecutionResult {
   }
 
   try {
-    const chart = computeCanonicalChart(validation.data);
+    const chart = await computeCanonicalChartWithConfiguredEphemeris(validation.data);
     return {
       success: true,
       tool: 'get_birth_chart',
@@ -91,7 +77,7 @@ export function executeGetBirthChart(args: any): ToolExecutionResult {
 /**
  * 2. get_divisional_chart (Vargas D1 to D60)
  */
-export function executeGetDivisionalChart(args: any): ToolExecutionResult {
+export async function executeGetDivisionalChart(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -123,7 +109,7 @@ export function executeGetDivisionalChart(args: any): ToolExecutionResult {
   }
 
   try {
-    const chart = computeCanonicalChart(validation.data);
+    const chart = await computeCanonicalChartWithConfiguredEphemeris(validation.data);
     const targetVarga = chart.vargas[vargaCode];
 
     return {
@@ -162,7 +148,7 @@ export function executeGetDivisionalChart(args: any): ToolExecutionResult {
 /**
  * 2b. get_all_divisional_charts (Complete Shodashavarga D1 through D60)
  */
-export function executeGetAllDivisionalCharts(args: any): ToolExecutionResult {
+export async function executeGetAllDivisionalCharts(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -179,7 +165,7 @@ export function executeGetAllDivisionalCharts(args: any): ToolExecutionResult {
   }
 
   try {
-    const chart = computeCanonicalChart(validation.data);
+    const chart = await computeCanonicalChartWithConfiguredEphemeris(validation.data);
     const vargasSummary: Record<string, any> = {};
     for (const [code, varga] of Object.entries(chart.vargas)) {
       vargasSummary[code] = {
@@ -230,7 +216,7 @@ export function executeGetAllDivisionalCharts(args: any): ToolExecutionResult {
 /**
  * 3. get_current_dasha
  */
-export function executeGetCurrentDasha(args: any): ToolExecutionResult {
+export async function executeGetCurrentDasha(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -247,7 +233,7 @@ export function executeGetCurrentDasha(args: any): ToolExecutionResult {
   }
 
   try {
-    const chart = computeCanonicalChart(validation.data);
+    const chart = await computeCanonicalChartWithConfiguredEphemeris(validation.data);
     return {
       success: true,
       tool: 'get_current_dasha',
@@ -285,7 +271,7 @@ export function executeGetCurrentDasha(args: any): ToolExecutionResult {
 /**
  * 4. get_dasha_at (Target Date)
  */
-export function executeGetDashaAt(args: any): ToolExecutionResult {
+export async function executeGetDashaAt(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -318,7 +304,7 @@ export function executeGetDashaAt(args: any): ToolExecutionResult {
 
   try {
     const targetDateUtc = new Date(targetDateStr);
-    const chart = computeCanonicalChart(validation.data, targetDateUtc);
+    const chart = await computeCanonicalChartWithConfiguredEphemeris(validation.data, targetDateUtc);
 
     return {
       success: true,
@@ -357,7 +343,7 @@ export function executeGetDashaAt(args: any): ToolExecutionResult {
 /**
  * 5. get_transits (Gochara & Sade Sati)
  */
-export function executeGetTransits(args: any): ToolExecutionResult {
+export async function executeGetTransits(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -375,7 +361,7 @@ export function executeGetTransits(args: any): ToolExecutionResult {
 
   try {
     const evalDate = args?.targetDateIso ? new Date(args.targetDateIso) : new Date();
-    const chart = computeCanonicalChart(validation.data, evalDate);
+    const chart = await computeCanonicalChartWithConfiguredEphemeris(validation.data, evalDate);
 
     return {
       success: true,
@@ -410,7 +396,7 @@ export function executeGetTransits(args: any): ToolExecutionResult {
 /**
  * 6. get_active_yogas (Yogas & Doshas)
  */
-export function executeGetActiveYogas(args: any): ToolExecutionResult {
+export async function executeGetActiveYogas(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -427,7 +413,7 @@ export function executeGetActiveYogas(args: any): ToolExecutionResult {
   }
 
   try {
-    const chart = computeCanonicalChart(validation.data);
+    const chart = await computeCanonicalChartWithConfiguredEphemeris(validation.data);
     const activeYogas = chart.yogas.filter((y) => y.present);
 
     return {
@@ -463,7 +449,7 @@ export function executeGetActiveYogas(args: any): ToolExecutionResult {
 /**
  * 7. get_planetary_strength (Shadbala)
  */
-export function executeGetPlanetaryStrength(args: any): ToolExecutionResult {
+export async function executeGetPlanetaryStrength(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -480,7 +466,7 @@ export function executeGetPlanetaryStrength(args: any): ToolExecutionResult {
   }
 
   try {
-    const chart = computeCanonicalChart(validation.data);
+    const chart = await computeCanonicalChartWithConfiguredEphemeris(validation.data);
     return {
       success: true,
       tool: 'get_planetary_strength',
@@ -514,7 +500,7 @@ export function executeGetPlanetaryStrength(args: any): ToolExecutionResult {
 /**
  * 8. get_ashtakavarga (BAV & SAV)
  */
-export function executeGetAshtakavarga(args: any): ToolExecutionResult {
+export async function executeGetAshtakavarga(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -531,7 +517,7 @@ export function executeGetAshtakavarga(args: any): ToolExecutionResult {
   }
 
   try {
-    const chart = computeCanonicalChart(validation.data);
+    const chart = await computeCanonicalChartWithConfiguredEphemeris(validation.data);
     return {
       success: true,
       tool: 'get_ashtakavarga',
@@ -568,7 +554,7 @@ export function executeGetAshtakavarga(args: any): ToolExecutionResult {
 /**
  * 9. get_jaimini_details (Karakas, Karakamsa, Arudha Lagna)
  */
-export function executeGetJaiminiDetails(args: any): ToolExecutionResult {
+export async function executeGetJaiminiDetails(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -585,7 +571,7 @@ export function executeGetJaiminiDetails(args: any): ToolExecutionResult {
   }
 
   try {
-    const chart = computeCanonicalChart(validation.data);
+    const chart = await computeCanonicalChartWithConfiguredEphemeris(validation.data);
     return {
       success: true,
       tool: 'get_jaimini_details',
@@ -615,7 +601,7 @@ export function executeGetJaiminiDetails(args: any): ToolExecutionResult {
 /**
  * 10. get_panchanga (5 Limbs of Time)
  */
-export function executeGetPanchanga(args: any): ToolExecutionResult {
+export async function executeGetPanchanga(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -632,7 +618,7 @@ export function executeGetPanchanga(args: any): ToolExecutionResult {
   }
 
   try {
-    const chart = computeCanonicalChart(validation.data);
+    const chart = await computeCanonicalChartWithConfiguredEphemeris(validation.data);
     return {
       success: true,
       tool: 'get_panchanga',

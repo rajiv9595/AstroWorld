@@ -11,7 +11,7 @@ export interface PlaceSuggestion {
   country?: string;
   latitude: number;
   longitude: number;
-  timezone: string;
+  timezone?: string;
 }
 
 // Pre-indexed high-speed Indian & Global cities for sub-millisecond 1-letter typing response
@@ -97,3 +97,34 @@ export async function searchCities(query: string): Promise<PlaceSuggestion[]> {
 
   return localMatches.slice(0, 8);
 }
+
+
+/**
+ * Resolve a single selected coordinate to an IANA timezone.
+ * The request is intentionally deferred until the user picks a location.
+ */
+export const resolveTimezoneForCoordinates = async (
+  latitude: number,
+  longitude: number,
+): Promise<string | undefined> => {
+  try {
+    const params = new URLSearchParams({
+      latitude: String(latitude),
+      longitude: String(longitude),
+    });
+
+    const response = await fetch('/api/geo/timezone?' + params.toString(), {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) return undefined;
+
+    const data = await response.json();
+    return typeof data?.timezone === 'string' && data.timezone.trim()
+      ? data.timezone.trim()
+      : undefined;
+  } catch {
+    return undefined;
+  }
+};

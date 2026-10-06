@@ -11,6 +11,25 @@ const DAYS_PER_YEAR = 365.25;
 const MS_PER_DAY = 86400000;
 const MS_PER_YEAR = DAYS_PER_YEAR * MS_PER_DAY;
 
+function validateDashaInputs(
+  moonSiderealLon: number,
+  birthDateUtc: Date,
+  evaluationDateUtc: Date,
+): void {
+  if (!Number.isFinite(moonSiderealLon) || moonSiderealLon < 0 || moonSiderealLon >= 360) {
+    throw new Error('Vimshottari Dasha requires Moon sidereal longitude in [0, 360).');
+  }
+  if (!(birthDateUtc instanceof Date) || Number.isNaN(birthDateUtc.getTime())) {
+    throw new Error('Vimshottari Dasha requires a valid UTC birth date.');
+  }
+  if (!(evaluationDateUtc instanceof Date) || Number.isNaN(evaluationDateUtc.getTime())) {
+    throw new Error('Vimshottari Dasha requires a valid UTC evaluation date.');
+  }
+  if (evaluationDateUtc.getTime() < birthDateUtc.getTime()) {
+    throw new Error('Vimshottari Dasha evaluation date cannot precede the birth date.');
+  }
+}
+
 /**
  * Generate sub-lord sequence starting from parent lord.
  */
@@ -27,6 +46,7 @@ export function calculateVimshottariDasha(
   birthDateUtc: Date,
   evaluationDateUtc: Date = new Date()
 ): VimshottariDashaFacts {
+  validateDashaInputs(moonSiderealLon, birthDateUtc, evaluationDateUtc);
   const nakInfo = getNakshatraAndPada(moonSiderealLon);
   const startLord = nakInfo.nakshatraLord;
   const fullDurYears = VIMSHOTTARI_DURATIONS[startLord];
@@ -43,18 +63,26 @@ export function calculateVimshottariDasha(
   const evalMs = evaluationDateUtc.getTime();
 
   // Initial Mahadasha virtual start timestamp (when the lord's full period theoretically began)
-  let currentMs = birthMs - elapsedYears * MS_PER_YEAR;
+  let currentMs = Math.round(birthMs - elapsedYears * MS_PER_YEAR);
 
   const mahadashaLords = getCycleStartingFrom(startLord);
+  const cycleLengthMs = 120 * MS_PER_YEAR;
+  const cycleCount = Math.max(
+    1,
+    evalMs >= currentMs
+      ? Math.ceil((evalMs - currentMs + 1) / cycleLengthMs)
+      : 1,
+  );
   const mahadashas: VimshottariDashaFacts['mahadashas'] = [];
 
   let activeMd: DashaPeriod | null = null;
   let activeAd: DashaPeriod | null = null;
   let activePd: DashaPeriod | null = null;
 
-  for (const mdLord of mahadashaLords) {
+  for (let cycle = 0; cycle < cycleCount; cycle++) {
+    for (const mdLord of mahadashaLords) {
     const mdDurYears = VIMSHOTTARI_DURATIONS[mdLord];
-    const mdDurMs = mdDurYears * MS_PER_YEAR;
+    const mdDurMs = Math.round(mdDurYears * MS_PER_YEAR);
     const mdStartMs = currentMs;
     const mdEndMs = mdStartMs + mdDurMs;
 
@@ -86,7 +114,7 @@ export function calculateVimshottariDasha(
     for (const adLord of adLords) {
       const adLordDur = VIMSHOTTARI_DURATIONS[adLord];
       const adDurYears = (mdDurYears * adLordDur) / 120.0;
-      const adDurMs = adDurYears * MS_PER_YEAR;
+      const adDurMs = Math.round(adDurYears * MS_PER_YEAR);
       const adStartMs = adCurrentMs;
       const adEndMs = adStartMs + adDurMs;
 
@@ -115,7 +143,7 @@ export function calculateVimshottariDasha(
       for (const pdLord of pdLords) {
         const pdLordDur = VIMSHOTTARI_DURATIONS[pdLord];
         const pdDurYears = (adDurYears * pdLordDur) / 120.0;
-        const pdDurMs = pdDurYears * MS_PER_YEAR;
+        const pdDurMs = Math.round(pdDurYears * MS_PER_YEAR);
         const pdStartMs = pdCurrentMs;
         const pdEndMs = pdStartMs + pdDurMs;
 
@@ -154,10 +182,11 @@ export function calculateVimshottariDasha(
       antardashas,
     });
 
-    currentMs = mdEndMs;
+      currentMs = mdEndMs;
+    }
   }
 
-  // Fallbacks if evaluation date is beyond 120 years or edge case
+  // Fallbacks only for evaluation dates that precede the generated sequence.
   const defaultMd = mahadashas[0].period;
   const defaultAd = mahadashas[0].antardashas[0].period;
   const defaultPd = mahadashas[0].antardashas[0].pratyantardashas[0];

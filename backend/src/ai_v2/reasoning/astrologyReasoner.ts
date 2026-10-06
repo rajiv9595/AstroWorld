@@ -95,7 +95,9 @@ export class AstrologyReasoner {
     );
 
     const ruleLineage = appliedRules.filter(r => r.applicabilityStatus === 'applied').map(r => r.ruleId);
-    const sourceLineage = Array.from(new Set(appliedRules.map(r => r.citation)));
+    const sourceLineage = Array.from(new Set(appliedRules
+      .filter(r => r.applicabilityStatus === 'applied')
+      .map(r => r.citation)));
 
     const executionDurationMs = Date.now() - startTime;
 
@@ -147,7 +149,7 @@ export class AstrologyReasoner {
       verified: true,
     };
 
-    const validation = validateReasoningPacket(reasoningPacket);
+    const validation = validateReasoningPacket(reasoningPacket, evidence);
     if (!validation.valid) {
       throw new Error(`AstrologyReasoner generated invalid ReasoningPacket: ${validation.errors.join('; ')}`);
     }
@@ -256,35 +258,20 @@ export class AstrologyReasoner {
     // Process Derived Facts (Yogas)
     for (const derived of evidence.derivedFacts) {
       if (derived.type === 'Yoga') {
+        const isNegativeYoga = derived.id.toLowerCase().endsWith('_absence');
         primaryFactors.push({
           id: derived.id,
           entity: derived.description,
-          property: 'classical_yoga',
+          property: isNegativeYoga ? 'presence' : 'classical_yoga',
           value: derived.ruleCitation || 'Brihat Parashara Hora Shastra',
           role: 'primary',
           relevance: 'high',
-          rationale: 'Classical auspicious combination mathematically verified in chart',
+          rationale: isNegativeYoga
+            ? 'Verified deterministic yoga engine explicitly reported this classical formation as absent'
+            : 'Classical combination verified in the deterministic rule engine',
           sourceTool: derived.sourceTool,
           evidenceId: derived.id,
-        });
-      }
-    }
-
-    // Explicit verification for inquired yogas (e.g. Gajakesari Yoga)
-    const userQ = plan.rawQuestion.toLowerCase();
-    if (userQ.includes('gajakesari')) {
-      const hasGajakesari = evidence.derivedFacts.some(d => d.id.toLowerCase().includes('gajakesari'));
-      if (!hasGajakesari) {
-        primaryFactors.push({
-          id: 'yoga_gajakesari_absence',
-          entity: 'Gajakesari Yoga',
-          property: 'presence',
-          value: 'Not present in chart (Jupiter is in Cancer, 8th from Moon in Sagittarius; Kendra relationship 1, 4, 7, 10 is not formed)',
-          role: 'primary',
-          relevance: 'high',
-          rationale: 'Inquired yoga verified absent from chart under classical Parashari principles',
-          sourceTool: 'get_active_yogas',
-          evidenceId: evidence.facts.find(f => f.entity === 'Moon')?.id || 'evidence_gajakesari_absent',
+          weight: 1.0,
         });
       }
     }
@@ -304,6 +291,21 @@ export class AstrologyReasoner {
     relevance: FactorRelevance,
     rationale: string
   ): ClassifiedFactor {
+    const roleWeight: Record<FactorRole, number> = {
+      primary: 1.0,
+      supporting: 0.65,
+      restricting: 1.0,
+      conflicting: 1.0,
+      background: 0.2,
+      irrelevant: 0,
+    };
+    const relevanceWeight: Record<FactorRelevance, number> = {
+      high: 1.0,
+      medium: 0.7,
+      low: 0.35,
+      irrelevant: 0,
+    };
+
     return {
       id: `factor_${fact.id}`,
       entity: fact.entity,
@@ -314,6 +316,7 @@ export class AstrologyReasoner {
       rationale,
       sourceTool: fact.sourceTool,
       evidenceId: fact.id,
+      weight: Number((roleWeight[role] * relevanceWeight[relevance]).toFixed(3)),
     };
   }
 
@@ -334,38 +337,54 @@ export class AstrologyReasoner {
     coverageStatus: 'complete' | 'partial' | 'insufficient_evidence';
     confidence: 'high' | 'medium' | 'low';
   } {
-    const totalSupportive = primaryFactors.length + supportingFactors.length;
-    const totalRestricting = restrictingFactors.length;
+    const supportScore = [...primaryFactors, ...supportingFactors]
+      .reduce((sum, factor) => sum + (factor.weight ?? 0), 0);
+    const restrictingScore = restrictingFactors
+      .reduce((sum, factor) => sum + (factor.weight ?? 0), 0);
+    const conflictingScore = conflictingFactors
+      .reduce((sum, factor) => sum + (factor.weight ?? 0), 0);
 
+    // A factor count is not evidence of strength. A hundred background facts
+    // must not outweigh two directly relevant, independently verified factors.
+    const dominant = Math.max(supportScore, restrictingScore, conflictingScore);
+    const margin = supportScore - restrictingScore;
     let direction: InterpretationDirection = 'neutral';
-    let strength: InterpretationStrength = 'moderate';
-    let confidence: 'high' | 'medium' | 'low' = 'medium';
+    let strength: InterpretationStrength = 'weak';
+    let confidence: 'high' | 'medium' | 'low' = 'low';
 
-    if (totalSupportive >= totalRestricting * 2 && totalSupportive > 0) {
-      direction = 'supportive';
-      strength = confluence.confluenceStrength === 'strong' ? 'strong' : 'moderate';
-      confidence = 'high';
-    } else if (totalRestricting >= totalSupportive * 2 && totalRestricting > 0) {
-      direction = 'challenging';
-      strength = 'moderate';
-      confidence = 'medium';
-    } else if (totalSupportive > 0 && totalRestricting > 0) {
+    if (dominant === 0) {
+      direction = 'neutral';
+      strength = 'inconclusive';
+      confidence = 'low';
+    } else if (supportScore > 0 && restrictingScore > 0 && Math.abs(margin) < 0.75) {
       direction = 'mixed';
       strength = 'moderate';
       confidence = 'medium';
-    } else if (totalSupportive > 0) {
+    } else if (supportScore > restrictingScore && supportScore >= 1.25) {
       direction = 'supportive';
-      strength = 'moderate';
-      confidence = 'high';
-    } else if (totalRestricting > 0) {
+      strength = confluence.confluenceStrength === 'strong' ? 'strong' : supportScore >= 2.5 ? 'moderate' : 'weak';
+      confidence = supportScore >= 2.5 && restrictingScore < 0.75 ? 'high' : 'medium';
+    } else if (restrictingScore > supportScore && restrictingScore >= 1.25) {
       direction = 'challenging';
-      strength = 'moderate';
-      confidence = 'medium';
+      strength = restrictingScore >= 2.5 ? 'moderate' : 'weak';
+      confidence = restrictingScore >= 2.5 && supportScore < 0.75 ? 'high' : 'medium';
+    } else if (supportScore > 0 || restrictingScore > 0) {
+      direction = margin > 0 ? 'supportive' : 'challenging';
+      strength = 'weak';
+      confidence = 'low';
+    } else {
+      direction = conflictingScore > 0 ? 'mixed' : 'neutral';
+      strength = 'inconclusive';
+      confidence = 'low';
     }
 
-    const coverageStatus = appliedRulesCount >= 1 && totalSupportive + totalRestricting >= 2
-      ? 'complete'
-      : 'partial';
+    const relevantFactorCount = [...primaryFactors, ...supportingFactors, ...restrictingFactors]
+      .filter(f => (f.weight ?? 0) > 0)
+      .length;
+    const coverageStatus =
+      appliedRulesCount >= 1 && relevantFactorCount >= 2 && confluence.convergingLayersCount >= 1
+        ? 'complete'
+        : 'partial';
 
     return {
       direction,

@@ -184,7 +184,7 @@ async function runPhase2CSuite() {
   // ==========================================
   console.log('\n--- 9. UNSUPPORTED FUNCTION CALL DEFENSE ---');
 
-  const unregisteredExecution = AstrologyToolRegistry.executeTool('generate_speculative_horoscope', {});
+  const unregisteredExecution = await AstrologyToolRegistry.executeTool('generate_speculative_horoscope', {});
 
   assert(
     unregisteredExecution.success === false &&

@@ -37,6 +37,8 @@ export interface ClassifiedFactor {
   rationale: string;
   sourceTool: string;
   evidenceId: string;
+  /** Deterministic contribution weight used by confluence synthesis. */
+  weight?: number;
 }
 
 export interface AppliedRuleRecord {
@@ -60,6 +62,8 @@ export interface ConfluenceItem {
   alignment: 'supportive' | 'restricting' | 'neutral';
   evidenceId: string;
   ruleId?: string;
+  supportScore?: number;
+  restrictingScore?: number;
 }
 
 export interface ConfluenceResult {
@@ -68,6 +72,8 @@ export interface ConfluenceResult {
   convergingLayersCount: number;
   layers: ConfluenceItem[];
   confluenceSummary: string;
+  supportiveScore?: number;
+  restrictingScore?: number;
 }
 
 export interface TemporalWindowResult {
@@ -124,7 +130,7 @@ export interface ReasoningPacket {
   verified: boolean;
 }
 
-export function validateReasoningPacket(packet: any): { valid: boolean; errors: string[] } {
+export function validateReasoningPacket(packet: any, evidence?: import('./evidencePacket.ts').EvidencePacket): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   if (!packet || typeof packet !== 'object') {
@@ -163,6 +169,52 @@ export function validateReasoningPacket(packet: any): { valid: boolean; errors: 
   if (!Array.isArray(packet.sourceLineage)) errors.push('sourceLineage must be an array.');
   if (!packet.auditTrace || typeof packet.auditTrace !== 'object') errors.push('auditTrace must be an object.');
   if (typeof packet.verified !== 'boolean') errors.push('verified must be a boolean.');
+
+  if (evidence) {
+    const evidenceIds = new Set([
+      ...evidence.facts.map(f => f.id),
+      ...evidence.derivedFacts.map(f => f.id),
+    ].filter(Boolean));
+    const assertKnownEvidenceId = (id: any, location: string) => {
+      if (typeof id !== 'string' || !evidenceIds.has(id)) {
+        errors.push(`${location} references unresolved evidence "${String(id)}".`);
+      }
+    };
+
+    for (const factor of [
+      ...(packet.primaryFactors || []),
+      ...(packet.supportingFactors || []),
+      ...(packet.restrictingFactors || []),
+      ...(packet.conflictingFactors || []),
+    ]) {
+      assertKnownEvidenceId(factor.evidenceId, 'ClassifiedFactor');
+    }
+
+    for (const rule of packet.appliedRules || []) {
+      for (const id of rule.evidenceIds || []) assertKnownEvidenceId(id, `AppliedRule ${rule.ruleId}`);
+    }
+
+    for (const window of packet.temporalWindows || []) {
+      for (const id of window.evidenceIds || []) assertKnownEvidenceId(id, `TemporalWindow ${window.id}`);
+    }
+
+    for (const layer of packet.confluence?.layers || []) {
+      assertKnownEvidenceId(layer.evidenceId, `ConfluenceLayer ${layer.layer}`);
+    }
+
+    for (const id of packet.evidenceLineage || []) assertKnownEvidenceId(id, 'ReasoningPacket evidenceLineage');
+
+    const appliedRuleIds = new Set(
+      (packet.appliedRules || [])
+        .filter((r: any) => r?.applicabilityStatus === 'applied')
+        .map((r: any) => r.ruleId),
+    );
+    for (const id of packet.ruleLineage || []) {
+      if (!appliedRuleIds.has(id)) {
+        errors.push(`ruleLineage references non-applied rule "${id}".`);
+      }
+    }
+  }
 
   return {
     valid: errors.length === 0,

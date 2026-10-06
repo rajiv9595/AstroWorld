@@ -15,6 +15,18 @@ import {
 } from './types.ts';
 
 // 60 classical Shashtiamsha Devata Names according to BPHS (Santhanam tradition)
+/** Explicit D60 convention used by AstroWorld.
+ * This is a sign-based Parashari/PVR-style occupied-sign mapping: each 0°30'
+ * amsha advances one sign from the source Rashi. D60 traditions differ, so
+ * callers must not present this convention as universally canonical.
+ */
+export const D60_CONVENTION = {
+  name: 'Parashari PVR occupied-sign method',
+  intervalDegrees: 0.5,
+  mapping: 'source-sign-plus-amsha-index',
+  boundaryRule: '[start, end)',
+} as const;
+
 export const D60_DEVATA_NAMES: string[] = [
   'Ghora', 'Rakshasa', 'Deva', 'Kubera', 'Yaksha', 'Kinnara', 'Bhrashta', 'Kulaghna',
   'Garala', 'Vahni', 'Maya', 'Purishaka', 'Apampathi', 'Marutwan', 'Kala', 'Sarpa',
@@ -52,6 +64,36 @@ export const VARGA_METADATA_LIST: VargaMetadata[] = [
   { code: 'D45', name: 'Akshavedamsha', sanskritName: 'अक्षवेदांश (D45)', divisionNumber: 45, purpose: 'All areas of character, moral integrity and purity' },
   { code: 'D60', name: 'Shashtiamsha', sanskritName: 'षष्ट्यंश (D60)', divisionNumber: 60, purpose: 'All matters, past life karma, ultimate root cause of events' },
 ];
+
+/**
+ * Equal-width Varga boundary helper.
+ *
+ * Treats boundaries as half-open [start, end) while compensating
+ * for tiny floating-point representation errors at exact boundaries.
+ */
+function calculateEqualVargaPart(
+  degreeInSign: number,
+  span: number,
+  divisions: number,
+): { part: number; degreeInVargaSign: number } {
+  const quotient = degreeInSign / span;
+  const nearestInteger = Math.round(quotient);
+  const boundaryTolerance = 1e-10;
+
+  const isExactBoundary =
+    Math.abs(quotient - nearestInteger) < boundaryTolerance;
+
+  const part = Math.min(
+    divisions - 1,
+    isExactBoundary ? nearestInteger : Math.floor(quotient),
+  );
+
+  const degreeInVargaSign = isExactBoundary
+    ? 0
+    : (degreeInSign - part * span) * divisions;
+
+  return { part, degreeInVargaSign };
+}
 
 /**
  * Compute the resulting Zodiac sign index (0-11) for any varga from sidereal longitude.
@@ -112,10 +154,16 @@ export function calculateVargaSignIndex(vargaCode: VargaCode, siderealLongitude:
       // Odd signs: Start from source sign
       // Even signs: Start from 7th from source sign
       const span = 30.0 / 7.0;
-      const part = Math.min(6, Math.floor(degInSign / span));
-      const startSign = isOddSign ? sourceSignIndex : (sourceSignIndex + 6) % 12;
+      const { part, degreeInVargaSign } = calculateEqualVargaPart(
+        degInSign,
+        span,
+        7,
+      );
+      const startSign = isOddSign
+        ? sourceSignIndex
+        : (sourceSignIndex + 6) % 12;
       const targetSignIndex = (startSign + part) % 12;
-      return { signIndex: targetSignIndex, degreeInVargaSign: (degInSign % span) * 7 };
+      return { signIndex: targetSignIndex, degreeInVargaSign };
     }
 
     case 'D9': {
@@ -125,11 +173,15 @@ export function calculateVargaSignIndex(vargaCode: VargaCode, siderealLongitude:
       // Air signs (Gemini 2, Libra 6, Aqu 10): Start Libra (6)
       // Water signs (Cancer 3, Scorpio 7, Pis 11): Start Cancer (3)
       const span = 30.0 / 9.0;
-      const part = Math.min(8, Math.floor(degInSign / span));
+      const { part, degreeInVargaSign } = calculateEqualVargaPart(
+        degInSign,
+        span,
+        9,
+      );
       const elementStarts = [0, 9, 6, 3];
       const startSign = elementStarts[sourceSignIndex % 4];
       const targetSignIndex = (startSign + part) % 12;
-      return { signIndex: targetSignIndex, degreeInVargaSign: (degInSign % span) * 9 };
+      return { signIndex: targetSignIndex, degreeInVargaSign };
     }
 
     case 'D10': {
@@ -198,11 +250,15 @@ export function calculateVargaSignIndex(vargaCode: VargaCode, siderealLongitude:
       // Air: Start Libra (6)
       // Water: Start Capricorn (9)
       const span = 30.0 / 27.0;
-      const part = Math.min(26, Math.floor(degInSign / span));
+      const { part, degreeInVargaSign } = calculateEqualVargaPart(
+        degInSign,
+        span,
+        27,
+      );
       const elementStarts = [0, 3, 6, 9];
       const startSign = elementStarts[sourceSignIndex % 4];
       const targetSignIndex = (startSign + part) % 12;
-      return { signIndex: targetSignIndex, degreeInVargaSign: (degInSign % span) * 27 };
+      return { signIndex: targetSignIndex, degreeInVargaSign };
     }
 
     case 'D30': {
@@ -220,20 +276,23 @@ export function calculateVargaSignIndex(vargaCode: VargaCode, siderealLongitude:
       // 20-25°: Saturn (Capricorn, 9)
       // 25-30°: Mars (Scorpio, 7)
       let targetSignIndex = 0;
+      let bandStart = 0;
+      let bandEnd = 30;
       if (isOddSign) {
-        if (degInSign < 5.0) targetSignIndex = 0; // Aries
-        else if (degInSign < 10.0) targetSignIndex = 10; // Aquarius
-        else if (degInSign < 18.0) targetSignIndex = 8; // Sagittarius
-        else if (degInSign < 25.0) targetSignIndex = 2; // Gemini
-        else targetSignIndex = 6; // Libra
+        if (degInSign < 5.0) { targetSignIndex = 0; bandStart = 0; bandEnd = 5; } // Aries
+        else if (degInSign < 10.0) { targetSignIndex = 10; bandStart = 5; bandEnd = 10; } // Aquarius
+        else if (degInSign < 18.0) { targetSignIndex = 8; bandStart = 10; bandEnd = 18; } // Sagittarius
+        else if (degInSign < 25.0) { targetSignIndex = 2; bandStart = 18; bandEnd = 25; } // Gemini
+        else { targetSignIndex = 6; bandStart = 25; bandEnd = 30; } // Libra
       } else {
-        if (degInSign < 5.0) targetSignIndex = 1; // Taurus
-        else if (degInSign < 12.0) targetSignIndex = 5; // Virgo
-        else if (degInSign < 20.0) targetSignIndex = 11; // Pisces
-        else if (degInSign < 25.0) targetSignIndex = 9; // Capricorn
-        else targetSignIndex = 7; // Scorpio
+        if (degInSign < 5.0) { targetSignIndex = 1; bandStart = 0; bandEnd = 5; } // Taurus
+        else if (degInSign < 12.0) { targetSignIndex = 5; bandStart = 5; bandEnd = 12; } // Virgo
+        else if (degInSign < 20.0) { targetSignIndex = 11; bandStart = 12; bandEnd = 20; } // Pisces
+        else if (degInSign < 25.0) { targetSignIndex = 9; bandStart = 20; bandEnd = 25; } // Capricorn
+        else { targetSignIndex = 7; bandStart = 25; bandEnd = 30; } // Scorpio
       }
-      return { signIndex: targetSignIndex, degreeInVargaSign: degInSign };
+      const degreeInVargaSign = ((degInSign - bandStart) / (bandEnd - bandStart)) * 30;
+      return { signIndex: targetSignIndex, degreeInVargaSign };
     }
 
     case 'D40': {
@@ -268,7 +327,11 @@ export function calculateVargaSignIndex(vargaCode: VargaCode, siderealLongitude:
       const span = 0.5;
       const part = Math.min(59, Math.floor(degInSign / span));
       const targetSignIndex = (sourceSignIndex + part) % 12;
-      const devataName = D60_DEVATA_NAMES[part % 60];
+      // BPHS reverses the named Shashtiamsha sequence for even signs.
+      // The occupied-sign calculation remains the source-sign-plus-amsha
+      // mapping; the reversal applies to the named amsha sequence.
+      const devataIndex = isOddSign ? part : (59 - part);
+      const devataName = D60_DEVATA_NAMES[devataIndex];
       return {
         signIndex: targetSignIndex,
         degreeInVargaSign: (degInSign % span) * 60,

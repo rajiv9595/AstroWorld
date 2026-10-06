@@ -27,6 +27,7 @@ import {
   ConversationState,
   ConversationTurn,
 } from '../conversation_state/index.ts';
+import { ConversationPersistenceRepository } from '../conversation_state/conversationPersistenceRepository.ts';
 import {
   IPersistentMemoryRepository,
   InMemoryPersistentMemoryRepository,
@@ -37,6 +38,7 @@ import {
   MemoryCommandResolver,
   CommandExecutionResult,
 } from '../memory/index.ts';
+import { createDefaultMemoryRepository } from '../memory/supabasePersistentMemoryRepository.ts';
 import {
   ConsultationResult,
   ConsultationTrace,
@@ -79,6 +81,7 @@ export class ConsultationOrchestrator {
   private memoryWriteGate: MemoryWriteGate;
   private memoryConsolidator: MemoryConsolidator;
   private memoryCommandResolver: MemoryCommandResolver;
+  private conversationPersistence: ConversationPersistenceRepository;
   private isLiveMode: boolean;
 
   constructor(options?: {
@@ -92,6 +95,7 @@ export class ConsultationOrchestrator {
     primaryTimeoutMs?: number;
     fallbackTimeoutMs?: number;
     repairTimeoutMs?: number;
+    conversationPersistence?: ConversationPersistenceRepository;
   }) {
     this.planner = new QuestionPlanner();
     this.toolOrchestrator = new ToolExecutionOrchestrator();
@@ -116,9 +120,10 @@ export class ConsultationOrchestrator {
     });
     this.stateManager = new ConversationStateManager();
     this.stateResolver = new ConversationStateResolver();
+    this.conversationPersistence = options?.conversationPersistence || new ConversationPersistenceRepository();
     this.stateUpdater = new ConversationStateUpdater();
 
-    this.memoryRepository = options?.memoryRepository || new InMemoryPersistentMemoryRepository();
+    this.memoryRepository = options?.memoryRepository || createDefaultMemoryRepository();
     this.memoryRetriever = new MemoryRetriever(this.memoryRepository);
     this.memoryCandidateGenerator = new MemoryCandidateGenerator();
     this.memoryWriteGate = new MemoryWriteGate();
@@ -144,6 +149,22 @@ export class ConsultationOrchestrator {
 
   public getConversationState(conversationId: string): ConversationState | undefined {
     return this.stateManager.getState(conversationId);
+  }
+
+  public getConversationPersistenceRepository(): ConversationPersistenceRepository {
+    return this.conversationPersistence;
+  }
+
+  public async isConversationOwnedByPersistent(conversationId: string, userId: string): Promise<boolean> {
+    return this.conversationPersistence.owns(userId, conversationId);
+  }
+
+  public async listOwnedPersistentConversationIds(userId: string): Promise<string[]> {
+    return this.conversationPersistence.listOwned(userId);
+  }
+
+  public async deleteOwnedPersistentConversation(conversationId: string, userId: string): Promise<boolean> {
+    return this.conversationPersistence.delete(userId, conversationId);
   }
 
   /**
@@ -185,6 +206,17 @@ export class ConsultationOrchestrator {
       `session_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     let currentState = options?.conversationState || this.stateManager.getState(conversationId) || this.stateManager.createInitialState(conversationId);
     let turns = this.stateManager.getTurns(conversationId);
+
+    // Durable state is authoritative when configured. The in-memory manager is
+    // only the request-local working cache.
+    if (!options?.conversationState && this.conversationPersistence.isEnabled()) {
+      const stored = await this.conversationPersistence.load(userId, conversationId);
+      if (stored) {
+        currentState = this.stateManager.cloneState(stored.state);
+        turns = stored.turns.map(t => JSON.parse(JSON.stringify(t)));
+        this.stateManager.commitState(conversationId, currentState);
+      }
+    }
 
     // If options.conversationContext was passed and turns is empty, reconstruct state for backwards compatibility
     if (options?.conversationContext && options.conversationContext.length > 0 && turns.length === 0) {
@@ -433,6 +465,9 @@ export class ConsultationOrchestrator {
     // 12. Update Conversation State post-narration
     const { updatedState, newTurn } = this.stateUpdater.updateState(rawQuestion, consultationResult, currentState);
     this.stateManager.commitState(conversationId, updatedState, newTurn);
+    if (this.conversationPersistence.isEnabled()) {
+      await this.conversationPersistence.save(userId, updatedState, newTurn);
+    }
     consultationResult.conversationState = updatedState;
     consultationResult.contextPack = contextPack;
     consultationResult.stateTrace = stateTrace;

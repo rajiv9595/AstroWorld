@@ -69,6 +69,12 @@ export function calculateArudhaPada(
 /**
  * Calculate complete Jaimini facts suite.
  */
+/**
+ * Convention note:
+ * AstroWorld currently uses the 7-karaka scheme (Sun-Saturn). The 8-karaka
+ * school that includes Rahu with reversed within-sign degree is intentionally
+ * not silently mixed into these results.
+ */
 export function calculateJaiminiFacts(
   planets: PlanetPosition[],
   ascendantSignIndex: number,
@@ -93,8 +99,13 @@ export function calculateJaiminiFacts(
       sign: p.sign,
     }));
 
-  // Sort descending by degree within sign
-  candidates.sort((a, b) => b.degreeInSign - a.degreeInSign);
+  // Seven-karaka convention: Sun through Saturn, excluding Rahu/Ketu.
+  // Break exact degree ties deterministically by the canonical planet order.
+  const canonicalOrder: PlanetName[] = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  candidates.sort((a, b) =>
+    b.degreeInSign - a.degreeInSign ||
+    canonicalOrder.indexOf(a.name) - canonicalOrder.indexOf(b.name)
+  );
 
   const charaKarakas: CharaKaraka[] = candidates.map((c, idx) => {
     const meta = KARAKA_ROLES[idx];
@@ -129,6 +140,7 @@ export function calculateJaiminiFacts(
   return {
     charaKarakas,
     atmakaraka,
+    karakaScheme: 'seven_karaka',
     karakamsaSign: charaKarakas[0].sign,
     karakamsaNavamshaSign,
     arudhaLagna: {

@@ -1,0 +1,48 @@
+name: AstroWorld Production Certification
+
+on:
+  push:
+    branches:
+      - astroworld/production-certification-v2
+      - main
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'shared/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/production-certification.yml'
+
+jobs:
+  production-certification:
+    name: production-certification
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Frontend build
+        run: npm --workspace=@astroworld/frontend run build
+
+      - name: Complete production certification
+        run: npm --workspace=@astroworld/backend run test:production:certification
+
+      - name: Repository status
+        run: git status --short

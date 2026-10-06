@@ -3,7 +3,8 @@
  * Data-driven classical evaluation with BPHS provenance citations.
  */
 
-import { SIGN_LORDS } from './constants.ts';
+import { SIGN_LORDS, ZODIAC_SIGNS } from './constants.ts';
+import { hasParashariFullAspect, hasParashariSambandha } from './aspects.ts';
 import { DoshaFact, PlanetName, PlanetPosition, YogaFact, ZodiacSign } from './types.ts';
 
 export function calculateYogasAndDoshas(
@@ -126,6 +127,7 @@ export function calculateYogasAndDoshas(
 
   // 3. Budhaditya Yoga: Sun and Mercury conjunct
   const isBudhaditya = sun.sign === mercury.sign;
+  const budhadityaQualification = mercury.combust ? 'Mercury is combust; the conjunction is structurally present but its expression requires qualification.' : 'No combustion qualification flagged by the engine.';
   yogas.push({
     id: 'budhaditya',
     name: 'Budhaditya Yoga (बुधादित्य योग)',
@@ -135,13 +137,11 @@ export function calculateYogasAndDoshas(
     housesInvolved: [sun.houseNumber],
     bphsReference: 'BPHS, Ch. 36, Verse 1',
     classicalRule: 'Sun and Mercury conjunct in the same sign without severe combustion.',
-    effects: 'Heightens analytical prowess, administrative capability, communicative intelligence, and professional prestige.',
+    effects: `Structural conjunction detected. ${budhadityaQualification}`,
   });
 
   // 4. Chandra-Mangala Yoga: Moon and Mars conjunct or mutual aspect
-  const isChandraMangala =
-    moon.sign === mars.sign ||
-    Math.abs(moon.houseNumber - mars.houseNumber) === 6;
+  const isChandraMangala = hasParashariSambandha(moon, mars);
   yogas.push({
     id: 'chandra_mangala',
     name: 'Chandra-Mangala Yoga (चन्द्र-मंगल योग)',
@@ -154,55 +154,139 @@ export function calculateYogasAndDoshas(
     effects: 'Strong wealth-generating potential through bold enterprise, commerce, property investments, and energetic resourcefulness.',
   });
 
-  // 5. Raja Yoga: Kendra and Trikona lords combination
-  // For Taurus Lagna: Saturn is lord of 9 (Trikona) and 10 (Kendra) -> natural Yogakaraka
-  // Check if any Kendra lord is conjunct or aspecting a Trikona lord
-  const isRajaYoga =
-    [1, 4, 5, 9, 10].includes(jupiter.houseNumber) ||
-    [1, 4, 5, 9, 10].includes(saturn.houseNumber) ||
-    [1, 4, 5, 9, 10].includes(mercury.houseNumber);
+  // 5. Raja Yoga: actual Kendra/Trikona lord sambandha.
+  // A planet must be the lord of the relevant house(s); merely occupying a
+  // kendra/trikona is not sufficient to establish this named yoga.
+  const getHouseLord = (house: number): PlanetName => {
+    // Ascendant sign is represented by house 1; derive each house sign from the canonical zodiac order.
+    const ascIndex = ZODIAC_SIGNS.indexOf(ascendantSign);
+    const houseSign = ZODIAC_SIGNS[(ascIndex + house - 1 + 12) % 12];
+    return SIGN_LORDS[houseSign];
+  };
+  const lordHouse = (planet: PlanetName) => getPlanet(planet).houseNumber;
+  const sambandha = (a: PlanetName, b: PlanetName): boolean => {
+    if (a === b) return true; // One planet owning both functional groups is a Yogakaraka structure.
+    const pa = getPlanet(a);
+    const pb = getPlanet(b);
+
+    // Strict Parashari sambandha for this evaluator:
+    // 1) conjunction in the same whole-sign house,
+    // 2) a classical full graha drishti from either planet,
+    // 3) mutual sign exchange (Parivartana).
+    const aspectOrConjunction = hasParashariSambandha(pa, pb);
+    const exchange = SIGN_LORDS[pa.sign] === b && SIGN_LORDS[pb.sign] === a;
+    return aspectOrConjunction || exchange;
+  };
+  const kendraLords = kendraHouses.map(getHouseLord);
+  const trikonaLords = [5, 9].map(getHouseLord);
+  const rajaPairs = kendraLords.flatMap(k =>
+    trikonaLords.filter(t => sambandha(k, t)).map(t => [k, t] as [PlanetName, PlanetName])
+  );
+  const isRajaYoga = rajaPairs.length > 0;
+  const rajaPlanets = Array.from(new Set(rajaPairs.flat()));
+  const rajaHouses = Array.from(new Set(rajaPlanets.map(p => getPlanet(p).houseNumber)));
   yogas.push({
     id: 'raja_yoga',
-    name: 'Raja Yoga — Kendra-Trikona Conjunction (राज योग)',
+    name: 'Raja Yoga — Kendra-Trikona Lord Sambandha (राज योग)',
     category: 'RAJA',
     present: isRajaYoga,
-    formingPlanets: ['Saturn', 'Mercury'],
-    housesInvolved: [saturn.houseNumber, mercury.houseNumber],
+    formingPlanets: rajaPlanets,
+    housesInvolved: rajaHouses,
     bphsReference: 'BPHS, Ch. 34, Verses 14-16',
-    classicalRule: 'Lords of Kendra (Kendra-pati) and Trikona (Kona-pati) establishing sambandha (conjunction, aspect, or mutual exchange).',
-    effects: 'Elevates individual to positions of high authority, respect, civic recognition, prosperity, and career success.',
+    classicalRule: 'A Kendra lord and Trikona lord establish sambandha by conjunction, mutual 7th aspect, exchange, or a single planet owning both functional groups.',
+    effects: 'Indicates a classical authority/prosperity combination; actual manifestation depends on dignity, strength, dasha activation, and affliction.',
   });
 
-  // 6. Viparita Raja Yogas (Harsha, Sarala, Vimala)
-  const isViparita =
-    [6, 8, 12].includes(saturn.houseNumber) ||
-    [6, 8, 12].includes(mercury.houseNumber) ||
-    [6, 8, 12].includes(mars.houseNumber);
+  // 6. Viparita Raja Yogas — evaluate the actual dusthana lords.
+  const dusthanas = [6, 8, 12];
+  const dusthanaLordMap = new Map<number, PlanetName>(
+    dusthanas.map(h => [h, getHouseLord(h)])
+  );
+  const harshaLord = dusthanaLordMap.get(6)!;
+  const saralaLord = dusthanaLordMap.get(8)!;
+  const vimalaLord = dusthanaLordMap.get(12)!;
+  const harsha = dusthanas.includes(lordHouse(harshaLord));
+  const sarala = dusthanas.includes(lordHouse(saralaLord));
+  const vimala = dusthanas.includes(lordHouse(vimalaLord));
+  const viparitaPlanets = Array.from(new Set([
+    ...(harsha ? [harshaLord] : []),
+    ...(sarala ? [saralaLord] : []),
+    ...(vimala ? [vimalaLord] : []),
+  ]));
+  const viparitaHouses = Array.from(new Set(viparitaPlanets.map(p => lordHouse(p))));
+  const isViparita = viparitaPlanets.length > 0;
+  yogas.push({
+    id: 'harsha_viparita',
+    name: 'Harsha Viparita Raja Yoga (हर्ष विपरीत राज योग)',
+    category: 'VIPARITA',
+    present: harsha,
+    formingPlanets: [harshaLord],
+    housesInvolved: harsha ? [6, lordHouse(harshaLord)] : [6],
+    bphsReference: 'Uttara Kalamrita, Ch. 4, Verses 22-23',
+    classicalRule: 'The 6th lord is placed in a dusthana (6th, 8th, or 12th).',
+    effects: 'Potential rise through overcoming competition, obstacles, debts, or service-related adversity.',
+  });
+  yogas.push({
+    id: 'sarala_viparita',
+    name: 'Sarala Viparita Raja Yoga (सरल विपरीत राज योग)',
+    category: 'VIPARITA',
+    present: sarala,
+    formingPlanets: [saralaLord],
+    housesInvolved: sarala ? [8, lordHouse(saralaLord)] : [8],
+    bphsReference: 'Uttara Kalamrita, Ch. 4, Verses 22-23',
+    classicalRule: 'The 8th lord is placed in a dusthana (6th, 8th, or 12th).',
+    effects: 'Potential resilience and gains through transformation, hidden matters, and crises.',
+  });
+  yogas.push({
+    id: 'vimala_viparita',
+    name: 'Vimala Viparita Raja Yoga (विमल विपरीत राज योग)',
+    category: 'VIPARITA',
+    present: vimala,
+    formingPlanets: [vimalaLord],
+    housesInvolved: vimala ? [12, lordHouse(vimalaLord)] : [12],
+    bphsReference: 'Uttara Kalamrita, Ch. 4, Verses 22-23',
+    classicalRule: 'The 12th lord is placed in a dusthana (6th, 8th, or 12th).',
+    effects: 'Potential independence and constructive results from expenditure, foreign links, isolation, or release.',
+  });
+  // Backward-compatible aggregate for callers that consume a single Viparita flag.
   yogas.push({
     id: 'viparita_raja',
-    name: 'Viparita Raja Yoga (विपरीत राज योग)',
+    name: 'Viparita Raja Yoga — Aggregate',
     category: 'VIPARITA',
     present: isViparita,
-    formingPlanets: ['Saturn', 'Mars'],
-    housesInvolved: [mars.houseNumber, saturn.houseNumber],
+    formingPlanets: viparitaPlanets,
+    housesInvolved: viparitaHouses,
     bphsReference: 'Uttara Kalamrita, Ch. 4, Verses 22-23',
-    classicalRule: 'Lords of dusthanas (6th, 8th, or 12th) situated within dusthanas, turning crises into breakthrough triumphs.',
-    effects: 'Success and rise born out of sudden crises, institutional shifts, overcoming intense obstacles, and competitive dominance.',
+    classicalRule: 'At least one specific dusthana-lord Viparita condition is satisfied.',
+    effects: 'Interpret only after identifying the specific Harsha, Sarala, or Vimala formation and its strength.',
   });
 
   // 7. Amala Yoga: Benefic in 10th from Lagna or Moon
-  const isAmala =
-    jupiter.houseNumber === 10 ||
-    venus.houseNumber === 10 ||
-    mercury.houseNumber === 10 ||
-    jupHouseFromMoon === 10;
+  const venusHouseFromMoon = ((venus.houseNumber - moonHouse + 12) % 12) + 1;
+  const mercuryHouseFromMoon = ((mercury.houseNumber - moonHouse + 12) % 12) + 1;
+  const amalaPlanets = new Set<PlanetName>();
+  if ([jupiter.houseNumber, venus.houseNumber, mercury.houseNumber].includes(10)) {
+    if (jupiter.houseNumber === 10) amalaPlanets.add('Jupiter');
+    if (venus.houseNumber === 10) amalaPlanets.add('Venus');
+    if (mercury.houseNumber === 10) amalaPlanets.add('Mercury');
+  }
+  if ([jupHouseFromMoon, venusHouseFromMoon, mercuryHouseFromMoon].includes(10)) {
+    if (jupHouseFromMoon === 10) amalaPlanets.add('Jupiter');
+    if (venusHouseFromMoon === 10) amalaPlanets.add('Venus');
+    if (mercuryHouseFromMoon === 10) amalaPlanets.add('Mercury');
+  }
+  const amalaFormingPlanets = Array.from(amalaPlanets);
+  const amalaHouses = Array.from(new Set([
+    ...amalaFormingPlanets.map(p => getPlanet(p).houseNumber),
+  ]));
+  const isAmala = amalaFormingPlanets.length > 0;
   yogas.push({
     id: 'amala_yoga',
     name: 'Amala Yoga (अमल योग)',
     category: 'MISCELLANEOUS',
     present: isAmala,
-    formingPlanets: ['Jupiter'],
-    housesInvolved: [10],
+    formingPlanets: amalaFormingPlanets,
+    housesInvolved: amalaHouses.length > 0 ? amalaHouses : [10],
     bphsReference: 'BPHS, Ch. 36, Verse 21',
     classicalRule: 'A natural benefic (Jupiter, Venus, Mercury) occupying the 10th house from Lagna or Moon.',
     effects: 'Brings spotless professional reputation, benevolent leadership, enduring honor, and virtuous conduct throughout career.',
@@ -220,13 +304,11 @@ export function calculateYogasAndDoshas(
   const mitigating: string[] = [];
   if (mars.sign === 'Aries') mitigating.push('Mars is in its own sign (Aries), substantially neutralizing adverse fire.');
   // Aspect cancellations
-  const diffJupMars = (mars.houseNumber - jupiter.houseNumber + 12) % 12;
-  const isJupAspectingMars = diffJupMars === 6 || diffJupMars === 4 || diffJupMars === 8;
-  if (isJupAspectingMars) mitigating.push('Jupiter aspects Mars, providing cooling benefic protection.');
+  const isJupAspectingMars = hasParashariFullAspect(jupiter, mars);
+  if (isJupAspectingMars) mitigating.push('Jupiter has a classical full Parashari aspect on Mars; this is recorded as a mitigation factor, not a cancellation.');
 
-  const diffSatMars = (mars.houseNumber - saturn.houseNumber + 12) % 12;
-  const isSatAspectingMars = diffSatMars === 6 || diffSatMars === 2 || diffSatMars === 9;
-  if (isSatAspectingMars) mitigating.push('Saturn balances marital impulse with patience and discipline.');
+  const isSatAspectingMars = hasParashariFullAspect(saturn, mars);
+  if (isSatAspectingMars) mitigating.push('Saturn has a classical full Parashari aspect on Mars; this is recorded as a moderation factor, not a cancellation.');
 
   doshas.push({
     id: 'kuja_dosha',
@@ -248,14 +330,18 @@ export function calculateYogasAndDoshas(
   // Are all 7 planets situated on one side of Rahu-Ketu axis?
   const rahuSignIdx = rahu.signIndex;
   const ketuSignIdx = ketu.signIndex;
-  let allOneSide = true;
-  for (const p of [sun, moon, mars, mercury, jupiter, venus, saturn]) {
-    const diff = ((p.signIndex - rahuSignIdx + 12) % 12);
-    if (diff > 6) {
-      allOneSide = false;
-      break;
-    }
-  }
+  const classicalPlanets = [sun, moon, mars, mercury, jupiter, venus, saturn];
+  const rahuDistances = classicalPlanets.map(
+    (p) => (p.signIndex - rahuSignIdx + 12) % 12,
+  );
+
+  // A school-dependent Kala Sarpa test must accept either orientation of the
+  // Rahu-Ketu half-axis; the previous one-direction test produced false
+  // negatives when all seven grahas occupied the opposite half.
+  const nodesAreOpposite = ((ketuSignIdx - rahuSignIdx + 12) % 12) === 6;
+  const allWithinFirstHalf = rahuDistances.every((diff) => diff <= 6);
+  const allWithinSecondHalf = rahuDistances.every((diff) => diff >= 6);
+  const allOneSide = nodesAreOpposite && (allWithinFirstHalf || allWithinSecondHalf);
 
   doshas.push({
     id: 'kala_sarpa',
@@ -263,8 +349,8 @@ export function calculateYogasAndDoshas(
     present: allOneSide,
     severity: allOneSide ? 'MEDIUM' : 'NONE',
     description: allOneSide
-      ? 'All seven classical planets are hemmed between the Rahu-Ketu nodal axis, creating an intense karmic trajectory of delayed yet profound breakthroughs.'
-      : 'Planets break through the Rahu-Ketu nodal axis, ensuring balanced life-flow free of Kala Sarpa encirclement.',
+      ? 'All seven classical planets fall within the selected Rahu-Ketu half-axis under this implementation. Kala Sarpa is school-dependent and should not be treated as a universally accepted dosha.'
+      : 'The selected Kala Sarpa half-axis condition is not satisfied under this implementation.',
     mitigatingFactors: [
       'Benefic planets in angles provide relief and counter-balance.',
       'Rahu in Pisces/Sagittarius is spiritually oriented.',
@@ -275,5 +361,19 @@ export function calculateYogasAndDoshas(
     ],
   });
 
-  return { yogas, doshas };
+  const enrichedYogas = yogas.map((y) => ({
+    ...y,
+    interpretationStatus: y.id === 'budhaditya' ? 'qualified' as const : 'structural' as const,
+    schoolDependent: y.id === 'kala_sarpa',
+  }));
+
+  const enrichedDoshas = doshas.map((d) => ({
+    ...d,
+    interpretationStatus: d.id === 'kuja_dosha' || d.id === 'kala_sarpa'
+      ? 'qualified' as const
+      : 'structural' as const,
+    schoolDependent: d.id === 'kuja_dosha' || d.id === 'kala_sarpa',
+  }));
+
+  return { yogas: enrichedYogas, doshas: enrichedDoshas };
 }

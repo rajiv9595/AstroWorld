@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Search, Loader2, Sparkles, Check } from 'lucide-react';
-import { PlaceSuggestion, searchCities } from '../services/geoService.ts';
+import { PlaceSuggestion, resolveTimezoneForCoordinates, searchCities } from '../services/geoService.ts';
 
 interface CityAutocompleteInputProps {
   value: string;
@@ -14,8 +14,8 @@ interface CityAutocompleteInputProps {
     cityName: string;
     latitude: string;
     longitude: string;
-    timezone: string;
-  }) => void;
+    timezone?: string;
+  }) => void | Promise<void>;
   onRawChange?: (val: string) => void;
   placeholder?: string;
   className?: string;
@@ -34,6 +34,7 @@ export const CityAutocompleteInput: React.FC<CityAutocompleteInputProps> = ({
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resolvingTimezone, setResolvingTimezone] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -80,14 +81,22 @@ export const CityAutocompleteInput: React.FC<CityAutocompleteInputProps> = ({
     }, 120);
   };
 
-  const handleSelect = (place: PlaceSuggestion) => {
+  const handleSelect = async (place: PlaceSuggestion) => {
     setInputValue(place.description);
     setIsOpen(false);
-    onSelectPlace({
+
+    let timezone = place.timezone;
+    if (!timezone) {
+      setResolvingTimezone(true);
+      timezone = await resolveTimezoneForCoordinates(place.latitude, place.longitude);
+      setResolvingTimezone(false);
+    }
+
+    await onSelectPlace({
       cityName: place.description,
-      latitude: String(place.latitude.toFixed(4)),
-      longitude: String(place.longitude.toFixed(4)),
-      timezone: place.timezone || 'Asia/Kolkata',
+      latitude: String(place.latitude.toFixed(6)),
+      longitude: String(place.longitude.toFixed(6)),
+      timezone: timezone || '',
     });
   };
 
@@ -111,7 +120,7 @@ export const CityAutocompleteInput: React.FC<CityAutocompleteInputProps> = ({
           }
         />
         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
-          {loading ? (
+          {loading || resolvingTimezone ? (
             <Loader2 size={14} className="animate-spin text-orange-500" />
           ) : (
             <Search size={14} />
@@ -150,7 +159,7 @@ export const CityAutocompleteInput: React.FC<CityAutocompleteInputProps> = ({
                 <div className="text-[10px] text-slate-400 font-mono mt-0.5 flex items-center gap-2">
                   <span>{place.latitude.toFixed(2)}°N, {place.longitude.toFixed(2)}°E</span>
                   <span>&bull;</span>
-                  <span>{place.timezone}</span>
+                  <span>{place.timezone || 'Timezone resolved on selection'}</span>
                 </div>
               </div>
             </button>

@@ -65,14 +65,13 @@ export class ClassicalRAGRetriever {
     const focusDomain = questionPlan?.domain;
     const focusIntent = questionPlan?.intent;
 
-    // Extract active factors from verified EvidencePacket if available
-    const activeYogas = evidencePacket?.derivedFacts
-      ?.filter(f => f.type === 'Yoga')
-      ?.map(f => f.description.toLowerCase()) || [];
-
     const scoredRecords: Array<{ record: KnowledgeRecord; score: number }> = [];
 
     for (const record of this.knowledgeBase) {
+      // Never retrieve unverified classical material into the reasoning path.
+      // A source must be explicitly verified before it can influence claims.
+      if (!record.verified) continue;
+
       // Filter by tradition if requested
       if (traditionFilter && record.metadata.tradition !== traditionFilter && record.metadata.tradition !== 'classical') {
         continue;
@@ -145,8 +144,25 @@ export class ClassicalRAGRetriever {
       }
 
       // 5. Active Yoga Evidence Match
-      for (const yName of activeYogas) {
-        if (meta.yogaSubjects?.some(ys => yName.includes(ys.toLowerCase()))) {
+      // Use stable verified yoga identifiers; descriptive variants must not
+      // activate a classical rule by substring coincidence.
+      const activeYogaKeys = evidencePacket?.derivedFacts
+        ?.filter(f => f.type === 'Yoga' && f.verified)
+        ?.map(f => f.id
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '')
+          .replace(/^yoga/, '')
+          .replace(/yoga$/, ''))
+        || [];
+      for (const yogaSubject of meta.yogaSubjects || []) {
+        const expectedYogaKey = yogaSubject
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '')
+          .replace(/^yoga/, '')
+          .replace(/yoga$/, '');
+        if (activeYogaKeys.includes(expectedYogaKey)) {
           score += 3.0;
         }
       }

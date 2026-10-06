@@ -1,10 +1,12 @@
 /**
  * ASTROWORLD — Chart Persistence Client Service
- * Calls server-side proxy routes (/api/user/charts) for secure persistence
- * in Supabase PostgreSQL, with local cache for instant UI rendering.
+ *
+ * The authenticated user is established exclusively by the server session.
+ * No user id is accepted from the browser as an authorization credential.
  */
 
 import { BirthProfile } from '../engine/types.ts';
+import { authWriteHeaders } from '../lib/supabase.ts';
 
 export interface SavedKundliRecord {
   id: string;
@@ -24,35 +26,37 @@ export interface SavedKundliRecord {
   createdAt: string;
 }
 
-export const fetchUserCharts = async (userId: string): Promise<SavedKundliRecord[]> => {
-  if (!userId) return [];
+async function parseResponse(res: Response): Promise<any> {
+  return res.json().catch(() => null);
+}
 
+export const fetchUserCharts = async (_legacyUserId?: string): Promise<SavedKundliRecord[]> => {
   try {
-    const res = await fetch(`/api/user/charts/${encodeURIComponent(userId)}`);
-    const data = await res.json();
-    if (data.success && Array.isArray(data.charts)) {
-      localStorage.setItem(`astroworld_cached_charts_${userId}`, JSON.stringify(data.charts));
-      return data.charts;
+    const res = await fetch('/api/user/charts', {
+      method: 'GET',
+      credentials: 'include',
+      headers: authWriteHeaders({ Accept: 'application/json' }),
+    });
+
+    const data = await parseResponse(res);
+    if (!res.ok || !data?.success || !Array.isArray(data.charts)) {
+      if (res.status === 401) return [];
+      throw new Error(data?.error || 'Failed to fetch saved charts.');
     }
-  } catch (err) {
-    console.warn('Network fetch charts notice, using cache:', err);
-  }
 
-  try {
-    const local = localStorage.getItem(`astroworld_cached_charts_${userId}`);
-    return local ? JSON.parse(local) : [];
-  } catch {
+    return data.charts;
+  } catch (err) {
+    console.warn('[Charts] Unable to load saved charts:', err);
     return [];
   }
 };
 
 export const saveUserChart = async (
-  userId: string,
+  _legacyUserId: string | undefined,
   profile: BirthProfile,
-  chartStyle: 'NORTH_INDIAN' | 'SOUTH_INDIAN' = 'NORTH_INDIAN'
+  chartStyle: 'NORTH_INDIAN' | 'SOUTH_INDIAN' = 'NORTH_INDIAN',
 ): Promise<SavedKundliRecord> => {
   const payload = {
-    userId,
     chart: {
       name: profile.name,
       year: profile.year,
@@ -69,57 +73,30 @@ export const saveUserChart = async (
     },
   };
 
-  try {
-    const res = await fetch('/api/user/charts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (data.success && data.chart) {
-      const existing = await fetchUserCharts(userId);
-      localStorage.setItem(
-        `astroworld_cached_charts_${userId}`,
-        JSON.stringify([data.chart, ...existing.filter((c) => c.id !== data.chart.id)])
-      );
-      return data.chart;
-    }
-    throw new Error(data.error || 'Failed to save chart');
-  } catch (err: any) {
-    console.warn('Server save chart warning, using local fallback:', err);
-    const localRecord: SavedKundliRecord = {
-      id: `chart_${Date.now()}`,
-      userId,
-      ...payload.chart,
-      createdAt: new Date().toISOString(),
-    };
-    const existing = await fetchUserCharts(userId);
-    localStorage.setItem(
-      `astroworld_cached_charts_${userId}`,
-      JSON.stringify([localRecord, ...existing.filter((c) => c.name !== profile.name)])
-    );
-    return localRecord;
+  const res = await fetch('/api/user/charts', {
+    method: 'POST',
+    credentials: 'include',
+    headers: authWriteHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(payload),
+  });
+
+  const data = await parseResponse(res);
+  if (!res.ok || !data?.success || !data.chart) {
+    throw new Error(data?.error || ('Unable to save chart (HTTP ' + res.status + ').'));
   }
+
+  return data.chart;
 };
 
-export const deleteUserChart = async (userId: string, chartId: string): Promise<boolean> => {
+export const deleteUserChart = async (_legacyUserId: string | undefined, chartId: string): Promise<boolean> => {
   try {
-    const res = await fetch(`/api/user/charts/${encodeURIComponent(userId)}/${encodeURIComponent(chartId)}`, {
+    const res = await fetch('/api/user/charts/' + encodeURIComponent(chartId), {
       method: 'DELETE',
+      credentials: 'include',
+      headers: authWriteHeaders({ Accept: 'application/json' }),
     });
-    const data = await res.json();
-    if (data.success) {
-      const local = localStorage.getItem(`astroworld_cached_charts_${userId}`);
-      if (local) {
-        const list: SavedKundliRecord[] = JSON.parse(local);
-        localStorage.setItem(
-          `astroworld_cached_charts_${userId}`,
-          JSON.stringify(list.filter((c) => c.id !== chartId))
-        );
-      }
-      return true;
-    }
-    return false;
+
+    return res.ok;
   } catch {
     return false;
   }

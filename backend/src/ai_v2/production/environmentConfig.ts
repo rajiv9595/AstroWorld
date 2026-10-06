@@ -34,7 +34,7 @@ export interface EnvironmentConfig {
     enforceHttps: boolean;
     hstsMaxAgeSeconds: number;
     cookieSecure: boolean;
-    cookieSameSite: 'strict' | 'lax';
+    cookieSameSite: 'strict' | 'lax' | 'none';
   };
   gemini: {
     modelName: string;
@@ -111,7 +111,7 @@ export class EnvironmentManager {
             'http://localhost:3000',
           ],
           database: {
-            connectionString: process.env.STAGING_DATABASE_URL || 'postgresql://astroworld_staging_user:staging_secret@staging-db.astroworld.internal:5432/astroworld_staging',
+            connectionString: process.env.STAGING_DATABASE_URL || '',
             schema: 'astroworld_staging',
             maxConnections: 20,
             ssl: true,
@@ -134,7 +134,7 @@ export class EnvironmentManager {
             enforceHttps: true,
             hstsMaxAgeSeconds: 31536000,
             cookieSecure: true,
-            cookieSameSite: 'strict',
+            cookieSameSite: 'none',
           },
           gemini: {
             modelName: 'gemini-3.8-flash',
@@ -152,7 +152,7 @@ export class EnvironmentManager {
             'https://app.astroworld.com',
           ],
           database: {
-            connectionString: process.env.DATABASE_URL || 'postgresql://astroworld_prod_user:prod_secure_pass@prod-db-cluster.astroworld.internal:5432/astroworld_prod',
+            connectionString: process.env.DATABASE_URL || '',
             schema: 'astroworld_production',
             maxConnections: 100,
             ssl: true,
