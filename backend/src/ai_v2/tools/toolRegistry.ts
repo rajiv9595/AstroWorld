@@ -4,6 +4,7 @@
  */
 
 import { ASTROLOGY_TOOL_DEFINITIONS, ToolDefinition } from '../schemas/toolSchemas.ts';
+import { getConfiguredEphemerisSource } from '../../services/ephemeris/providerRuntime.ts';
 import {
   executeGetBirthChart,
   executeGetDivisionalChart,
@@ -19,7 +20,7 @@ import {
   ToolExecutionResult,
 } from './astrologyTools.ts';
 
-type ToolHandler = (args: any) => ToolExecutionResult;
+type ToolHandler = (args: any) => Promise<ToolExecutionResult>;
 
 export class AstrologyToolRegistry {
   private static handlers: Record<string, ToolHandler> = {
@@ -53,7 +54,7 @@ export class AstrologyToolRegistry {
   /**
    * Executes a registered tool securely through the controlled boundary.
    */
-  public static executeTool(toolName: string, args: any): ToolExecutionResult {
+  public static async executeTool(toolName: string, args: any): Promise<ToolExecutionResult> {
     const handler = this.handlers[toolName];
     if (!handler) {
       return {
@@ -70,7 +71,15 @@ export class AstrologyToolRegistry {
     }
 
     try {
-      return handler(args);
+      const result = await handler(args);
+      if (result.success) {
+        const provider = getConfiguredEphemerisSource();
+        result.provenance = {
+          ...result.provenance,
+          sourceEngine: `${result.provenance.sourceEngine} [ephemeris:${provider}]`,
+        };
+      }
+      return result;
     } catch (err: any) {
       return {
         success: false,
