@@ -1,0 +1,29 @@
+name: AstroWorld Phase 12 Independent Lunar Reference
+
+on:
+  push:
+    branches:
+      - astroworld/production-certification-v2
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'shared/**'
+      - '.github/workflows/phase12-independent-lunar.yml'
+
+jobs:
+  phase12-independent-lunar:
+    name: phase12-independent-lunar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Backend build
+        run: npm --workspace=@astroworld/backend run build
+      - name: Phase 12 independent lunar reference
+        run: npm --workspace=@astroworld/backend run test:phase12:independent-lunar
