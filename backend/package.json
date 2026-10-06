@@ -70,7 +70,8 @@
     "astronomy-engine": "^2.1.19",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "@swisseph/node": "1.4.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
