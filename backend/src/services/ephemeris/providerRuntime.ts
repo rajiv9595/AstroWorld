@@ -26,6 +26,10 @@ import type {
 } from '../../../../shared/index.ts';
 import { createSwissEphemerisProvider } from './swissEphemerisAdapter.ts';
 
+let initializedConfiguredProvider: SiderealEphemerisProvider | null = null;
+let initializedConfiguredSource: EphemerisSource | null = null;
+let initializedConfiguredPromise: Promise<SiderealEphemerisProvider> | null = null;
+
 function swissEphemerisProvider(): SiderealEphemerisProvider {
   let delegate: SiderealEphemerisProvider | null = null;
 
@@ -77,12 +81,50 @@ export function getConfiguredEphemerisProvider(): SiderealEphemerisProvider {
  * consumes its temporal planetary and horizon-event primitives. Downstream rule
  * engines continue to consume canonical D1 facts.
  */
+export async function getInitializedConfiguredEphemerisProvider(): Promise<SiderealEphemerisProvider> {
+  const source = getConfiguredEphemerisSource();
+
+  if (
+    initializedConfiguredProvider &&
+    initializedConfiguredSource === source &&
+    !initializedConfiguredPromise
+  ) {
+    return initializedConfiguredProvider;
+  }
+
+  if (
+    initializedConfiguredPromise &&
+    initializedConfiguredSource === source
+  ) {
+    return initializedConfiguredPromise;
+  }
+
+  initializedConfiguredSource = source;
+  initializedConfiguredPromise = (async () => {
+    const provider = getConfiguredEphemerisProvider();
+    if (provider.initialize) await provider.initialize();
+    initializedConfiguredProvider = provider;
+    return provider;
+  })();
+
+  try {
+    return await initializedConfiguredPromise;
+  } finally {
+    initializedConfiguredPromise = null;
+  }
+}
+
+export function resetConfiguredEphemerisProviderCache(): void {
+  initializedConfiguredProvider = null;
+  initializedConfiguredSource = null;
+  initializedConfiguredPromise = null;
+}
+
 export async function computeCanonicalChartWithConfiguredEphemeris(
   profile: BirthProfile,
   evaluationDateUtc: Date = new Date(),
 ) {
-  const provider = getConfiguredEphemerisProvider();
-  if (provider.initialize) await provider.initialize();
+  const provider = await getInitializedConfiguredEphemerisProvider();
   const birthUtcDate = birthProfileToUtcDate(profile);
   let snapshot;
   try {
