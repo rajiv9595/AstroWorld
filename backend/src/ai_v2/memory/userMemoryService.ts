@@ -9,7 +9,8 @@ import {
   MemoryFilterOptions,
   MemoryWriteCandidate,
 } from './persistentMemoryTypes.ts';
-import { IPersistentMemoryRepository, InMemoryPersistentMemoryRepository } from './persistentMemoryRepository.ts';
+import { IPersistentMemoryRepository } from './persistentMemoryRepository.ts';
+import { createDefaultMemoryRepository } from './supabasePersistentMemoryRepository.ts';
 import { MemoryWriteGate } from './memoryWriteGate.ts';
 import { MemoryConsolidator } from './memoryConsolidator.ts';
 import { MemoryCommandResolver } from './memoryCommandResolver.ts';
@@ -22,7 +23,7 @@ export class UserMemoryService {
   private userEnabledMap: Map<string, boolean> = new Map();
 
   constructor(repository?: IPersistentMemoryRepository) {
-    this.repository = repository || new InMemoryPersistentMemoryRepository();
+    this.repository = repository || createDefaultMemoryRepository();
     this.writeGate = new MemoryWriteGate();
     this.consolidator = new MemoryConsolidator(this.repository);
     this.commandResolver = new MemoryCommandResolver(this.repository);
