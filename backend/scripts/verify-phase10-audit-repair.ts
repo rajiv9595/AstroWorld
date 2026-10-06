@@ -1,9 +1,8 @@
 /**
  * ASTROWORLD — Phase 10 Correctness Audit Repair TDD
  *
- * These tests capture regressions discovered during the post-phase10 forensic
- * audit. They intentionally fail against the current phase10 branch before
- * the repair is applied.
+ * These regression contracts capture defects discovered during the post-phase10
+ * forensic audit and protect the repaired behavior against reintroduction.
  */
 
 import { RulePrerequisiteMatcher } from '../src/ai_v2/reasoning/ruleMatcher.ts';
