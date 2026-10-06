@@ -95,7 +95,9 @@ export class AstrologyReasoner {
     );
 
     const ruleLineage = appliedRules.filter(r => r.applicabilityStatus === 'applied').map(r => r.ruleId);
-    const sourceLineage = Array.from(new Set(appliedRules.map(r => r.citation)));
+    const sourceLineage = Array.from(new Set(appliedRules
+      .filter(r => r.applicabilityStatus === 'applied')
+      .map(r => r.citation)));
 
     const executionDurationMs = Date.now() - startTime;
 
@@ -147,7 +149,7 @@ export class AstrologyReasoner {
       verified: true,
     };
 
-    const validation = validateReasoningPacket(reasoningPacket);
+    const validation = validateReasoningPacket(reasoningPacket, evidence);
     if (!validation.valid) {
       throw new Error(`AstrologyReasoner generated invalid ReasoningPacket: ${validation.errors.join('; ')}`);
     }
