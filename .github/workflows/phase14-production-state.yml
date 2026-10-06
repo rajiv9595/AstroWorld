@@ -1,0 +1,35 @@
+name: AstroWorld Phase 14 Production State Certification
+
+on:
+  push:
+    branches:
+      - astroworld/production-certification-v2
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'shared/**'
+      - '.github/workflows/phase14-production-state.yml'
+
+jobs:
+  phase14-production-state:
+    name: phase14-production-state
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Backend build
+        run: npm --workspace=@astroworld/backend run build
+      - name: Durable conversation persistence
+        run: npm --workspace=@astroworld/backend run test:phase14:conversation-persistence
+      - name: Full inherited precision/security
+        run: npm --workspace=@astroworld/backend run test:phase9:all
+      - name: Phase 12 lunar reference
+        run: npm --workspace=@astroworld/backend run test:phase12:independent-lunar
+      - name: Phase 13 evidence/source hardening
+        run: npm --workspace=@astroworld/backend run test:phase13:evidence-source
