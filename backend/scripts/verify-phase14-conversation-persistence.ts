@@ -61,7 +61,9 @@ class FakeRepo extends ConversationPersistenceRepository {
       single: async()=>({data:self.row,error:null}),
       upsert: async(row:any)=>{self.row=row; return {data:row,error:null};},
       insert: async(rows:any)=>{self.messages.push(...(Array.isArray(rows)?rows:[rows]));return {data:rows,error:null};},
-      order(){ return this; },
+      order: async()=> table==='conversation_messages'
+        ? {data:self.messages,error:null}
+        : {data:self.row ? [self.row] : [],error:null},
     };
   }
 
@@ -80,6 +82,17 @@ async function main(){
   assert(loaded?.state.stateVersion===2,'Persisted state version must round-trip.');
   assert(loaded?.turns.length===1,'Persisted turn history must round-trip.');
   assert(loaded?.turns[0].turnId==='turn_1','Persisted turn identity must round-trip.');
+
+  // The repository must surface a conflict when a stale state version is saved.
+  let conflict = false;
+  try {
+    const staleState = {...state, stateVersion: 5, updatedAtIso:'2026-10-06T00:02:00.000Z'};
+    await repo.save('user1', staleState);
+  } catch {
+    conflict = true;
+  }
+  assert(conflict, 'Stale conversation state versions must fail closed.');
+
   console.log('PHASE 14 CONVERSATION PERSISTENCE TDD: PASS');
 }
 main().catch(e=>{console.error('PHASE 14 CONVERSATION PERSISTENCE TDD: FAIL');console.error(e);process.exitCode=1;});
