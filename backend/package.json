@@ -59,7 +59,8 @@
     "test:phase9:config": "tsx scripts/verify-phase9-config-contract.ts",
     "test:phase9:provider": "tsx scripts/verify-phase9-provider-contract.ts",
     "test:phase10:calculation-truth": "tsx scripts/verify-phase10-calculation-truth.ts",
-    "test:phase10:source-integrity": "tsx scripts/verify-phase10-classical-source-integrity.ts"
+    "test:phase10:source-integrity": "tsx scripts/verify-phase10-classical-source-integrity.ts",
+    "test:phase10:audit-repair": "tsx scripts/verify-phase10-audit-repair.ts"
   },
   "dependencies": {
     "@astroworld/shared": "*",
