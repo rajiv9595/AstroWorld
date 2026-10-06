@@ -73,11 +73,11 @@ async function main() {
       Saturn: 'Libra',
     };
     for (const [planetName, expectedSign] of Object.entries(d9Expected)) {
-      const d9 = canonical.vargas.D9?.find((p: any) => p.name === planetName);
+      const d9 = canonical.vargas.D9?.planets.find((p: any) => p.planet === planetName);
       assert(
         `D9 ${planetName}`,
-        Boolean(d9 && d9.sign === expectedSign),
-        `Expected ${expectedSign}, got ${d9?.sign}`
+        Boolean(d9 && d9.vargaSign === expectedSign),
+        `Expected ${expectedSign}, got ${d9?.vargaSign}`
       );
     }
 
@@ -92,11 +92,11 @@ async function main() {
       Saturn: 'Gemini',
     };
     for (const [planetName, expectedSign] of Object.entries(d10Expected)) {
-      const d10 = canonical.vargas.D10?.find((p: any) => p.name === planetName);
+      const d10 = canonical.vargas.D10?.planets.find((p: any) => p.planet === planetName);
       assert(
         `D10 ${planetName}`,
-        Boolean(d10 && d10.sign === expectedSign),
-        `Expected ${expectedSign}, got ${d10?.sign}`
+        Boolean(d10 && d10.vargaSign === expectedSign),
+        `Expected ${expectedSign}, got ${d10?.vargaSign}`
       );
     }
 

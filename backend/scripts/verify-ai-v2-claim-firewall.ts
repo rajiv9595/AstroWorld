@@ -420,6 +420,18 @@ async function runPhase3CSuite() {
         interpretationSummary: 'BPHS foundational governance.',
       },
       {
+        ruleId: 'bphs_rule_24',
+        sourceId: 'bphs_ch24',
+        sourceText: 'BPHS Ch 24 Rule',
+        citation: 'BPHS Ch. 24',
+        tradition: 'parashari' as const,
+        ruleType: 'placement' as const,
+        applicabilityStatus: 'applied' as const,
+        satisfiedPrerequisites: ['Verified'],
+        evidenceIds: ['fact_saturn_1'],
+        interpretationSummary: 'BPHS Ch 24 governance.',
+      },
+      {
         ruleId: 'phala_rule_1',
         sourceId: 'phala_ch26',
         sourceText: 'Phala Rule 1',
