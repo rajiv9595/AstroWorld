@@ -15,6 +15,16 @@ import {
 } from '../schemas/reasoningPacket.ts';
 
 export class ConfluenceEngine {
+  private deterministicWindowId(
+    prefix: string,
+    parts: Array<string | number | undefined>,
+  ): string {
+    return `win_${prefix}_${parts
+      .filter((part): part is string | number => part !== undefined)
+      .map(part => String(part).replace(/[^a-zA-Z0-9]+/g, '_'))
+      .join('_')}`;
+  }
+
   /**
    * Evaluates astrological confluence across independent chart layers.
    */
@@ -60,14 +70,6 @@ export class ConfluenceEngine {
       if (toolLayer === layer) return true;
       return layer === 'D1' && factor.sourceTool.toLowerCase().includes('planet');
     });
-
-    const deterministicWindowId = (
-      prefix: string,
-      parts: Array<string | number | undefined>,
-    ): string => `win_${prefix}_${parts
-      .filter((part): part is string | number => part !== undefined)
-      .map(part => String(part).replace(/[^a-zA-Z0-9]+/g, '_'))
-      .join('_')}`;
 
     const pushLayer = (
       layer: ConfluenceItem['layer'],
@@ -257,7 +259,7 @@ export class ConfluenceEngine {
           const dashaLord = h.mahadasha.lord;
           const subLord = h.antardasha.subLord || h.antardasha.lord;
           windows.push({
-            id: deterministicWindowId('dasha', [dashaLord, subLord, startDateIso, endDateIso]),
+            id: this.deterministicWindowId('dasha', [dashaLord, subLord, startDateIso, endDateIso]),
             label: `Vimshottari Dasha Window (${dashaLord} - ${subLord})`,
             startDateIso,
             endDateIso,
