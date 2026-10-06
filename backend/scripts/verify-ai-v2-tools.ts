@@ -55,7 +55,7 @@ async function main() {
   );
 
   // 1b. Test get_all_divisional_charts
-  const resAllVargas = AstrologyToolRegistry.executeTool('get_all_divisional_charts', { birthProfile: GOLDEN_PROFILE });
+  const resAllVargas = await AstrologyToolRegistry.executeTool('get_all_divisional_charts', { birthProfile: GOLDEN_PROFILE });
   assert(
     'Tool 1b: get_all_divisional_charts',
     resAllVargas.success && resAllVargas.data?.count === 16,
@@ -63,7 +63,7 @@ async function main() {
   );
 
   // 2. Test get_birth_chart
-  const res1 = AstrologyToolRegistry.executeTool('get_birth_chart', { birthProfile: GOLDEN_PROFILE });
+  const res1 = await AstrologyToolRegistry.executeTool('get_birth_chart', { birthProfile: GOLDEN_PROFILE });
   assert(
     'Tool 1: get_birth_chart',
     res1.success &&
@@ -74,7 +74,7 @@ async function main() {
   );
 
   // 3. Test get_divisional_chart (D9 Navamsha)
-  const res2 = AstrologyToolRegistry.executeTool('get_divisional_chart', {
+  const res2 = await AstrologyToolRegistry.executeTool('get_divisional_chart', {
     birthProfile: GOLDEN_PROFILE,
     vargaCode: 'D9',
   });
@@ -85,7 +85,7 @@ async function main() {
   );
 
   // 4. Test get_divisional_chart (D10 Dashamsha)
-  const res2b = AstrologyToolRegistry.executeTool('get_divisional_chart', {
+  const res2b = await AstrologyToolRegistry.executeTool('get_divisional_chart', {
     birthProfile: GOLDEN_PROFILE,
     vargaCode: 'D10',
   });
@@ -96,7 +96,7 @@ async function main() {
   );
 
   // 5. Test get_current_dasha
-  const res3 = AstrologyToolRegistry.executeTool('get_current_dasha', { birthProfile: GOLDEN_PROFILE });
+  const res3 = await AstrologyToolRegistry.executeTool('get_current_dasha', { birthProfile: GOLDEN_PROFILE });
   assert(
     'Tool 3: get_current_dasha',
     res3.success &&
@@ -106,7 +106,7 @@ async function main() {
   );
 
   // 6. Test get_dasha_at (Target Date: 2028-01-01)
-  const res4 = AstrologyToolRegistry.executeTool('get_dasha_at', {
+  const res4 = await AstrologyToolRegistry.executeTool('get_dasha_at', {
     birthProfile: GOLDEN_PROFILE,
     targetDateIso: '2028-01-01T00:00:00Z',
   });
@@ -117,7 +117,7 @@ async function main() {
   );
 
   // 7. Test get_transits
-  const res5 = AstrologyToolRegistry.executeTool('get_transits', { birthProfile: GOLDEN_PROFILE });
+  const res5 = await AstrologyToolRegistry.executeTool('get_transits', { birthProfile: GOLDEN_PROFILE });
   assert(
     'Tool 5: get_transits',
     res5.success && Array.isArray(res5.data?.planets) && res5.data?.planets.length === 9 && Boolean(res5.data?.sadeSati),
@@ -125,7 +125,7 @@ async function main() {
   );
 
   // 8. Test get_active_yogas
-  const res6 = AstrologyToolRegistry.executeTool('get_active_yogas', { birthProfile: GOLDEN_PROFILE });
+  const res6 = await AstrologyToolRegistry.executeTool('get_active_yogas', { birthProfile: GOLDEN_PROFILE });
   assert(
     'Tool 6: get_active_yogas',
     res6.success && Array.isArray(res6.data?.yogas) && res6.data?.activeYogasCount > 0,
@@ -133,7 +133,7 @@ async function main() {
   );
 
   // 9. Test get_planetary_strength (Shadbala)
-  const res7 = AstrologyToolRegistry.executeTool('get_planetary_strength', { birthProfile: GOLDEN_PROFILE });
+  const res7 = await AstrologyToolRegistry.executeTool('get_planetary_strength', { birthProfile: GOLDEN_PROFILE });
   assert(
     'Tool 7: get_planetary_strength',
     res7.success && Array.isArray(res7.data?.shadbala) && res7.data?.shadbala.length === 7,
@@ -141,7 +141,7 @@ async function main() {
   );
 
   // 10. Test get_ashtakavarga
-  const res8 = AstrologyToolRegistry.executeTool('get_ashtakavarga', { birthProfile: GOLDEN_PROFILE });
+  const res8 = await AstrologyToolRegistry.executeTool('get_ashtakavarga', { birthProfile: GOLDEN_PROFILE });
   assert(
     'Tool 8: get_ashtakavarga',
     res8.success && res8.data?.sarvashtakavargaTotal === 337 && res8.data?.sav?.length === 12,
@@ -149,7 +149,7 @@ async function main() {
   );
 
   // 11. Test get_jaimini_details
-  const res9 = AstrologyToolRegistry.executeTool('get_jaimini_details', { birthProfile: GOLDEN_PROFILE });
+  const res9 = await AstrologyToolRegistry.executeTool('get_jaimini_details', { birthProfile: GOLDEN_PROFILE });
   assert(
     'Tool 9: get_jaimini_details',
     res9.success && res9.data?.atmakaraka === 'Jupiter' && res9.data?.karakamsaNavamshaSign === 'Cancer',
@@ -157,7 +157,7 @@ async function main() {
   );
 
   // 12. Test get_panchanga
-  const res10 = AstrologyToolRegistry.executeTool('get_panchanga', { birthProfile: GOLDEN_PROFILE });
+  const res10 = await AstrologyToolRegistry.executeTool('get_panchanga', { birthProfile: GOLDEN_PROFILE });
   assert(
     'Tool 10: get_panchanga',
     res10.success && Boolean(res10.data?.tithi) && Boolean(res10.data?.nakshatra),
@@ -165,7 +165,7 @@ async function main() {
   );
 
   // 13. Test Validation: Missing Fields
-  const resMissing = AstrologyToolRegistry.executeTool('get_birth_chart', { birthProfile: { year: 2000 } });
+  const resMissing = await AstrologyToolRegistry.executeTool('get_birth_chart', { birthProfile: { year: 2000 } });
   assert(
     'Validation: Missing Fields Rejected',
     resMissing.success === false && Boolean(resMissing.error) && resMissing.provenance.verified === false,
@@ -173,7 +173,7 @@ async function main() {
   );
 
   // 14. Test Validation: Out of Range Coordinates
-  const resCoords = AstrologyToolRegistry.executeTool('get_birth_chart', {
+  const resCoords = await AstrologyToolRegistry.executeTool('get_birth_chart', {
     birthProfile: { ...GOLDEN_PROFILE, latitude: 120 },
   });
   assert(
@@ -183,7 +183,7 @@ async function main() {
   );
 
   // 15. Test Validation: Invalid Varga Code
-  const resBadVarga = AstrologyToolRegistry.executeTool('get_divisional_chart', {
+  const resBadVarga = await AstrologyToolRegistry.executeTool('get_divisional_chart', {
     birthProfile: GOLDEN_PROFILE,
     vargaCode: 'D99_INVALID',
   });
@@ -194,7 +194,7 @@ async function main() {
   );
 
   // 16. Test Validation: Unregistered Tool Dispatch
-  const resUnregistered = AstrologyToolRegistry.executeTool('non_existent_tool', {});
+  const resUnregistered = await AstrologyToolRegistry.executeTool('non_existent_tool', {});
   assert(
     'Validation: Unregistered Tool Rejected',
     resUnregistered.success === false && Boolean(resUnregistered.error?.includes('not registered')),
