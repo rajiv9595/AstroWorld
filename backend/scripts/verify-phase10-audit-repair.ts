@@ -217,12 +217,12 @@ function run() {
   ] as any;
   const layered = confluence.evaluateConfluence(basePlan(), avEvidence, avFactors, []);
   assert(
-    layered.layers.some((l: any) => l.layer === 'Ashtakavarga'),
-    'Ashtakavarga evidence must produce an explicit Ashtakavarga confluence layer.',
+    layered.layers.some((l: any) => l.layer === 'Ashtakavarga' && l.alignment === 'neutral'),
+    'Ashtakavarga evidence is retained as explicit neutral context until an outcome-specific interpretation is proven.',
   );
   assert(
-    layered.layers.some((l: any) => l.layer === 'Jaimini'),
-    'Jaimini evidence must produce an explicit Jaimini confluence layer.',
+    layered.layers.some((l: any) => l.layer === 'Jaimini' && l.alignment === 'neutral'),
+    'Jaimini evidence is retained as explicit neutral context until an outcome-specific interpretation is proven.',
   );
 
   // 7. RAG yoga matching uses stable identifiers, not loose substring matching.
