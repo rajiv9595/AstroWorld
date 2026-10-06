@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - astroworld/phase10-astrology-correctness
+      - astroworld/phase10-correctness-audit-repair
   pull_request:
     branches:
       - main
@@ -41,3 +42,6 @@ jobs:
 
       - name: Phase 9 + precision regression
         run: npm --workspace=@astroworld/backend run test:phase9:all
+
+      - name: Phase 10 audit-repair regression
+        run: npm --workspace=@astroworld/backend run test:phase10:audit-repair
