@@ -1,132 +1,3 @@
-/**
- * ASTROWORLD AI V2 — Astrology Reasoning Engine
- * Synthesizes QuestionPlan, verified EvidencePacket, and Classical RAG results into a structured ReasoningPacket.
- * Enforces strict boundaries:
- * - Engine facts are immutable.
- * - Rules apply only when preconditions are verified.
- * - Supporting, restricting, and conflicting factors remain distinct.
- * - Temporal windows use verified dates only.
- * - Missing evidence produces 'insufficient_evidence' rather than speculative guesses.
- */
-
-import { QuestionPlan } from '../schemas/questionPlan.ts';
-import { EvidencePacket, FactItem, DerivedFactItem } from '../schemas/evidencePacket.ts';
-import { RAGRetrievalResponse } from '../schemas/knowledgeRecord.ts';
-import {
-  ReasoningPacket,
-  ClassifiedFactor,
-  InterpretationDirection,
-  InterpretationStrength,
-  FactorRole,
-  FactorRelevance,
-  validateReasoningPacket,
-} from '../schemas/reasoningPacket.ts';
-import { RulePrerequisiteMatcher } from './ruleMatcher.ts';
-import { ConfluenceEngine } from './confluenceEngine.ts';
-
-export class AstrologyReasoner {
-  private ruleMatcher: RulePrerequisiteMatcher;
-  private confluenceEngine: ConfluenceEngine;
-
-  constructor() {
-    this.ruleMatcher = new RulePrerequisiteMatcher();
-    this.confluenceEngine = new ConfluenceEngine();
-  }
-
-  /**
-   * Synthesizes inputs into an immutable, verifiable ReasoningPacket.
-   */
-  public reason(
-    plan: QuestionPlan,
-    evidence: EvidencePacket,
-    ragResponse: RAGRetrievalResponse
-  ): ReasoningPacket {
-    const startTime = Date.now();
-
-    // 1. Handle Ambiguous or Insufficient Evidence Pre-condition
-    if (
-      plan.clarificationRequired ||
-      !evidence.verified ||
-      (evidence.facts.length === 0 && evidence.derivedFacts.length === 0)
-    ) {
-      return this.buildInsufficientEvidencePacket(plan, evidence, startTime);
-    }
-
-    // 2. Classify Evidence Factors according to QuestionPlan domain and intent
-    const { primaryFactors, supportingFactors, restrictingFactors, conflictingFactors, irrelevantFactors } =
-      this.classifyFactors(plan, evidence);
-
-    // 3. Match Classical Rules with Prerequisites
-    const { appliedRules, appliedCount, rejectedCount } = this.ruleMatcher.evaluateRules(
-      ragResponse.results,
-      evidence
-    );
-
-    // 4. Evaluate Astrological Confluence
-    const confluence = this.confluenceEngine.evaluateConfluence(
-      plan,
-      evidence,
-      primaryFactors,
-      restrictingFactors
-    );
-
-    // 5. Build Verified Temporal Windows
-    const temporalWindows = this.confluenceEngine.buildTemporalWindows(plan, evidence);
-
-    // 6. Determine Synthesis Direction and Strength
-    const { direction, strength, coverageStatus, confidence } = this.determineDirectionAndStrength(
-      plan,
-      primaryFactors,
-      supportingFactors,
-      restrictingFactors,
-      conflictingFactors,
-      appliedCount,
-      confluence
-    );
-
-    // 7. Compile Verified Lineage
-    const evidenceLineage = Array.from(
-      new Set([
-        ...primaryFactors.map(f => f.evidenceId),
-        ...supportingFactors.map(f => f.evidenceId),
-        ...restrictingFactors.map(f => f.evidenceId),
-        ...appliedRules.flatMap(r => r.evidenceIds),
-      ])
-    );
-
-    const ruleLineage = appliedRules.filter(r => r.applicabilityStatus === 'applied').map(r => r.ruleId);
-    const sourceLineage = Array.from(new Set(appliedRules.map(r => r.citation)));
-
-    const executionDurationMs = Date.now() - startTime;
-
-    // 8. Assemble Machine-Readable Reasoning Audit Trace
-    const auditTrace = {
-      questionId: plan.questionId,
-      intent: plan.intent,
-      domain: plan.domain,
-      requiredFactsCount: plan.chartLayers.length + (plan.planetFocus.length || 1),
-      verifiedFactsCount: evidence.facts.length,
-      applicableRulesCount: appliedCount,
-      rejectedRulesCount: rejectedCount,
-      supportingFactorsCount: primaryFactors.length + supportingFactors.length,
-      restrictingFactorsCount: restrictingFactors.length,
-      conflictingFactorsCount: conflictingFactors.length,
-      hasTemporalConfluence: temporalWindows.length > 0,
-      stepSequence: [
-        '1. Validate QuestionPlan & EvidencePacket',
-        '2. Filter and rank domain-specific factors',
-        '3. Evaluate classical rule preconditions',
-        '4. Calculate multi-layer chart confluence',
-        '5. Construct verified temporal windows',
-        '6. Synthesize direction and strength',
-      ],
-      executionDurationMs,
-    };
-
-    const reasoningPacket: ReasoningPacket = {
-      questionId: plan.questionId,
-      direction,
-      strength,
       primaryFactors,
       supportingFactors,
       restrictingFactors,
@@ -271,36 +142,71 @@ export class AstrologyReasoner {
       }
     }
 
-    // Explicit verification for inquired yogas (e.g. Gajakesari Yoga)
+    // Explicit verification for inquired yogas (e.g. Gajakesari Yoga).
+    // Absence is only asserted when the verified yoga tool actually ran and
+    // returned a complete deterministic yoga list. Missing derived data alone
+    // is not proof that a yoga is absent.
     const userQ = plan.rawQuestion.toLowerCase();
     if (userQ.includes('gajakesari')) {
-      const hasGajakesari = evidence.derivedFacts.some(d => d.id.toLowerCase().includes('gajakesari'));
-      if (!hasGajakesari) {
-        const moonFact = evidence.facts.find(f => f.entity.toLowerCase() === 'moon');
-        const jupiterFact = evidence.facts.find(f => f.entity.toLowerCase() === 'jupiter');
-        const moonHouse = moonFact?.house;
-        const jupiterHouse = jupiterFact?.house;
-        const relativeHouse = moonHouse && jupiterHouse
-          ? ((jupiterHouse - moonHouse + 12) % 12) + 1
-          : undefined;
+      const normalizeYogaKey = (value: string) => value
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '')
+        .replace(/^yoga/, '')
+        .replace(/yoga$/, '');
 
-        const absenceDescription =
-          moonHouse && jupiterHouse
-            ? `Not present in chart: Jupiter is ${relativeHouse}th from Moon by whole-sign house distance (Moon house ${moonHouse}, Jupiter house ${jupiterHouse}); this is outside the 1st/4th/7th/10th Kendra relationship.`
-            : 'Not present in chart under the deterministic Gajakesari prerequisite evaluator; Moon/Jupiter relationship evidence was incomplete.';
+      const existingVerifiedGaja = evidence.derivedFacts.some(
+        d => d.type === 'Yoga' &&
+          d.verified &&
+          normalizeYogaKey(d.id) === 'gajakesari',
+      );
 
-        primaryFactors.push({
-          id: 'yoga_gajakesari_absence',
-          entity: 'Gajakesari Yoga',
-          property: 'presence',
-          value: absenceDescription,
-          role: 'primary',
-          relevance: 'high',
-          rationale: 'Inquired yoga verified absent from chart under classical Parashari principles',
-          sourceTool: 'get_active_yogas',
-          evidenceId: moonFact?.id || jupiterFact?.id || 'evidence_gajakesari_absent',
-          weight: 1.0,
-        });
+      const yogaToolResult = evidence.toolResults.find(
+        r => r.toolName === 'get_active_yogas' &&
+          r.success &&
+          r.provenance?.verified &&
+          Array.isArray(r.data?.yogas ?? r.data?.activeYogas),
+      );
+
+      if (!existingVerifiedGaja && yogaToolResult) {
+        const yogaResults = (yogaToolResult.data?.yogas ?? yogaToolResult.data?.activeYogas) as any[];
+        const yogaHasGaja = yogaResults.some(
+          y => normalizeYogaKey(String(y?.id || y?.name || '')) === 'gajakesari',
+        );
+
+        if (!yogaHasGaja) {
+          const moonFact = evidence.facts.find(
+            f => f.entity.trim().toLowerCase() === 'moon' &&
+              f.category === 'natal',
+          );
+          const jupiterFact = evidence.facts.find(
+            f => f.entity.trim().toLowerCase() === 'jupiter' &&
+              f.category === 'natal',
+          );
+          const moonHouse = moonFact?.house;
+          const jupiterHouse = jupiterFact?.house;
+          const relativeHouse = moonHouse !== undefined && jupiterHouse !== undefined
+            ? ((jupiterHouse - moonHouse + 12) % 12) + 1
+            : undefined;
+
+          const absenceDescription =
+            relativeHouse !== undefined
+              ? `Not present in chart: Jupiter is ${relativeHouse}th from Moon by whole-sign house distance; the verified yoga engine returned no Gajakesari formation.`
+              : 'Not present in chart: the verified yoga engine returned no Gajakesari formation.';
+
+          primaryFactors.push({
+            id: 'yoga_gajakesari_absence',
+            entity: 'Gajakesari Yoga',
+            property: 'presence',
+            value: absenceDescription,
+            role: 'primary',
+            relevance: 'high',
+            rationale: 'Verified yoga engine explicitly returned no qualifying Gajakesari formation',
+            sourceTool: 'get_active_yogas',
+            evidenceId: yogaToolResult.toolName,
+            weight: 1.0,
+          });
+        }
       }
     }
 
@@ -338,137 +244,3 @@ export class AstrologyReasoner {
       id: `factor_${fact.id}`,
       entity: fact.entity,
       property: fact.property,
-      value: fact.value,
-      role,
-      relevance,
-      rationale,
-      sourceTool: fact.sourceTool,
-      evidenceId: fact.id,
-      weight: Number((roleWeight[role] * relevanceWeight[relevance]).toFixed(3)),
-    };
-  }
-
-  /**
-   * Determines direction, strength, coverage status, and confidence.
-   */
-  private determineDirectionAndStrength(
-    plan: QuestionPlan,
-    primaryFactors: ClassifiedFactor[],
-    supportingFactors: ClassifiedFactor[],
-    restrictingFactors: ClassifiedFactor[],
-    conflictingFactors: ClassifiedFactor[],
-    appliedRulesCount: number,
-    confluence: any
-  ): {
-    direction: InterpretationDirection;
-    strength: InterpretationStrength;
-    coverageStatus: 'complete' | 'partial' | 'insufficient_evidence';
-    confidence: 'high' | 'medium' | 'low';
-  } {
-    const supportScore = [...primaryFactors, ...supportingFactors]
-      .reduce((sum, factor) => sum + (factor.weight ?? 0), 0);
-    const restrictingScore = restrictingFactors
-      .reduce((sum, factor) => sum + (factor.weight ?? 0), 0);
-    const conflictingScore = conflictingFactors
-      .reduce((sum, factor) => sum + (factor.weight ?? 0), 0);
-
-    // A factor count is not evidence of strength. A hundred background facts
-    // must not outweigh two directly relevant, independently verified factors.
-    const dominant = Math.max(supportScore, restrictingScore, conflictingScore);
-    const margin = supportScore - restrictingScore;
-    let direction: InterpretationDirection = 'neutral';
-    let strength: InterpretationStrength = 'weak';
-    let confidence: 'high' | 'medium' | 'low' = 'low';
-
-    if (dominant === 0) {
-      direction = 'neutral';
-      strength = 'inconclusive';
-      confidence = 'low';
-    } else if (supportScore > 0 && restrictingScore > 0 && Math.abs(margin) < 0.75) {
-      direction = 'mixed';
-      strength = 'moderate';
-      confidence = 'medium';
-    } else if (supportScore > restrictingScore && supportScore >= 1.25) {
-      direction = 'supportive';
-      strength = confluence.confluenceStrength === 'strong' ? 'strong' : supportScore >= 2.5 ? 'moderate' : 'weak';
-      confidence = supportScore >= 2.5 && restrictingScore < 0.75 ? 'high' : 'medium';
-    } else if (restrictingScore > supportScore && restrictingScore >= 1.25) {
-      direction = 'challenging';
-      strength = restrictingScore >= 2.5 ? 'moderate' : 'weak';
-      confidence = restrictingScore >= 2.5 && supportScore < 0.75 ? 'high' : 'medium';
-    } else if (supportScore > 0 || restrictingScore > 0) {
-      direction = margin > 0 ? 'supportive' : 'challenging';
-      strength = 'weak';
-      confidence = 'low';
-    } else {
-      direction = conflictingScore > 0 ? 'mixed' : 'neutral';
-      strength = 'inconclusive';
-      confidence = 'low';
-    }
-
-    const relevantFactorCount = [...primaryFactors, ...supportingFactors, ...restrictingFactors]
-      .filter(f => (f.weight ?? 0) > 0)
-      .length;
-    const coverageStatus =
-      appliedRulesCount >= 1 && relevantFactorCount >= 2 && confluence.convergingLayersCount >= 1
-        ? 'complete'
-        : 'partial';
-
-    return {
-      direction,
-      strength,
-      coverageStatus,
-      confidence,
-    };
-  }
-
-  private buildInsufficientEvidencePacket(
-    plan: QuestionPlan,
-    evidence: EvidencePacket,
-    startTime: number
-  ): ReasoningPacket {
-    return {
-      questionId: plan.questionId,
-      direction: 'insufficient_evidence',
-      strength: 'inconclusive',
-      primaryFactors: [],
-      supportingFactors: [],
-      restrictingFactors: [],
-      conflictingFactors: [],
-      irrelevantFactors: [],
-      appliedRules: [],
-      confluence: {
-        hasConfluence: false,
-        confluenceStrength: 'inconclusive',
-        convergingLayersCount: 0,
-        layers: [],
-        confluenceSummary: 'Insufficient evidence or ambiguous query halted reasoning synthesis.',
-      },
-      temporalWindows: [],
-      unresolvedQuestions: plan.ambiguities || ['User query requires clarification.'],
-      evidenceLineage: [],
-      ruleLineage: [],
-      sourceLineage: [],
-      coverageStatus: 'insufficient_evidence',
-      confidence: 'low',
-      auditTrace: {
-        questionId: plan.questionId,
-        intent: plan.intent,
-        domain: plan.domain,
-        requiredFactsCount: 0,
-        verifiedFactsCount: 0,
-        applicableRulesCount: 0,
-        rejectedRulesCount: 0,
-        supportingFactorsCount: 0,
-        restrictingFactorsCount: 0,
-        conflictingFactorsCount: 0,
-        hasTemporalConfluence: false,
-        stepSequence: ['Ambiguity/insufficient evidence gate triggered.'],
-        executionDurationMs: Date.now() - startTime,
-      },
-      version: 'ai-v2-reasoning-1',
-      createdAtIso: new Date().toISOString(),
-      verified: true,
-    };
-  }
-}
