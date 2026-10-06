@@ -496,6 +496,16 @@ async function main(): Promise<void> {
           { latitude: vector.latitude, longitude: vector.longitude },
         );
         if (!astronomyActual) throw new Error('Astronomy Engine provider returned null.');
+
+        if (vector.label.startsWith('Sydney')) {
+          const hours = (astronomyActual.getTime() - start.getTime()) / 3600000;
+          if (hours < 24) {
+            throw new Error(
+              vector.label + ': Sydney next-event regression expected >24h after the UTC anchor; got ' +
+              hours.toFixed(3) + 'h',
+            );
+          }
+        }
         const astronomyDelta = assertClose(vector.label + ' Astronomy vs independent', astronomyActual, vector.expectedUtc, 120);
         maxAstronomyDelta = Math.max(maxAstronomyDelta, astronomyDelta);
 
