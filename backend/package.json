@@ -61,7 +61,8 @@
     "test:phase10:calculation-truth": "tsx scripts/verify-phase10-calculation-truth.ts",
     "test:phase10:source-integrity": "tsx scripts/verify-phase10-classical-source-integrity.ts",
     "test:phase10:audit-repair": "tsx scripts/verify-phase10-audit-repair.ts",
-    "test:phase11:provider-convergence": "tsx scripts/verify-phase11-provider-convergence.ts"
+    "test:phase11:provider-convergence": "tsx scripts/verify-phase11-provider-convergence.ts",
+    "test:phase12:independent-lunar": "tsx scripts/verify-phase12-independent-lunar-reference.ts"
   },
   "dependencies": {
     "@astroworld/shared": "*",
