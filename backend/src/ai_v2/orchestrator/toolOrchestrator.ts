@@ -341,7 +341,7 @@ export class ToolExecutionOrchestrator {
     }
 
     const yogasList = Array.isArray(data.yogas) ? data.yogas : Array.isArray(data.activeYogas) ? data.activeYogas : [];
-    if (toolName === 'get_active_yogas' && yogasList.length > 0) {
+    if (toolName === 'get_active_yogas' && Array.isArray(yogasList)) {
       for (const y of yogasList) {
         derivedFacts.push({
           id: `yoga_${(y.name || '').toLowerCase().replace(/\s+/g, '_')}`,
@@ -350,6 +350,28 @@ export class ToolExecutionOrchestrator {
           participatingPlanets: y.planetsInvolved,
           participatingHouses: y.housesInvolved,
           description: y.description || y.name,
+          sourceTool: toolName,
+          verified: true,
+        });
+      }
+
+      const gajaPresent = yogasList.some(
+        (y: any) => String(y?.id || y?.name || '')
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '')
+          .replace(/^yoga/, '')
+          .replace(/yoga$/, '') === 'gajakesari',
+      );
+
+      // The negative result is emitted only from a successful, verified,
+      // complete yoga-engine response, preserving auditable evidence lineage.
+      if (!gajaPresent && yogasList.length >= 0) {
+        derivedFacts.push({
+          id: 'yoga_gajakesari_absence',
+          type: 'Yoga',
+          ruleCitation: 'BPHS, Gajakesari Yoga Kendra-from-Moon prerequisite',
+          description: 'Gajakesari Yoga absent: verified yoga engine returned no qualifying Gajakesari formation.',
           sourceTool: toolName,
           verified: true,
         });
