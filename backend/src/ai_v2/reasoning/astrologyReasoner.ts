@@ -271,39 +271,6 @@ export class AstrologyReasoner {
       }
     }
 
-    // Explicit verification for inquired yogas (e.g. Gajakesari Yoga)
-    const userQ = plan.rawQuestion.toLowerCase();
-    if (userQ.includes('gajakesari')) {
-      const hasGajakesari = evidence.derivedFacts.some(d => d.id.toLowerCase().includes('gajakesari'));
-      if (!hasGajakesari) {
-        const moonFact = evidence.facts.find(f => f.entity.toLowerCase() === 'moon');
-        const jupiterFact = evidence.facts.find(f => f.entity.toLowerCase() === 'jupiter');
-        const moonHouse = moonFact?.house;
-        const jupiterHouse = jupiterFact?.house;
-        const relativeHouse = moonHouse && jupiterHouse
-          ? ((jupiterHouse - moonHouse + 12) % 12) + 1
-          : undefined;
-
-        const absenceDescription =
-          moonHouse && jupiterHouse
-            ? `Not present in chart: Jupiter is ${relativeHouse}th from Moon by whole-sign house distance (Moon house ${moonHouse}, Jupiter house ${jupiterHouse}); this is outside the 1st/4th/7th/10th Kendra relationship.`
-            : 'Not present in chart under the deterministic Gajakesari prerequisite evaluator; Moon/Jupiter relationship evidence was incomplete.';
-
-        primaryFactors.push({
-          id: 'yoga_gajakesari_absence',
-          entity: 'Gajakesari Yoga',
-          property: 'presence',
-          value: absenceDescription,
-          role: 'primary',
-          relevance: 'high',
-          rationale: 'Inquired yoga verified absent from chart under classical Parashari principles',
-          sourceTool: 'get_active_yogas',
-          evidenceId: moonFact?.id || jupiterFact?.id || 'evidence_gajakesari_absent',
-          weight: 1.0,
-        });
-      }
-    }
-
     return {
       primaryFactors,
       supportingFactors,
