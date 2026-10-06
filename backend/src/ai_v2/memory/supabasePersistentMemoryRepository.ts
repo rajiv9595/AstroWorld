@@ -9,6 +9,7 @@
 import { supabase as defaultSupabase, isSupabaseConfigured } from '../../services/supabaseService.ts';
 import {
   IPersistentMemoryRepository,
+  InMemoryPersistentMemoryRepository,
 } from './persistentMemoryRepository.ts';
 import {
   PersistentMemory,
@@ -269,13 +270,5 @@ export function createDefaultMemoryRepository(
 ): IPersistentMemoryRepository {
   return isSupabaseConfigured
     ? new SupabasePersistentMemoryRepository(client)
-    : new (requireInMemoryRepository())();
-}
-
-// Avoid a static constructor cycle in the factory while retaining browser-safe imports.
-function requireInMemoryRepository(): typeof import('./persistentMemoryRepository.ts').InMemoryPersistentMemoryRepository {
-  // The synchronous module reference is safe in Node ESM because this function
-  // executes only after the module has loaded.
-  return (globalThis as any).__ASTROWORLD_INMEMORY_MEMORY_REPOSITORY__ ||
-    ((globalThis as any).__ASTROWORLD_INMEMORY_MEMORY_REPOSITORY__ = class extends Object {} as any);
+    : new InMemoryPersistentMemoryRepository();
 }
