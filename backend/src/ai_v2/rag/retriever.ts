@@ -149,8 +149,26 @@ export class ClassicalRAGRetriever {
       }
 
       // 5. Active Yoga Evidence Match
-      for (const yName of activeYogas) {
-        if (meta.yogaSubjects?.some(ys => yName.includes(ys.toLowerCase()))) {
+      // Match only stable yoga identities derived from verified engine output.
+      // Descriptive variants such as "Gajakesari-like" must not activate a
+      // classical Gajakesari rule.
+      const activeYogaKeys = evidencePacket?.derivedFacts
+        ?.filter(f => f.type === 'Yoga' && f.verified)
+        ?.map(f => f.id
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '')
+          .replace(/^yoga/, '')
+          .replace(/yoga$/, ''))
+        || [];
+      for (const yogaSubject of meta.yogaSubjects || []) {
+        const expectedYogaKey = yogaSubject
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '')
+          .replace(/^yoga/, '')
+          .replace(/yoga$/, '');
+        if (activeYogaKeys.includes(expectedYogaKey)) {
           score += 3.0;
         }
       }
