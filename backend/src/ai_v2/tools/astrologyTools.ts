@@ -40,7 +40,7 @@ export interface ToolExecutionResult<T = any> {
 /**
  * 1. get_birth_chart (D1 Rashi)
  */
-export async function executeGetBirthChart(args: any): Promise<ToolExecutionResult {
+export async function executeGetBirthChart(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -92,7 +92,7 @@ export async function executeGetBirthChart(args: any): Promise<ToolExecutionResu
 /**
  * 2. get_divisional_chart (Vargas D1 to D60)
  */
-export async function executeGetDivisionalChart(args: any): Promise<ToolExecutionResult {
+export async function executeGetDivisionalChart(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -163,7 +163,7 @@ export async function executeGetDivisionalChart(args: any): Promise<ToolExecutio
 /**
  * 2b. get_all_divisional_charts (Complete Shodashavarga D1 through D60)
  */
-export async function executeGetAllDivisionalCharts(args: any): Promise<ToolExecutionResult {
+export async function executeGetAllDivisionalCharts(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -231,7 +231,7 @@ export async function executeGetAllDivisionalCharts(args: any): Promise<ToolExec
 /**
  * 3. get_current_dasha
  */
-export async function executeGetCurrentDasha(args: any): Promise<ToolExecutionResult {
+export async function executeGetCurrentDasha(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -286,7 +286,7 @@ export async function executeGetCurrentDasha(args: any): Promise<ToolExecutionRe
 /**
  * 4. get_dasha_at (Target Date)
  */
-export async function executeGetDashaAt(args: any): Promise<ToolExecutionResult {
+export async function executeGetDashaAt(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -358,7 +358,7 @@ export async function executeGetDashaAt(args: any): Promise<ToolExecutionResult 
 /**
  * 5. get_transits (Gochara & Sade Sati)
  */
-export async function executeGetTransits(args: any): Promise<ToolExecutionResult {
+export async function executeGetTransits(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -411,7 +411,7 @@ export async function executeGetTransits(args: any): Promise<ToolExecutionResult
 /**
  * 6. get_active_yogas (Yogas & Doshas)
  */
-export async function executeGetActiveYogas(args: any): Promise<ToolExecutionResult {
+export async function executeGetActiveYogas(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -464,7 +464,7 @@ export async function executeGetActiveYogas(args: any): Promise<ToolExecutionRes
 /**
  * 7. get_planetary_strength (Shadbala)
  */
-export async function executeGetPlanetaryStrength(args: any): Promise<ToolExecutionResult {
+export async function executeGetPlanetaryStrength(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -515,7 +515,7 @@ export async function executeGetPlanetaryStrength(args: any): Promise<ToolExecut
 /**
  * 8. get_ashtakavarga (BAV & SAV)
  */
-export async function executeGetAshtakavarga(args: any): Promise<ToolExecutionResult {
+export async function executeGetAshtakavarga(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -569,7 +569,7 @@ export async function executeGetAshtakavarga(args: any): Promise<ToolExecutionRe
 /**
  * 9. get_jaimini_details (Karakas, Karakamsa, Arudha Lagna)
  */
-export async function executeGetJaiminiDetails(args: any): Promise<ToolExecutionResult {
+export async function executeGetJaiminiDetails(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
@@ -616,7 +616,7 @@ export async function executeGetJaiminiDetails(args: any): Promise<ToolExecution
 /**
  * 10. get_panchanga (5 Limbs of Time)
  */
-export async function executeGetPanchanga(args: any): Promise<ToolExecutionResult {
+export async function executeGetPanchanga(args: any): Promise<ToolExecutionResult> {
   const validation = validateBirthProfile(args?.birthProfile);
   if (!validation.valid || !validation.data) {
     return {
