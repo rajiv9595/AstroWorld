@@ -48,9 +48,12 @@ class FakeRepo extends ConversationPersistenceRepository {
   private row: any = null;
   private messages: any[] = [];
 
-  public constructor(){ super({supabaseClient: {
-    from: (table:string) => this.from(table),
-  }} as any); }
+  public constructor(){ super({
+    configured: true,
+    supabaseClient: {
+      from: (table:string) => this.from(table),
+    },
+  } as any); }
 
   private from(table:string):any {
     const self=this;
