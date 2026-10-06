@@ -212,6 +212,8 @@ function calculateSwissHorizonEvent(
       location.latitude,
       0,
       swiss.CalculationFlag.SwissEphemeris,
+      1013.25,
+      15,
     );
     return swissDateTimeToDate(swiss.julianDayToDate(result.time));
   } catch {
