@@ -122,17 +122,17 @@ describe('Phase 10.2 Remediation Verification Suite', () => {
   // 2. P1 REMEDIATION: Provenance Consistency & Documentation
   // ============================================================================
   describe('P1 — Calculation Engine Provenance', () => {
-    it('All tool executions return astronomy-engine + Analytical Lahiri provenance', () => {
-      const birthChartRes = AstrologyToolRegistry.executeTool('get_birth_chart', { birthProfile: PROFILE_A });
+    it('All tool executions return astronomy-engine + Analytical Lahiri provenance', async () => {
+      const birthChartRes = await AstrologyToolRegistry.executeTool('get_birth_chart', { birthProfile: PROFILE_A });
       expect(birthChartRes.success).toBe(true);
       expect(birthChartRes.provenance.sourceEngine).toContain('astronomy-engine + Analytical Lahiri Ayanamsha');
       expect(birthChartRes.provenance.sourceEngine).not.toContain('Swiss Ephemeris');
 
-      const vargaRes = AstrologyToolRegistry.executeTool('get_divisional_chart', { birthProfile: PROFILE_A, vargaCode: 'D9' });
+      const vargaRes = await AstrologyToolRegistry.executeTool('get_divisional_chart', { birthProfile: PROFILE_A, vargaCode: 'D9' });
       expect(vargaRes.success).toBe(true);
       expect(vargaRes.provenance.sourceEngine).toContain('astronomy-engine + Analytical Lahiri Ayanamsha');
 
-      const transitsRes = AstrologyToolRegistry.executeTool('get_transits', { birthProfile: PROFILE_A });
+      const transitsRes = await AstrologyToolRegistry.executeTool('get_transits', { birthProfile: PROFILE_A });
       expect(transitsRes.success).toBe(true);
       expect(transitsRes.provenance.sourceEngine).toContain('astronomy-engine + Analytical Lahiri Ayanamsha');
     });
@@ -471,8 +471,8 @@ describe('Phase 10.2 Remediation Verification Suite', () => {
       expect(allToolNames).toContain('get_all_divisional_charts');
     });
 
-    it('get_all_divisional_charts tool returns complete 16 Shodashavarga matrix', () => {
-      const res = AstrologyToolRegistry.executeTool('get_all_divisional_charts', { birthProfile: PROFILE_A });
+    it('get_all_divisional_charts tool returns complete 16 Shodashavarga matrix', async () => {
+      const res = await AstrologyToolRegistry.executeTool('get_all_divisional_charts', { birthProfile: PROFILE_A });
       expect(res.success).toBe(true);
       expect(res.data.count).toBe(16);
       expect(res.data.availableVargas).toEqual([
