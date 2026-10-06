@@ -123,20 +123,23 @@ export class RulePrerequisiteMatcher {
       }
     }
 
-    // 3. Declared house prerequisites are conjunctive constraints.
+    // 3. House scope check. The corpus historically stores houses as an
+    // allowed/covered set (e.g. 1,4,7,10), not an all-of conjunction.
+    // Require at least one verified fact inside the declared scope; exact
+    // single-house rules therefore remain strict.
     if (meta.houseSubjects && meta.houseSubjects.length > 0) {
-      for (const house of meta.houseSubjects) {
-        const matchingHouseFacts = evidence.facts.filter(
-          f => f.verified && f.house === house,
+      const matchingHouseFacts = evidence.facts.filter(
+        f => f.verified && typeof f.house === 'number' && meta.houseSubjects.includes(f.house),
+      );
+      if (matchingHouseFacts.length > 0) {
+        satisfiedPrerequisites.push(
+          `Verified evidence exists within declared house scope [${meta.houseSubjects.join(', ')}]`,
         );
-        if (matchingHouseFacts.length > 0) {
-          satisfiedPrerequisites.push(
-            `Verified evidence exists in required house ${house}`,
-          );
-          matchedEvidenceIds.push(...matchingHouseFacts.map(f => f.id));
-        } else {
-          missingPrerequisites.push(`No verified evidence found in required house ${house}`);
-        }
+        matchedEvidenceIds.push(...matchingHouseFacts.map(f => f.id));
+      } else {
+        missingPrerequisites.push(
+          `No verified evidence found in declared house scope [${meta.houseSubjects.join(', ')}]`,
+        );
       }
     }
 
@@ -158,33 +161,47 @@ export class RulePrerequisiteMatcher {
       }
     }
 
-    // 5. Transit Precondition Check — match declared transit identities exactly.
+    // 5. Transit precondition check. A metadata list represents supported
+    // transit scopes/labels; standardized planetary identities are matched
+    // exactly, while descriptive scope labels require an actual transit tool.
     if (meta.transitSubjects && meta.transitSubjects.length > 0) {
-      for (const subject of meta.transitSubjects) {
-        const expected = subject.trim().toLowerCase();
-        const matchingTransitFacts = evidence.facts.filter(
-          f => f.category === 'transit' &&
-            f.verified &&
-            this.normalizeTransitIdentity(f.entity).includes(expected),
+      const transitFacts = evidence.facts.filter(
+        f => f.category === 'transit' && f.verified,
+      );
+      const transitTool = evidence.toolResults.find(
+        r => r.toolName === 'get_transits' &&
+          r.success &&
+          r.provenance?.verified &&
+          Array.isArray(r.data?.transits),
+      );
+
+      const standardizedSubjects = meta.transitSubjects
+        .map(s => s.trim().toLowerCase())
+        .filter(s => ['sun','moon','mars','mercury','jupiter','venus','saturn','rahu','ketu'].includes(s));
+
+      const exactTransitMatches = transitFacts.filter(f => {
+        const identity = this.normalizeTransitIdentity(f.entity);
+        return standardizedSubjects.includes(identity);
+      });
+      const toolMatchesStandardized = Boolean(transitTool?.data?.transits?.some(
+        (t: any) => standardizedSubjects.includes(
+          this.normalizeTransitIdentity(String(t?.planet || '')),
+        ),
+      ));
+
+      // Descriptive labels such as "Sade Sati" or "Career Activation" are
+      // contextual scopes and are satisfied by the verified transit tool itself.
+      const hasDescriptiveScope = meta.transitSubjects.some(
+        s => !['sun','moon','mars','mercury','jupiter','venus','saturn','rahu','ketu'].includes(s.trim().toLowerCase()),
+      );
+
+      if (exactTransitMatches.length > 0 || toolMatchesStandardized || (hasDescriptiveScope && transitTool)) {
+        satisfiedPrerequisites.push('Verified Gochara transit evidence available for the declared scope');
+        matchedEvidenceIds.push(...exactTransitMatches.map(f => f.id));
+      } else {
+        missingPrerequisites.push(
+          `Declared transit scope [${meta.transitSubjects.join(', ')}] was not found in verified evidence`,
         );
-
-        const transitTool = evidence.toolResults.find(
-          r => r.toolName === 'get_transits' &&
-            r.success &&
-            r.provenance?.verified &&
-            Array.isArray(r.data?.transits),
-        );
-
-        const toolHasSubject = Boolean(transitTool?.data?.transits?.some(
-          (t: any) => this.normalizeTransitIdentity(String(t?.planet || '')) === expected,
-        ));
-
-        if (matchingTransitFacts.length > 0 || toolHasSubject) {
-          satisfiedPrerequisites.push(`Verified transit evidence for ${subject}`);
-          matchedEvidenceIds.push(...matchingTransitFacts.map(f => f.id));
-        } else {
-          missingPrerequisites.push(`Required transit condition "${subject}" was not found in verified evidence`);
-        }
       }
     }
 
