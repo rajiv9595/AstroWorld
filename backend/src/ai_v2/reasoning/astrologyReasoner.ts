@@ -358,9 +358,17 @@ export class AstrologyReasoner {
     const netScore = supportScore - restrictingScore;
     let direction: InterpretationDirection = 'neutral';
 
-    if (supportScore > 0 && restrictingScore > 0) direction = 'mixed';
-    else if (netScore > 0) direction = 'supportive';
-    else if (netScore < 0) direction = 'challenging';
+    if (supportScore >= restrictingScore * 2 && supportScore > 0) {
+      direction = 'supportive';
+    } else if (restrictingScore >= supportScore * 2 && restrictingScore > 0) {
+      direction = 'challenging';
+    } else if (supportScore > 0 && restrictingScore > 0) {
+      direction = 'mixed';
+    } else if (supportScore > 0) {
+      direction = 'supportive';
+    } else if (restrictingScore > 0) {
+      direction = 'challenging';
+    }
 
     if (conflictScore > 0 && direction !== 'neutral') {
       direction = 'mixed';

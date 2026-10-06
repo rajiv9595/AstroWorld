@@ -52,6 +52,21 @@ function validateEphemerisDate(dateUtc: Date, label: string): void {
   }
 }
 
+export function validateHorizonLocation(
+  location: { latitude: number; longitude: number },
+  label: string,
+): void {
+  if (!location || !Number.isFinite(location.latitude) || !Number.isFinite(location.longitude)) {
+    throw new Error(`${label} requires finite latitude and longitude.`);
+  }
+  if (location.latitude < -90 || location.latitude > 90) {
+    throw new Error(`${label} latitude must be between -90 and 90 degrees.`);
+  }
+  if (location.longitude < -180 || location.longitude > 180) {
+    throw new Error(`${label} longitude must be between -180 and 180 degrees.`);
+  }
+}
+
 export type EphemerisHorizonBody = 'Sun' | 'Moon';
 export type EphemerisHorizonEvent = 'RISE' | 'SET';
 
@@ -128,6 +143,7 @@ export const astronomyEngineEphemerisProvider: SiderealEphemerisProvider = {
   },
   getHorizonEvent(startDateUtc, body, event, location) {
     validateEphemerisDate(startDateUtc, 'Astronomy Engine horizon-event calculation');
+    validateHorizonLocation(location, 'Astronomy Engine horizon-event calculation');
     const observer = new Astronomy.Observer(location.latitude, location.longitude, 0);
     const bodyMap = { Sun: Astronomy.Body.Sun, Moon: Astronomy.Body.Moon } as const;
     const direction = event === 'RISE' ? 1 : -1;

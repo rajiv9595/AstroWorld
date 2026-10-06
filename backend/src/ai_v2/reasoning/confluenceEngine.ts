@@ -31,14 +31,15 @@ export class ConfluenceEngine {
     const d1Facts = evidence.facts.filter(f => f.category === 'natal');
     if (d1Facts.length > 0) {
       const natalSources = new Set(['get_birth_chart', 'get_planetary_positions']);
-      const isRestricting = restrictingFactors.some(f => natalSources.has(f.sourceTool));
-      const isSupportive = [...primaryFactors, ...supportingFactors].some(
+      const hasSupport = [...primaryFactors, ...supportingFactors].some(
         f => natalSources.has(f.sourceTool) && (f.role === 'primary' || f.role === 'supporting' || f.role === 'background')
       );
+      const hasRestrict = restrictingFactors.some(f => natalSources.has(f.sourceTool));
+      const alignment = hasSupport ? 'supportive' : hasRestrict ? 'restricting' : 'neutral';
       layers.push({
         layer: 'D1',
         factorDescription: `Natal D1 chart foundations: ${d1Facts.slice(0, 3).map(f => `${f.entity} in ${f.sign}`).join(', ')}`,
-        alignment: isRestricting ? 'restricting' : isSupportive ? 'supportive' : 'neutral',
+        alignment,
         evidenceId: d1Facts[0].id,
       });
     }
@@ -97,10 +98,15 @@ export class ConfluenceEngine {
     // 5. Classical Yogas Layer
     const yogas = evidence.derivedFacts.filter(f => f.type === 'Yoga');
     if (yogas.length > 0) {
+      const yogaEvidenceIds = new Set(yogas.map(f => f.id));
+      const isRestricting = restrictingFactors.some(f => yogaEvidenceIds.has(f.evidenceId));
+      const isSupportive = [...primaryFactors, ...supportingFactors].some(
+        f => yogaEvidenceIds.has(f.evidenceId) && (f.role === 'primary' || f.role === 'supporting')
+      );
       layers.push({
         layer: 'Yoga',
         factorDescription: `Active classical combinations: ${yogas.slice(0, 2).map(y => y.description).join('; ')}`,
-        alignment: 'supportive',
+        alignment: isRestricting ? 'restricting' : isSupportive ? 'supportive' : 'neutral',
         evidenceId: yogas[0].id,
       });
     }
