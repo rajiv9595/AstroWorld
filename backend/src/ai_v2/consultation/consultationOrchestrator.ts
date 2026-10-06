@@ -38,6 +38,7 @@ import {
   MemoryCommandResolver,
   CommandExecutionResult,
 } from '../memory/index.ts';
+import { createDefaultMemoryRepository } from '../memory/supabasePersistentMemoryRepository.ts';
 import {
   ConsultationResult,
   ConsultationTrace,
@@ -122,7 +123,7 @@ export class ConsultationOrchestrator {
     this.conversationPersistence = options?.conversationPersistence || new ConversationPersistenceRepository();
     this.stateUpdater = new ConversationStateUpdater();
 
-    this.memoryRepository = options?.memoryRepository || new InMemoryPersistentMemoryRepository();
+    this.memoryRepository = options?.memoryRepository || createDefaultMemoryRepository();
     this.memoryRetriever = new MemoryRetriever(this.memoryRepository);
     this.memoryCandidateGenerator = new MemoryCandidateGenerator();
     this.memoryWriteGate = new MemoryWriteGate();
