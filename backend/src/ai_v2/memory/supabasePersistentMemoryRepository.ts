@@ -97,12 +97,12 @@ export class SupabasePersistentMemoryRepository implements IPersistentMemoryRepo
 
     if (!options.includeExpired) {
       const now = Date.now();
-      memories = memories.filter(m => !m.expiresAt || new Date(m.expiresAt).getTime() > now);
+      memories = memories.filter((m: PersistentMemory) => !m.expiresAt || new Date(m.expiresAt).getTime() > now);
     }
 
     if (options.domain) {
       const domain = options.domain.toLowerCase();
-      memories = memories.filter(m => {
+      memories = memories.filter((m: PersistentMemory) => {
         const combined = `${m.key} ${m.value} ${m.tags.join(' ')}`.toLowerCase();
         return combined.includes(domain);
       });
@@ -110,7 +110,7 @@ export class SupabasePersistentMemoryRepository implements IPersistentMemoryRepo
 
     if (options.topic) {
       const topic = options.topic.toLowerCase();
-      memories = memories.filter(m => {
+      memories = memories.filter((m: PersistentMemory) => {
         const combined = `${m.key} ${m.value} ${m.tags.join(' ')}`.toLowerCase();
         return combined.includes(topic);
       });
