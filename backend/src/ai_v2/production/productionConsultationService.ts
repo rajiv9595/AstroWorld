@@ -100,7 +100,21 @@ export class ProductionConsultationService {
       const userId = validatedReq.authenticatedUser.userId;
       const conversationId = validatedReq.conversationId;
 
-      // Ownership enforcement (IDOR protection)
+      // Ownership enforcement (IDOR protection). Persistent storage is
+      // authoritative in configured production deployments; the map remains a
+      // fast in-process cache.
+      let persistentOwnerExists = false;
+      if (this.orchestrator.getConversationPersistenceRepository().isEnabled()) {
+        persistentOwnerExists = await this.orchestrator.isConversationOwnedByPersistent(conversationId, userId);
+        const userScopedExisting = await this.orchestrator.isConversationOwnedByPersistent(conversationId, userId);
+        if (persistentOwnerExists) {
+          this.conversationOwners.set(conversationId, userId);
+        } else if (userScopedExisting === false) {
+          const probe = await this.orchestrator.getConversationPersistenceRepository().load(userId, conversationId);
+          void probe;
+        }
+      }
+
       const existingOwner = this.conversationOwners.get(conversationId);
       if (existingOwner && existingOwner !== userId) {
         throw new ProductionError({
@@ -333,10 +347,36 @@ export class ProductionConsultationService {
     return this.conversationOwners.get(conversationId) === userId;
   }
 
+  public async isConversationOwnedByAsync(conversationId: string, userId: string): Promise<boolean> {
+    if (this.orchestrator.getConversationPersistenceRepository().isEnabled()) {
+      return this.orchestrator.isConversationOwnedByPersistent(conversationId, userId);
+    }
+    return this.isConversationOwnedBy(conversationId, userId);
+  }
+
+  public async listOwnedConversationIdsAsync(userId: string): Promise<string[]> {
+    if (this.orchestrator.getConversationPersistenceRepository().isEnabled()) {
+      return this.orchestrator.listOwnedPersistentConversationIds(userId);
+    }
+    return this.listOwnedConversationIds(userId);
+  }
+
   public listOwnedConversationIds(userId: string): string[] {
     return Array.from(this.conversationOwners.entries())
       .filter(([, ownerId]) => ownerId === userId)
       .map(([conversationId]) => conversationId);
+  }
+
+  public async deleteOwnedConversationAsync(conversationId: string, userId: string): Promise<boolean> {
+    if (this.orchestrator.getConversationPersistenceRepository().isEnabled()) {
+      const deleted = await this.orchestrator.deleteOwnedPersistentConversation(conversationId, userId);
+      if (deleted) {
+        this.stateManager.resetState(conversationId);
+        this.conversationOwners.delete(conversationId);
+      }
+      return deleted;
+    }
+    return this.deleteOwnedConversation(conversationId, userId);
   }
 
   public deleteOwnedConversation(conversationId: string, userId: string): boolean {
