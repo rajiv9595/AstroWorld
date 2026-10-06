@@ -180,7 +180,9 @@ async function main() {
     },
     version: 'phase13', createdAtIso: new Date().toISOString(), verified: true,
   };
-  const reasoningResult = validateReasoningPacket(invalidReasoning);
+  const reasoningResult = validateReasoningPacket(invalidReasoning, evidence([
+    natal('j1', 'Jupiter', 10),
+  ]));
   assert(reasoningResult.valid === false, 'ReasoningPacket validation must reject unresolvable evidence lineage.');
 
   console.log('PHASE 13 EVIDENCE/SOURCE HARDENING: PASS');
