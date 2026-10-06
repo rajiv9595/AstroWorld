@@ -260,7 +260,8 @@ aiV2Router.get('/conversations', (req: Request, res: Response) => {
   try {
     const { userId } = getAuthenticatedUser(req);
     const stateManager = productionConsultationService.getStateManager();
-    const summaries = productionConsultationService.listOwnedConversationIds(userId)
+    const conversationIds = await productionConsultationService.listOwnedConversationIdsAsync(userId);
+    const summaries = conversationIds
       .map((conversationId) => {
         const state = stateManager.getState(conversationId);
         const turns = stateManager.getTurns(conversationId);
@@ -289,7 +290,7 @@ aiV2Router.get('/conversations/:id', (req: Request, res: Response) => {
     const { userId } = getAuthenticatedUser(req);
     const conversationId = req.params.id;
 
-    if (!productionConsultationService.isConversationOwnedBy(conversationId, userId)) {
+    if (!(await productionConsultationService.isConversationOwnedByAsync(conversationId, userId))) {
       res.status(404).json({ success: false, error: 'Conversation not found' });
       return;
     }
@@ -312,7 +313,7 @@ aiV2Router.get('/conversations/:id', (req: Request, res: Response) => {
 aiV2Router.delete('/conversations/:id', (req: Request, res: Response) => {
   try {
     const { userId } = getAuthenticatedUser(req);
-    const deleted = productionConsultationService.deleteOwnedConversation(req.params.id, userId);
+    const deleted = await productionConsultationService.deleteOwnedConversationAsync(req.params.id, userId);
 
     if (!deleted) {
       res.status(404).json({ success: false, error: 'Conversation not found' });
