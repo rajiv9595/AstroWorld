@@ -61,13 +61,22 @@ export class ConfluenceEngine {
       return layer === 'D1' && factor.sourceTool.toLowerCase().includes('planet');
     });
 
+    const deterministicWindowId = (
+      prefix: string,
+      parts: Array<string | number | undefined>,
+    ): string => `win_${prefix}_${parts
+      .filter((part): part is string | number => part !== undefined)
+      .map(part => String(part).replace(/[^a-zA-Z0-9]+/g, '_'))
+      .join('_')}`;
+
     const pushLayer = (
       layer: ConfluenceItem['layer'],
       description: string,
       evidenceId: string,
       factorSet: ClassifiedFactor[],
+      forceNeutral = false,
     ) => {
-      const factorScores = factorSet.map(f => ({
+      const factorScores = forceNeutral ? [] : factorSet.map(f => ({
         support: f.role === 'restricting' || f.role === 'conflicting' ? 0 : (f.weight ?? 0) * baseWeights[layer],
         restrict: f.role === 'restricting' || f.role === 'conflicting' ? (f.weight ?? 0) * baseWeights[layer] : 0,
       }));
@@ -81,7 +90,7 @@ export class ConfluenceEngine {
       layers.push({
         layer,
         factorDescription: description,
-        alignment,
+        alignment: forceNeutral ? 'neutral' : alignment,
         evidenceId,
         supportScore,
         restrictingScore,
@@ -159,6 +168,36 @@ export class ConfluenceEngine {
       );
     }
 
+    const ashtakavargaFacts = evidence.facts.filter(f => f.category === 'ashtakavarga');
+    const ashtakavargaFactors = [
+      ...factorsForLayer('Ashtakavarga', primaryFactors),
+      ...factorsForLayer('Ashtakavarga', restrictingFactors),
+    ];
+    if (ashtakavargaFacts.length > 0 && ashtakavargaFactors.length > 0) {
+      pushLayer(
+        'Ashtakavarga',
+        `Verified Ashtakavarga context: ${ashtakavargaFacts.slice(0, 2).map(f => String(f.value ?? '')).join(', ')}`,
+        ashtakavargaFacts[0].id,
+        ashtakavargaFactors,
+        true,
+      );
+    }
+
+    const jaiminiFacts = evidence.facts.filter(f => f.category === 'jaimini');
+    const jaiminiFactors = [
+      ...factorsForLayer('Jaimini', primaryFactors),
+      ...factorsForLayer('Jaimini', restrictingFactors),
+    ];
+    if (jaiminiFacts.length > 0 && jaiminiFactors.length > 0) {
+      pushLayer(
+        'Jaimini',
+        `Verified Jaimini context: ${jaiminiFacts.slice(0, 2).map(f => String(f.value ?? '')).join(', ')}`,
+        jaiminiFacts[0].id,
+        jaiminiFactors,
+        true,
+      );
+    }
+
     const supportiveScore = Number(layers.reduce((n, l) => n + (l.supportScore ?? 0), 0).toFixed(3));
     const restrictingScore = Number(layers.reduce((n, l) => n + (l.restrictingScore ?? 0), 0).toFixed(3));
     const supportiveLayers = layers.filter(l => l.alignment === 'supportive').length;
@@ -197,44 +236,40 @@ export class ConfluenceEngine {
    * Constructs verified temporal evaluation windows from engine Dasha and Transit facts.
    */
   public buildTemporalWindows(
-    plan: QuestionPlan,
+    _plan: QuestionPlan,
     evidence: EvidencePacket
   ): TemporalWindowResult[] {
     const windows: TemporalWindowResult[] = [];
 
-    // A. Active Current / Target Dasha Period Window
     const dashaToolResult = evidence.toolResults.find(
-      r => (r.toolName === 'get_current_dasha' || r.toolName === 'get_dasha_at') && r.success
+      r => (r.toolName === 'get_current_dasha' || r.toolName === 'get_dasha_at') &&
+        r.success &&
+        r.provenance?.verified &&
+        r.data?.currentHierarchy,
     );
 
-    if (dashaToolResult && dashaToolResult.data?.currentHierarchy) {
+    if (dashaToolResult) {
       const h = dashaToolResult.data.currentHierarchy;
       if (h.mahadasha && h.antardasha) {
-        windows.push({
-          id: `win_dasha_${Date.now()}`,
-          label: `Vimshottari Dasha Window (${h.mahadasha.lord} - ${h.antardasha.subLord || h.antardasha.lord})`,
-          startDateIso: h.antardasha.startDateIso || h.mahadasha.startDateIso || new Date().toISOString(),
-          endDateIso: h.antardasha.endDateIso || h.mahadasha.endDateIso || new Date().toISOString(),
-          type: 'supportive_window',
-          contributingDasha: `${h.mahadasha.lord}/${h.antardasha.subLord || h.antardasha.lord}`,
-          evidenceIds: [evidence.facts.find(f => f.category === 'dasha')?.id || 'dasha_ev_1'],
-          strength: 'moderate',
-        });
+        const startDateIso = h.antardasha.startDateIso || h.mahadasha.startDateIso;
+        const endDateIso = h.antardasha.endDateIso || h.mahadasha.endDateIso;
+        if (startDateIso && endDateIso) {
+          const dashaLord = h.mahadasha.lord;
+          const subLord = h.antardasha.subLord || h.antardasha.lord;
+          windows.push({
+            id: deterministicWindowId('dasha', [dashaLord, subLord, startDateIso, endDateIso]),
+            label: `Vimshottari Dasha Window (${dashaLord} - ${subLord})`,
+            startDateIso,
+            endDateIso,
+            type: 'general_dasha_period',
+            contributingDasha: `${dashaLord}/${subLord}`,
+            evidenceIds: [
+              evidence.facts.find(f => f.category === 'dasha')?.id,
+            ].filter((id): id is string => Boolean(id)),
+            strength: 'moderate',
+          });
+        }
       }
-    }
-
-    // B. Target Timing Scope from QuestionPlan (e.g. 2027)
-    if (plan.temporalScope.type === 'specific_date' || plan.temporalScope.type === 'upcoming') {
-      const targetDate = plan.targetDatesIso[0] || plan.temporalScope.startIso || '2027-01-01T00:00:00.000Z';
-      windows.push({
-        id: `win_target_${Date.now()}`,
-        label: `Target Query Window (${new Date(targetDate).getUTCFullYear()})`,
-        startDateIso: plan.temporalScope.startIso || targetDate,
-        endDateIso: plan.temporalScope.endIso || targetDate,
-        type: 'peak_confluence_window',
-        evidenceIds: evidence.facts.filter(f => f.category === 'transit' || f.category === 'dasha').map(f => f.id),
-        strength: 'strong',
-      });
     }
 
     return windows;
