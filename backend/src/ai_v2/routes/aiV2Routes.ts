@@ -256,7 +256,7 @@ aiV2Router.delete('/memory', async (req: Request, res: Response) => {
   }
 });
 
-aiV2Router.get('/conversations', (req: Request, res: Response) => {
+aiV2Router.get('/conversations', async (req: Request, res: Response) => {
   try {
     const { userId } = getAuthenticatedUser(req);
     const stateManager = productionConsultationService.getStateManager();
@@ -285,7 +285,7 @@ aiV2Router.get('/conversations', (req: Request, res: Response) => {
   }
 });
 
-aiV2Router.get('/conversations/:id', (req: Request, res: Response) => {
+aiV2Router.get('/conversations/:id', async (req: Request, res: Response) => {
   try {
     const { userId } = getAuthenticatedUser(req);
     const conversationId = req.params.id;
@@ -310,7 +310,7 @@ aiV2Router.get('/conversations/:id', (req: Request, res: Response) => {
   }
 });
 
-aiV2Router.delete('/conversations/:id', (req: Request, res: Response) => {
+aiV2Router.delete('/conversations/:id', async (req: Request, res: Response) => {
   try {
     const { userId } = getAuthenticatedUser(req);
     const deleted = await productionConsultationService.deleteOwnedConversationAsync(req.params.id, userId);
