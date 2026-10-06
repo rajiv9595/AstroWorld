@@ -65,11 +65,6 @@ export class ClassicalRAGRetriever {
     const focusDomain = questionPlan?.domain;
     const focusIntent = questionPlan?.intent;
 
-    // Extract active factors from verified EvidencePacket if available
-    const activeYogas = evidencePacket?.derivedFacts
-      ?.filter(f => f.type === 'Yoga')
-      ?.map(f => f.description.toLowerCase()) || [];
-
     const scoredRecords: Array<{ record: KnowledgeRecord; score: number }> = [];
 
     for (const record of this.knowledgeBase) {
