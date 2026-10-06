@@ -244,7 +244,7 @@ async function runPhase2BSuite() {
   console.log('\n--- F. INVALID CASES ---');
 
   // Test 15: Unknown Tool Rejection
-  const unknownToolResult = AstrologyToolRegistry.executeTool('hack_astrology_db', {});
+  const unknownToolResult = await AstrologyToolRegistry.executeTool('hack_astrology_db', {});
   assert(
     unknownToolResult.success === false && Boolean(unknownToolResult.error?.includes('not registered')),
     'Test 15: Unknown Tool Rejection',
@@ -252,7 +252,7 @@ async function runPhase2BSuite() {
   );
 
   // Test 16: Invalid Tool Arguments
-  const invalidArgsResult = await AstrologyToolRegistry.executeTool('get_divisional_chart', {
+  const invalidArgsResult = await await AstrologyToolRegistry.executeTool('get_divisional_chart', {
     birthProfile: SAMPLE_PROFILE,
     vargaCode: 'D999_INVALID',
   });
