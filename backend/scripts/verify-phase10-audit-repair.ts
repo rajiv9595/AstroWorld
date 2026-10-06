@@ -157,6 +157,38 @@ function run() {
     'Missing Gajakesari derived evidence must not be converted into a fabricated absence claim.',
   );
 
+  const verifiedGajaAbsenceEvidence = evidenceWithFacts(
+    [
+      natalFact('Moon', 'moon_verified'),
+      natalFact('Jupiter', 'jupiter_verified'),
+    ],
+    [{
+      id: 'yoga_gajakesari_absence',
+      type: 'Yoga',
+      ruleCitation: 'BPHS Gajakesari prerequisite',
+      description: 'Gajakesari Yoga absent: verified yoga engine returned no qualifying Gajakesari formation.',
+      sourceTool: 'get_active_yogas',
+      verified: true,
+    }],
+    [{
+      toolName: 'get_active_yogas',
+      executionDurationMs: 1,
+      success: true,
+      provenance: {
+        sourceEngine: 'Classical Yoga Evaluator Engine',
+        ruleStandard: 'BPHS Yoga Adhyaya',
+        calculatedAtIso: '2026-10-06T00:00:00.000Z',
+        verified: true,
+      },
+      data: { yogas: [] },
+    }],
+  );
+  const verifiedAbsenceClassification = (reasoner as any).classifyFactors(gajaPlan, verifiedGajaAbsenceEvidence);
+  assert(
+    verifiedAbsenceClassification.primaryFactors.some((f: any) => f.id === 'yoga_gajakesari_absence'),
+    'Verified negative yoga evidence must be surfaced as an explicit absence factor.',
+  );
+
   // 4. A query scope is not a predictive temporal window.
   const confluence = new ConfluenceEngine();
   const scopeOnly = confluence.buildTemporalWindows(basePlan(), evidenceWithFacts());
