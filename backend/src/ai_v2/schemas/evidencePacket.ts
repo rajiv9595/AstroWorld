@@ -29,6 +29,7 @@ export interface DerivedFactItem {
   participatingSigns?: string[];
   description: string;
   sourceTool: string;
+  evidenceIds?: string[];
   verified: boolean;
 }
 
@@ -120,6 +121,44 @@ export function validateEvidencePacket(packet: any): EvidencePacketValidationRes
 
   if (typeof packet.verified !== 'boolean') {
     errors.push('EvidencePacket.verified must be a boolean.');
+  }
+
+  const toolResults = Array.isArray(packet.toolResults) ? packet.toolResults : [];
+  const verifiedSuccessfulTools = new Set(
+    toolResults
+      .filter((r: any) => r?.success === true && r?.provenance?.verified === true)
+      .map((r: any) => r.toolName),
+  );
+  const factIds = new Set(
+    (Array.isArray(packet.facts) ? packet.facts : []).map((f: any) => f?.id).filter(Boolean),
+  );
+  const derivedIds = new Set(
+    (Array.isArray(packet.derivedFacts) ? packet.derivedFacts : []).map((f: any) => f?.id).filter(Boolean),
+  );
+
+  for (const fact of Array.isArray(packet.facts) ? packet.facts : []) {
+    if (!fact?.id || !fact?.sourceTool) {
+      errors.push('Every FactItem must have id and sourceTool.');
+    }
+    if (fact?.verified === true && !verifiedSuccessfulTools.has(fact.sourceTool)) {
+      errors.push(`Verified fact "${fact?.id}" has no matching verified successful source tool.`);
+    }
+  }
+
+  for (const derived of Array.isArray(packet.derivedFacts) ? packet.derivedFacts : []) {
+    if (!derived?.id || !derived?.sourceTool) {
+      errors.push('Every DerivedFactItem must have id and sourceTool.');
+    }
+    if (derived?.verified === true && !verifiedSuccessfulTools.has(derived.sourceTool)) {
+      errors.push(`Verified derived fact "${derived?.id}" has no matching verified successful source tool.`);
+    }
+    if (Array.isArray(derived?.evidenceIds)) {
+      for (const evidenceId of derived.evidenceIds) {
+        if (!factIds.has(evidenceId) && !derivedIds.has(evidenceId)) {
+          errors.push(`Derived fact "${derived?.id}" references missing evidence "${evidenceId}".`);
+        }
+      }
+    }
   }
 
   return {
