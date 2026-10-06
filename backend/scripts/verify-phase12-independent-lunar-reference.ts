@@ -333,7 +333,7 @@ function moonUpperLimbAltitudeDegrees(
 ): number {
   const { ra, dec, distanceKm } = moonCoordinates(dateUtc);
   const phi = latitudeDeg * DEG;
-  const hourAngle = siderealTime(dateUtc, -longitudeDeg) - ra;
+  const hourAngle = siderealTime(dateUtc, longitudeDeg) - ra;
 
   const geoAltitude = Math.asin(
     Math.sin(phi) * Math.sin(dec) +
