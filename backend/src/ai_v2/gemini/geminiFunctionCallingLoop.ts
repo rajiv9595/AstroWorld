@@ -326,7 +326,7 @@ CRITICAL PROTOCOL RULES:
         const startTool = Date.now();
         // Inject validated birthProfile if omitted by model
         const mergedArgs = { birthProfile, ...toolArgs };
-        const result = AstrologyToolRegistry.executeTool(toolName, mergedArgs);
+        const result = await AstrologyToolRegistry.executeTool(toolName, mergedArgs);
         const duration = Date.now() - startTool;
 
         trace.push({
@@ -424,7 +424,7 @@ CRITICAL PROTOCOL RULES:
 
     for (const item of filteredTools) {
       const start = Date.now();
-      const result = AstrologyToolRegistry.executeTool(item.name, item.args);
+      const result = await AstrologyToolRegistry.executeTool(item.name, item.args);
       const duration = Date.now() - start;
 
       trace.push({
