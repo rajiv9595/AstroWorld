@@ -366,7 +366,7 @@ export class ToolExecutionOrchestrator {
 
       // The negative result is emitted only from a successful, verified,
       // complete yoga-engine response, preserving auditable evidence lineage.
-      if (!gajaPresent && yogasList.length >= 0) {
+      if (!gajaPresent) {
         derivedFacts.push({
           id: 'yoga_gajakesari_absence',
           type: 'Yoga',
