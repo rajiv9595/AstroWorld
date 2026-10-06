@@ -256,14 +256,17 @@ export class AstrologyReasoner {
     // Process Derived Facts (Yogas)
     for (const derived of evidence.derivedFacts) {
       if (derived.type === 'Yoga') {
+        const isNegativeYoga = derived.id.toLowerCase().endsWith('_absence');
         primaryFactors.push({
           id: derived.id,
           entity: derived.description,
-          property: 'classical_yoga',
+          property: isNegativeYoga ? 'presence' : 'classical_yoga',
           value: derived.ruleCitation || 'Brihat Parashara Hora Shastra',
           role: 'primary',
           relevance: 'high',
-          rationale: 'Classical combination verified in the deterministic rule engine',
+          rationale: isNegativeYoga
+            ? 'Verified deterministic yoga engine explicitly reported this classical formation as absent'
+            : 'Classical combination verified in the deterministic rule engine',
           sourceTool: derived.sourceTool,
           evidenceId: derived.id,
           weight: 1.0,
