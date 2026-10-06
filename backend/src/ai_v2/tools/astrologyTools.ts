@@ -4,22 +4,7 @@
  * Pure, structured, verifiable data responses only — zero prose or interpretation.
  */
 
-import {
-  computeCanonicalChart,
-  calculateLahiriAyanamsha,
-  calculatePlanetaryPositions,
-  calculateAscendant,
-  birthProfileToUtcDate,
-  generateAllShodashavargas,
-  calculateVimshottariDasha,
-  calculateTransits,
-  calculateYogasAndDoshas,
-  calculateStrengthFacts,
-  calculateAshtakavarga,
-  calculateJaiminiFacts,
-  calculatePanchanga,
-  VargaCode,
-} from '../../../../shared/index.ts';
+import { VargaCode } from '../../../../shared/index.ts';
 
 import { validateBirthProfile, VALID_VARGA_CODES } from '../schemas/birthProfile.ts';
 import { computeCanonicalChartWithConfiguredEphemeris } from '../../services/ephemeris/providerRuntime.ts';
