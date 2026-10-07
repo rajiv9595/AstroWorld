@@ -184,7 +184,11 @@ export class ConsultationOrchestrator {
       throw new Error(`Invalid BirthProfile provided to ConsultationOrchestrator: ${profileValidation.error}`);
     }
 
-    const userId = options?.userId || 'default_user';
+    const providedUserId = options?.userId?.trim();
+    if (this.isLiveMode && !providedUserId) {
+      throw new Error('Live consultation requires an authenticated userId.');
+    }
+    const userId = providedUserId || 'default_user';
 
     // 2. Explicit Memory Command Interception ("Remember that...", "What do you remember about me?", "Forget...")
     const commandResult = await this.memoryCommandResolver.executeCommand(userId, rawQuestion);
