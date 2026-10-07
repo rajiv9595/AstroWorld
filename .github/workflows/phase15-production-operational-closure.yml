@@ -1,0 +1,36 @@
+name: AstroWorld Phase 15 Production Operational Closure
+
+on:
+  push:
+    branches:
+      - astroworld/phase15-production-operational-closure
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'shared/**'
+      - 'production_runbook.md'
+      - 'release_manifest.md'
+      - '.github/workflows/phase15-production-operational-closure.yml'
+
+jobs:
+  phase15-operational-closure:
+    name: phase15-operational-closure
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Backend build
+        run: npm --workspace=@astroworld/backend run build
+      - name: Phase 15 TDD contract
+        run: npm --workspace=@astroworld/backend run test:phase15:operational-closure
