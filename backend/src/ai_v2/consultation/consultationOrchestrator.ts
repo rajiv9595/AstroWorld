@@ -63,6 +63,17 @@ export interface ConsultationOptions {
   parentDeadlineTimestampMs?: number;
 }
 
+export function resolveConsultationUserId(
+  userId: string | undefined,
+  isLiveMode: boolean,
+): string {
+  const providedUserId = userId?.trim();
+  if (isLiveMode && !providedUserId) {
+    throw new Error('Live consultation requires an authenticated userId.');
+  }
+  return providedUserId || 'default_user';
+}
+
 export class ConsultationOrchestrator {
   private planner: QuestionPlanner;
   private toolOrchestrator: ToolExecutionOrchestrator;
@@ -184,11 +195,7 @@ export class ConsultationOrchestrator {
       throw new Error(`Invalid BirthProfile provided to ConsultationOrchestrator: ${profileValidation.error}`);
     }
 
-    const providedUserId = options?.userId?.trim();
-    if (this.isLiveMode && !providedUserId) {
-      throw new Error('Live consultation requires an authenticated userId.');
-    }
-    const userId = providedUserId || 'default_user';
+    const userId = resolveConsultationUserId(options?.userId, this.isLiveMode);
 
     // 2. Explicit Memory Command Interception ("Remember that...", "What do you remember about me?", "Forget...")
     const commandResult = await this.memoryCommandResolver.executeCommand(userId, rawQuestion);
