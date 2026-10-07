@@ -161,6 +161,8 @@ async function runLiveGate() {
         smokeCase.question,
         CANONICAL_TEST_PROFILE,
         {
+          userId: 'phase4g_live_gate',
+          conversationId: smokeCase.caseId,
           conversationContext: smokeCase.conversationContext,
         }
       );
