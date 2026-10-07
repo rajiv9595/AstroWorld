@@ -11,8 +11,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { ConsultationOrchestrator } from '../src/ai_v2/consultation/consultationOrchestrator.ts';
-import { TEST_BENCHMARK_PROFILE } from '../../shared/index.ts';
+import { resolveConsultationUserId } from '../src/ai_v2/consultation/consultationOrchestrator.ts';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);
@@ -27,40 +26,44 @@ async function main(): Promise<void> {
   const runbookPath = path.resolve(repoRoot, '../../production_runbook.md');
   const manifestPath = path.resolve(repoRoot, '../../release_manifest.md');
 
-  // RED: current production code falls back to default_user in live mode.
-  const originalForceLive = process.env.FORCE_LIVE_GEMINI;
-  process.env.FORCE_LIVE_GEMINI = 'true';
-  const liveOrchestrator = new ConsultationOrchestrator({
-    forceMockMode: false,
-  });
-
-  let rejectedMissingIdentity = false;
-  try {
-    await liveOrchestrator.consult(
-      'Will my career improve?',
-      TEST_BENCHMARK_PROFILE,
-    );
-  } catch (error: any) {
-    rejectedMissingIdentity =
-      String(error?.message || error).includes('authenticated userId');
-  }
-  if (originalForceLive === undefined) delete process.env.FORCE_LIVE_GEMINI;
-  else process.env.FORCE_LIVE_GEMINI = originalForceLive;
-
+  // Live identity boundary.
   assert(
-    rejectedMissingIdentity,
-    'Live consultation must fail closed when authenticated userId is missing.',
+    (() => {
+      try {
+        resolveConsultationUserId(undefined, true);
+        return false;
+      } catch (error: any) {
+        return String(error?.message || error).includes('authenticated userId');
+      }
+    })(),
+    'Live consultation identity resolution must fail closed when userId is missing.',
+  );
+  assert(
+    (() => {
+      try {
+        resolveConsultationUserId('   ', true);
+        return false;
+      } catch {
+        return true;
+      }
+    })(),
+    'Live consultation identity resolution must fail closed when userId is blank.',
+  );
+  assert(
+    resolveConsultationUserId('user_phase15', true) === 'user_phase15',
+    'Live consultation must preserve the verified authenticated userId.',
+  );
+  assert(
+    resolveConsultationUserId(undefined, false) === 'default_user',
+    'Anonymous compatibility remains restricted to non-live/mock execution.',
   );
 
-  // The source itself must not contain a production identity fallback.
   const orchestratorSource = fs.readFileSync(orchestratorSourcePath, 'utf8');
   assert(
     !orchestratorSource.includes("options?.userId || 'default_user'"),
     'ConsultationOrchestrator must not contain the production default_user identity fallback.',
   );
 
-  // Operational truth remains explicit: engineering certification does not
-  // silently promote a historical SLO-breached release to launch-ready.
   const runbook = fs.readFileSync(runbookPath, 'utf8');
   assert(
     runbook.includes('NEEDS_OPERATIONAL_REVIEW') &&
