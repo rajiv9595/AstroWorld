@@ -74,17 +74,6 @@ export interface ConsultationOptions {
   parentDeadlineTimestampMs?: number;
 }
 
-export function resolveConsultationUserId(
-  userId: string | undefined,
-  isLiveMode: boolean,
-): string {
-  const providedUserId = userId?.trim();
-  if (isLiveMode && !providedUserId) {
-    throw new Error('Live consultation requires an authenticated userId.');
-  }
-  return providedUserId || 'default_user';
-}
-
 export class ConsultationOrchestrator {
   private planner: QuestionPlanner;
   private toolOrchestrator: ToolExecutionOrchestrator;
