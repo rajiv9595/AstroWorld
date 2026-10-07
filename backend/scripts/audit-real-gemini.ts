@@ -48,7 +48,10 @@ async function runQualityAudit() {
 
   const orchestrator = new ConsultationOrchestrator({ apiKey });
 
-  const result = await orchestrator.consult(query, AUDIT_PROFILE);
+  const result = await orchestrator.consult(query, AUDIT_PROFILE, {
+    userId: 'audit_real_gemini',
+    conversationId: 'audit_real_gemini',
+  });
 
   console.log('\n--- 1. COMPLETE EXECUTION TRACE ---');
   console.log(`Execution Mode: ${result.trace.executionMode}`);
