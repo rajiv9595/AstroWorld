@@ -28,8 +28,9 @@ async function main(): Promise<void> {
   const manifestPath = path.resolve(repoRoot, '../../release_manifest.md');
 
   // RED: current production code falls back to default_user in live mode.
+  const originalForceLive = process.env.FORCE_LIVE_GEMINI;
+  process.env.FORCE_LIVE_GEMINI = 'true';
   const liveOrchestrator = new ConsultationOrchestrator({
-    apiKey: 'phase15-test-key',
     forceMockMode: false,
   });
 
@@ -43,6 +44,9 @@ async function main(): Promise<void> {
     rejectedMissingIdentity =
       String(error?.message || error).includes('authenticated userId');
   }
+  if (originalForceLive === undefined) delete process.env.FORCE_LIVE_GEMINI;
+  else process.env.FORCE_LIVE_GEMINI = originalForceLive;
+
   assert(
     rejectedMissingIdentity,
     'Live consultation must fail closed when authenticated userId is missing.',
