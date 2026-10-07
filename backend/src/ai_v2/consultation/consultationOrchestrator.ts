@@ -48,6 +48,17 @@ import {
   validateConsultationResult,
 } from '../schemas/consultationPacket.ts';
 
+export function resolveConsultationUserId(
+  userId: string | undefined,
+  liveMode: boolean,
+): string {
+  const normalizedUserId = userId?.trim();
+  if (liveMode && !normalizedUserId) {
+    throw new Error('Live consultation requires an authenticated userId.');
+  }
+  return normalizedUserId || 'default_user';
+}
+
 export interface ConsultationOptions {
   conversationContext?: Array<{ role: 'user' | 'model'; text: string }>;
   forceMockMode?: boolean;
