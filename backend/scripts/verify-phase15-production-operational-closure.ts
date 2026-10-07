@@ -23,8 +23,8 @@ async function main(): Promise<void> {
     repoRoot,
     'src/ai_v2/consultation/consultationOrchestrator.ts',
   );
-  const runbookPath = path.resolve(repoRoot, '../../production_runbook.md');
-  const manifestPath = path.resolve(repoRoot, '../../release_manifest.md');
+  const runbookPath = path.resolve(repoRoot, 'production_runbook.md');
+  const manifestPath = path.resolve(repoRoot, 'release_manifest.md');
 
   // Live identity boundary.
   assert(
