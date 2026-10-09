@@ -172,7 +172,7 @@ export class ResponseEvidenceSelector {
     const selectedClaimIds = selectedClaims.map(c => c.claimId);
     const selectedEvidenceIds = Array.from(new Set(selectedClaims.flatMap(c => c.evidenceIds)));
 
-    const classicalContextSummary = this.buildClassicalContextSummary(plan, reasoning);
+    const classicalContextSummary = this.buildClassicalContextSummary(plan, reasoning, technicalMode);
 
     return {
       budget,
@@ -280,7 +280,11 @@ export class ResponseEvidenceSelector {
     }
   }
 
-  private buildClassicalContextSummary(_plan: QuestionPlan, reasoning: ReasoningPacket): string {
+  private buildClassicalContextSummary(
+    _plan: QuestionPlan,
+    reasoning: ReasoningPacket,
+    technicalMode: 'normal' | 'technical' = 'normal',
+  ): string {
     const applicableRules = (reasoning.appliedRules || [])
       .filter(rule => rule.applicabilityStatus === 'applied')
       .slice(0, 3);
@@ -289,8 +293,22 @@ export class ResponseEvidenceSelector {
       return 'No directly applicable classical rule passed verified prerequisite checks for this question. Do not present a named classical rule as established.';
     }
 
-    return applicableRules
-      .map(rule => `${rule.citation}: ${rule.interpretationSummary}`)
-      .join('\n');
+    // Source lineage belongs in technical mode. Normal conversation should explain the
+    // relevant principle without dumping citation headers and long catalogue-like passages.
+    if (technicalMode === 'technical') {
+      return applicableRules
+        .map(rule => `${rule.citation}: ${rule.interpretationSummary}`)
+        .join('\n');
+    }
+
+    const concisePrinciples = applicableRules.map(rule => {
+      let summary = String(rule.interpretationSummary || '').trim();
+      summary = summary.replace(/^[^:]{1,100}:\\s*/, '');
+      const end = summary.search(/[.!?](?:\\s|$)/);
+      if (end >= 0) summary = summary.slice(0, end + 1);
+      return summary.trim();
+    }).filter(Boolean);
+
+    return Array.from(new Set(concisePrinciples)).slice(0, 2).join(' ');
   }
 }
