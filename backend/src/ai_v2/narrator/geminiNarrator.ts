@@ -536,280 +536,120 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     responsePlan: ResponsePlan,
     approvedClaimSet: ApprovedClaimSet
   ): string {
-    const claims = approvedClaimSet.claims;
+    const claims = approvedClaimSet.claims.filter(claim => claim.allowed !== false);
     const pack = responsePlan.contextPack;
     const rawLower = plan.rawQuestion.toLowerCase();
 
-    // 1. Clarification & Insufficient Evidence Handling
-    if (responsePlan.responseType === 'clarification' || responsePlan.responseType === 'insufficient_evidence') {
-      if (plan.clarification?.question) {
-        return `${plan.clarification.reason || 'The question is a bit too broad to provide a specific astrological reading.'} ${plan.clarification.question}`;
-      }
-      return "What specific area of life would you like me to explore — such as career timing, marriage, finances, health, or spiritual growth?";
-    }
-
-    // 2. Specific Misinformation, Contradiction, and False Assumption Checks
+    // Safety responses may be deterministic, but chart-specific statements never are.
     if (rawLower.includes('when will i die') || rawLower.includes('will i die') || rawLower.includes('death')) {
-      return "Astrological analysis is ethically oriented towards life guidance, personal vitality, and constructive longevity rather than fatalistic lifespan forecasting.";
+      return "I don't provide fatalistic predictions about death. We can instead explore chart themes traditionally associated with vitality, resilience, and supportive periods, while keeping practical health decisions grounded in medical advice.";
     }
 
-    if (rawLower.includes('rahu was active') || (rawLower.includes('rahu') && rawLower.includes('moon dasha')) || (rawLower.includes('mahadasha') && rawLower.includes('antardasha'))) {
-      return "In the Vimshottari Dasha system, planetary periods operate in hierarchical layers: the primary overarching cycle is the Mahadasha (major ruler), while the active sub-cycle is the Antardasha (sub-ruler). Both planetary energies operate simultaneously in your chart.";
-    }
-
-    if (rawLower.includes('10th house earlier') || (rawLower.includes('10th') && rawLower.includes('7th house'))) {
-      return "To clarify how these sectors interact: the 10th house governs professional authority and public standing, whereas the 7th house and D9 Navamsha govern partnerships and interpersonal agreements. Both houses work synchronously during active dasha cycles.";
-    }
-
-    if ((rawLower.includes('jupiter') && rawLower.includes('saturn')) || (rawLower.includes('earlier') && (rawLower.includes('saturn') || rawLower.includes('jupiter')))) {
-      return "To clarify the planetary roles from your chart: Jupiter and Saturn govern complementary dimensions of career development in Vedic astrology — Jupiter provides expansive opportunities and recognition, while Saturn governs structural discipline, perseverance, and foundational consolidation. Both planetary influences operate simultaneously in your chart.";
-    }
-
-    if (rawLower.includes('earlier you said') || rawLower.includes('earlier timing') || rawLower.includes('timing was wrong') || rawLower.includes('august was stronger')) {
-      return "To clarify your timing windows from your birth chart: astrological confluence operates across continuous sub-periods rather than rigid single-month boundaries. Reviewing your verified cycles in your chart, peak planetary momentum develops across the broader timing window.";
-    }
-
-    if (rawLower.includes('guarantees marriage') || (rawLower.includes('guarantee') && rawLower.includes('marriage'))) {
-      return "In classical Jyotish, planetary timing indicates favorable relationship readiness rather than a fatalistically fixed date. The upcoming planetary cycles provide supportive timing for matrimonial commitments when paired with conscious mutual effort.";
-    }
-
-    if (rawLower.includes('guaranteed in 2027') || (rawLower.includes('guarantee') && rawLower.includes('2027'))) {
-      return "Astrologically, no milestone or life event is fatalistically guaranteed in 2027. The planetary cycles indicate supportive momentum for career growth during 2027, but concrete success develops through conscious discipline, ethical responsibility, and disciplined preparation.";
-    }
-
-    if (rawLower.includes('guaranteed') || rawLower.includes('guarantees') || rawLower.includes('guarantee')) {
-      const activeWin = pack?.dashaWindow?.periodText || pack?.confluenceWindow?.periodText;
-      const timingPhrase = activeWin ? ` during ${activeWin}` : '';
-      return `Astrologically, no milestone or life event is fatalistically guaranteed. The planetary cycles indicate supportive momentum${timingPhrase}, but concrete success develops through conscious discipline, ethical responsibility, and disciplined preparation.`;
-    }
-
-    if (rawLower.includes('gemstone') || rawLower.includes('buy right now') || rawLower.includes('buy a')) {
-      return "In classical Jyotish, no gemstone is guaranteed to alter your planetary cycles; authentic Jyotish emphasizes conscious discipline, patience, and ethical development over commercial gemstone prescriptions. Your verified chart placements indicate the inherent capacity to navigate your planetary cycles constructively.";
-    }
-
-    if (rawLower.includes('nothing happened')) {
-      return "In classical Jyotish, planetary timing windows often build internal readiness, emotional clarity, and subtle foundations before visible events emerge. This internal preparation is essential for lasting success.";
-    }
-
-    if (rawLower.includes('rejected') || rawLower.includes('setback') || rawLower.includes('what does that mean')) {
-      return "In classical Jyotish, career timing windows indicate supportive astrological momentum, but concrete professional outcomes require conscious discipline, patience, and structural preparation. A temporary setback serves as a developmental period to refine your career strategy.";
-    }
-
-    // 2b. Conversational Ambiguity & Clarification Scoping
-    if (
-      (responsePlan.responseType as string) === 'clarification' ||
-      plan.clarificationRequired ||
-      plan.intent === 'clarification_required' ||
-      rawLower.includes('what happens next') ||
-      rawLower.includes('will jupiter help me') ||
-      rawLower.includes('is this good') ||
-      rawLower.includes('tell me about myself') ||
-      rawLower.includes('is my future good')
-    ) {
-      return "To provide a focused astrological reading, could you please specify which area of life or timeframe you would like to explore — such as career timing, relationship dynamics, financial growth, or an upcoming year?";
-    }
-
-    // 2d. Conversational Emotional Uncertainty & Supportive Grounding
-    if (rawLower.includes('anxious') || rawLower.includes('job security') || rawLower.includes('stability')) {
-      return "Feelings of career anxiety often arise during Saturn transit cycles or transitional dasha phases. In Vedic astrology, Saturn tests structure to build lasting stability. Focus on steady perseverance, as your chart foundation supports long-term professional resilience.";
-    }
-
-    if (rawLower.includes('overwhelmed') || (rawLower.includes('heavy') && rawLower.includes('responsibilities')) || (rawLower.includes('relief') && rawLower.includes('dasha'))) {
-      return "Periods of heavy responsibility test our endurance and develop lasting leadership maturity. In your Vimshottari Dasha cycle, maintaining patience through current obligations prepares the ground for more expansive sub-periods.";
-    }
-
-    // 2e. Conversational False Assumption Corrections
-    if (rawLower.includes('d10 lagna is leo') || (rawLower.includes('d10') && rawLower.includes('leo') && rawLower.includes('confirm'))) {
-      return "Reviewing your divisional charts, your D10 Dashamsha Lagna is Taurus rather than Leo. Verified placements in your D10 chart contribute directly to your leadership and professional trajectory.";
-    }
-
-    if (rawLower.includes('saturn is exalted in aries') || (rawLower.includes('saturn') && rawLower.includes('exalted') && rawLower.includes('aries'))) {
-      return "In Vedic astrology, Saturn is debilitated in Aries (it reaches exaltation in Libra). Looking at your planetary positions, Saturn emphasizes structural discipline and patient mastery.";
-    }
-
-    if (rawLower.includes('gajakesari yoga') || rawLower.includes('have gajakesari')) {
-      return "In Vedic astrology, Gajakesari Yoga occurs when Jupiter is in a Kendra from the Moon. In your chart, Jupiter is situated in a Trikona placement from the Moon, so classical Gajakesari Yoga is not formed; instead, your chart's verified planetary configurations guide your personal and professional development.";
-    }
-
-    if (rawLower.includes('jupiter is definitely in my 10th house') || rawLower.includes('jupiter is in the 10th house, correct') || (rawLower.includes('jupiter') && rawLower.includes('10th house') && (rawLower.includes('definitely') || rawLower.includes('correct') || rawLower.includes('right')))) {
-      return "Reviewing your natal chart, Jupiter is positioned in your 7th house (influencing your authority and dharma houses) rather than the 10th house. The 10th house cusp is governed by your natal planetary configuration.";
-    }
-
-    // 2f. Conversational Context Switching & Follow-ups
-    if (rawLower.includes('same thing for marriage')) {
-      return "Evaluating the same planetary cycle for marriage: Jupiter acts as a natural benefic, supporting relational harmony and mutual understanding in your partnership sectors.";
-    }
-
-    if (rawLower.includes('saturn influence last') || (rawLower.includes('saturn') && rawLower.includes('how long'))) {
-      return "Saturn transit cycles and sub-periods typically operate across a multi-year period, providing necessary structural discipline and gradual consolidation.";
-    }
-
-    if (rawLower.includes('planets in d10 contribute')) {
-      return "In your D10 Dashamsha chart, the planets positioned in Kendra and Trikona sectors contribute directly to your leadership and professional capacity.";
-    }
-
-    if (rawLower.includes('2099') || rawLower.includes('october 14') || rawLower.includes('3:15 pm')) {
-      return "Astrological timing indicates that future planetary support and developmental cycles develop across broader Vimshottari Dasha windows rather than pinpointing isolated calendar timestamps.";
-    }
-
-    // 3. Conversational Memory Recall
-    const memoryClaims = claims.filter(c => c.type === 'user_context' || (c.type as string) === 'memory' || c.text.toLowerCase().includes('user noted') || c.text.toLowerCase().includes('consultations') || c.text.toLowerCase().includes('leadership') || c.text.toLowerCase().includes('preparing for') || c.text.toLowerCase().includes('ai engineering'));
-    if (memoryClaims.length > 0 && (rawLower.includes('what do you remember') || rawLower.includes('career goal') || rawLower.includes('remember about me') || rawLower.includes('what i am targeting') || rawLower.includes('tell you') || rawLower.includes('targeting'))) {
-      const memoryDetail = memoryClaims.map(c => this.normalizeSimpleFact(c.text)).join('. ');
-      return `Based on our consultations, you noted that ${memoryDetail}. Your chart placements and active dasha cycles provide constructive timing and executive capacity for this path.`;
-    }
-
-    if (rawLower.includes('why are you saying jupiter is supportive') || (rawLower.includes('why') && rawLower.includes('jupiter') && rawLower.includes('supportive'))) {
-      return "In classical Jyotish, Jupiter is supportive because it acts as a natural benefic (Guru / Brihaspati), expanding wisdom, professional authority, and auspicious development across your active houses.";
-    }
-
-    // 4. Conversational Follow-up ("Why?", "What makes this period stronger?")
-    if (rawLower === 'why?' || rawLower === 'why' || rawLower.includes('favorable. why') || rawLower.includes('why is that') || rawLower.includes('what makes that period stronger') || rawLower.includes('what makes august stronger') || rawLower.includes('what makes this period stronger') || rawLower.includes('august')) {
-      const supporting = pack?.supportingFactors || claims.filter(c => c.type === 'factual').map(c => c.text);
-      const augustMention = (rawLower.includes('august') || rawLower.includes('that period') || claims.some(c => c.text.toLowerCase().includes('august'))) ? 'in late summer and August ' : '';
-      if (supporting.length > 0) {
-        return `This period ${augustMention}is emphasized based on your chart, where peak astrological confluence between your active Vimshottari Dasha cycle and supportive planetary transits activates your professional authority sectors for career advancement. ${supporting.slice(0, 2).join(' ')}`;
+    if (responsePlan.responseType === 'clarification' || responsePlan.responseType === 'insufficient_evidence' ||
+        plan.clarificationRequired || plan.intent === 'clarification_needed' || plan.intent === 'clarification_required') {
+      if (plan.clarification?.question) {
+        return (plan.clarification.reason || 'I need one detail to give you a focused reading.') + ' ' + plan.clarification.question;
       }
-      return `This period ${augustMention}is emphasized based on the peak astrological confluence where supportive planetary transits align directly with the active dasha sub-period, creating constructive momentum for career growth.`;
+      return "I don't have enough verified chart evidence to answer that reliably yet. Which life area and timeframe should I focus on?";
     }
 
-    // 4b. Deep multi-year queries (2027 to 2030, Business Yogas, Spiritual Dharma)
-    if (rawLower.includes('2027 to 2030') || (rawLower.includes('2027') && rawLower.includes('2030'))) {
-      return `Evaluating your multi-year career horizon from 2027 to 2030 through D1 Rashi, D10 Dashamsha, Vimshottari Dasha, and transit cycles:
-
-Looking at your chart: Your D1 chart provides foundational executive stability, while your D10 Dashamsha reinforces leadership milestones and strategic responsibility. Between 2027 and 2030, major transit movements interact with your active dasha rulers to create sequential windows of professional expansion and structural consolidation.
-
-Here is the important qualification: In classical Jyotish, long-term multi-year cycles yield their greatest outcomes when paired with continuous skill mastery, patient leadership, and structural discipline rather than hasty career shifts.
-
-Regarding timing: Your transit confluence windows across 2027 to 2030 provide progressive phases for career elevation and professional recognition.`;
+    if (claims.length === 0) {
+      return "I don't have enough approved chart-specific evidence in this response to give you a reliable interpretation. I'd rather check the relevant placements and timing than guess.";
     }
 
-    if (rawLower.includes('business prospects') || (rawLower.includes('business') && rawLower.includes('entrepreneurship'))) {
-      return `Evaluating your business and entrepreneurship prospects using D1, D10 Dashamsha, Vimshottari Dasha, and verified classical yogas:
-
-Looking at your chart: Your D1 chart indicates strong entrepreneurial capacity, while D10 Dashamsha positions show executive authority and independent initiative. Favorable yogas in your chart reinforce commercial acumen and resource management during supportive Dasha sub-periods.
-
-Here is the important qualification: In classical Jyotish, independent enterprise prospers when bold initiative is tempered by thorough financial planning and operational discipline.
-
-Regarding timing: Your active Vimshottari Dasha cycle aligns with constructive timing windows for strategic business development.`;
+    // Memory recall must be grounded in user-provided memory and must not append a chart prediction.
+    const asksMemory = rawLower.includes('what do you remember') ||
+      rawLower.includes('remember about me') || rawLower.includes('what i am targeting') ||
+      rawLower.includes('career goal') || rawLower.includes('what did i tell you');
+    const memoryClaims = claims.filter(claim =>
+      claim.type === 'user_context' || (claim.type as string) === 'memory' ||
+      claim.text.toLowerCase().startsWith('user noted:')
+    );
+    if (asksMemory && memoryClaims.length > 0) {
+      return memoryClaims.map(claim => this.normalizeSimpleFact(claim.text)).join(' ');
     }
 
-    if (rawLower.includes('spiritual') || rawLower.includes('dharmic') || (rawLower.includes('dharma') && rawLower.includes('9th house'))) {
-      return `Evaluating your spiritual inclinations and dharma through the 9th house, 12th house, D9 Navamsha, and active dasha cycles:
+    const factualClaims = claims.filter(claim => claim.type === 'factual' || claim.type === 'timing');
+    const synthesisClaim = claims.find(claim => claim.type === 'qualified_prediction' || claim.type === 'interpretive');
 
-Looking at your chart: The 9th house governs higher dharma and philosophical wisdom, while the 12th house and D9 Navamsha reflect contemplative depth and inner spiritual evolution. Your planetary placements foster an enduring interest in ethical philosophy, self-reflection, and higher knowledge.
-
-Here is the important qualification: Authentic spiritual progress in classical Vedic thought unfolds through steady daily practice, self-discipline, and dharmic integrity rather than escapism.
-
-Regarding timing: Your active dasha cycles provide supportive phases for philosophical study and spiritual maturity.`;
-    }
-
-    // 5. Simple Fact Direct Handling (Dynamic Fact Matching)
+    // Resolve simple chart-fact questions against the actual supplied claims. In particular,
+    // select a D10 Lagna/Ascendant fact from this chart, never a benchmark-native answer.
     if (responsePlan.responseType === 'simple_fact') {
-      const factualClaims = claims.filter(c => c.type === 'factual' || c.type === 'timing');
-      const matchingClaim = this.findMatchingFactualClaim(factualClaims.length > 0 ? factualClaims : claims, rawLower);
+      const asksD10Lagna = rawLower.includes('d10') &&
+        (rawLower.includes('lagna') || rawLower.includes('ascendant'));
+      const d10LagnaClaim = asksD10Lagna
+        ? factualClaims.find(claim => {
+            const text = claim.text.toLowerCase();
+            return text.includes('d10') && (text.includes('lagna') || text.includes('ascendant'));
+          })
+        : undefined;
+      const matchingClaim = d10LagnaClaim ||
+        this.findMatchingFactualClaim(factualClaims.length > 0 ? factualClaims : claims, rawLower);
       if (matchingClaim) {
-        return `Looking at your chart: ${this.normalizeSimpleFact(matchingClaim.text)}`;
+        return this.normalizeSimpleFact(matchingClaim.text);
       }
-
-      const allSelected = pack
-        ? [...pack.supportingFactors, ...pack.restrictingFactors]
-        : claims.filter(c => c.type === 'factual').map(c => c.text);
-      if (allSelected.length > 0) {
-        return `Looking at your chart: ${this.normalizeSimpleFact(allSelected[0])}`;
+      const contextFact = (pack?.supportingFactors || []).find(factor => factor && factor.trim().length > 0);
+      if (contextFact) {
+        return this.normalizeSimpleFact(contextFact);
       }
-      return 'Looking at your chart placements for the queried factor.';
+      return "I couldn't find a matching verified chart fact for that specific question. Please check that the chart layer and birth details are correct.";
     }
 
-    // 6. Transit & Promotion Queries (Dynamic Synthesis)
-    const isTransitQuery =
-      responsePlan.responseType !== 'deep_analysis' &&
-      (plan.intent === 'promotion_timing' ||
-      /\btransits?\b/i.test(rawLower) ||
-      /\bgochara\b/i.test(rawLower) ||
-      ((plan.planetFocus?.length || 0) > 0 && /\bupcoming\b/i.test(rawLower)));
+    // The conclusion comes from the approved synthesis claim/context. This method does not
+    // infer a placement, yoga, dasha, transit, event, or classical rule from the wording alone.
+    const directAnswer = (pack?.directAnswerDirection || synthesisClaim?.text || '').trim();
+    const paragraphs: string[] = [];
+    if (directAnswer) {
+      paragraphs.push(directAnswer);
+    }
 
-    if (isTransitQuery) {
-      const planetName = plan.planetFocus?.[0] || 'Jupiter';
-      const p1 = `The upcoming transit of ${planetName} offers strong astrological support for your career momentum and promotion timing.`;
+    const rawSupporting = pack?.supportingFactors?.length
+      ? pack.supportingFactors
+      : factualClaims
+          .filter(claim => claim.type === 'factual' && claim.strength !== 'mixed')
+          .map(claim => this.normalizeSimpleFact(claim.text));
+    const supporting = rawSupporting
+      .filter(item => typeof item === 'string' && item.trim().length > 0)
+      .filter(item => !directAnswer || item.trim().toLowerCase() !== directAnswer.toLowerCase())
+      .slice(0, responsePlan.requestedDepth === 'deep' ? 4 : 2);
+    if (supporting.length > 0) {
+      paragraphs.push('The main chart factors are: ' + supporting.join(' '));
+    }
 
-      const supporting = pack?.supportingFactors?.[0] || 'Favorable placements in your chart reinforce your executive capacity';
-      const dashaMention = pack?.dashaWindow
-        ? `your active Vimshottari Dasha cycle (${pack.dashaWindow.periodText}) provides a supportive timing backdrop`
-        : 'your active Vimshottari Dasha cycle provides complementary support';
+    const rawRestrictions = pack?.restrictingFactors?.length
+      ? pack.restrictingFactors
+      : claims
+          .filter(claim => claim.type !== 'factual' && claim.type !== 'timing' &&
+            (claim.strength === 'mixed' || claim.text.toLowerCase().includes('restriction') ||
+             claim.text.toLowerCase().includes('delay') || claim.text.toLowerCase().includes('patience')))
+          .map(claim => claim.text);
+    const restrictions = rawRestrictions
+      .filter(item => typeof item === 'string' && item.trim().length > 0)
+      .slice(0, 2);
+    if (restrictions.length > 0) {
+      paragraphs.push('The important qualification is: ' + restrictions.join(' '));
+    }
 
-      const p2 = `This transit is particularly supportive because it activates the 10th house authority sector from your natal Moon. ${supporting}, while ${dashaMention}, creating a constructive confluence for professional advancement.`;
-      const p3 = 'Here is the important qualification: In classical Jyotish, Kendra and Trikona activations produce their highest results when paired with conscious discipline, thorough preparation, and strategic patience rather than expecting an effortless promotion.';
-
-      const confluenceWin = pack?.confluenceWindow;
-      const dashaWin = pack?.dashaWindow;
-
-      let p4: string;
-      if (confluenceWin && dashaWin && confluenceWin.periodText !== dashaWin.periodText) {
-        p4 = `In terms of timing, while your active ${dashaWin.label} spans ${dashaWin.periodText}, your primary promotion timing window runs ${confluenceWin.periodText}, representing the period of peak astrological confluence between transit activation and running dasha cycles.`;
-      } else if (confluenceWin || dashaWin) {
-        const primaryWin = confluenceWin || dashaWin;
-        p4 = `In terms of timing, your primary window runs ${primaryWin?.periodText}, representing the period of peak astrological confluence.`;
-      } else {
-        p4 = 'In terms of timing, your active cycles favor professional initiatives throughout the coming year.';
+    const asksTiming = ['when', 'timing', 'period', 'window', 'year', 'month', 'dasha', 'transit', 'by 20']
+      .some(term => rawLower.includes(term));
+    const timingWindows = asksTiming ? (pack?.timingWindows || []).slice(0, 2) : [];
+    if (timingWindows.length > 0) {
+      const formatted = timingWindows
+        .filter(window => window.periodText && window.periodText.trim().length > 0)
+        .map(window => (window.label ? window.label + ': ' : '') + window.periodText);
+      if (formatted.length > 0) {
+        paragraphs.push('For timing, the calculated window is ' + formatted.join('; ') + '.');
       }
-
-      return [p1, p2, p3, p4].join('\n\n');
     }
 
-    // 7. General Dynamic Multi-Paragraph Answer Synthesis
-    let domainLabel = 'constructive development';
-    if (plan.domain === 'relationship' || rawLower.includes('marriage') || rawLower.includes('relationship') || rawLower.includes('7th') || rawLower.includes('navamsha')) {
-      domainLabel = 'constructive relationship dynamics, 7th house indications, and Navamsha matrimonial development';
-    } else if (plan.domain === 'finance' || rawLower.includes('wealth') || rawLower.includes('financial')) {
-      domainLabel = 'constructive financial development and wealth management';
-    } else if (plan.domain === 'career' || rawLower.includes('career') || rawLower.includes('job') || rawLower.includes('profession')) {
-      domainLabel = 'constructive career development and professional growth';
-    } else if (plan.domain === 'travel' || rawLower.includes('travel') || rawLower.includes('foreign')) {
-      domainLabel = 'supportive travel and relocation opportunities';
-    } else if (plan.domain === 'education' || rawLower.includes('education') || rawLower.includes('intellect')) {
-      domainLabel = 'intellectual growth and educational milestones';
-    } else if (plan.domain === 'spirituality' || rawLower.includes('spiritual')) {
-      domainLabel = 'spiritual wisdom and inner growth';
+    const classicalContext = pack?.classicalContextSummary?.trim();
+    if (classicalContext &&
+        !classicalContext.toLowerCase().includes('no directly applicable classical rule passed')) {
+      paragraphs.push(classicalContext);
     }
 
-    let directSynthesis = pack?.directAnswerDirection || claims.find(c => c.type === 'qualified_prediction')?.text;
-    if (directSynthesis) {
-      if ((plan.domain === 'relationship' || rawLower.includes('relationship') || rawLower.includes('marriage') || rawLower.includes('7th') || rawLower.includes('navamsha')) && !directSynthesis.toLowerCase().includes('relationship')) {
-        directSynthesis = `For your relationship dynamics, 7th house indicators, and Navamsha matrimonial development, ${directSynthesis.charAt(0).toLowerCase() + directSynthesis.slice(1)}`;
-      } else if (rawLower.includes('business')) {
-        directSynthesis = `For your business and entrepreneurial prospects, ${directSynthesis.charAt(0).toLowerCase() + directSynthesis.slice(1)}`;
-      } else if ((plan.domain === 'career' || rawLower.includes('career')) && !directSynthesis.toLowerCase().includes('career')) {
-        const yearPrefix = (rawLower.includes('2027') || rawLower.includes('strongest') || rawLower.includes('best career')) ? 'in 2027 ' : '';
-        const dashamshaPrefix = rawLower.includes('stand out') || rawLower.includes('upcoming cycles') ? 'and D10 Dashamsha ' : '';
-        directSynthesis = `For your career trajectory ${yearPrefix}${dashamshaPrefix}and professional development, ${directSynthesis.charAt(0).toLowerCase() + directSynthesis.slice(1)}`;
-      }
-      if ((rawLower.includes('classical') || rawLower.includes('preference') || rawLower.includes('citation') || claims.some(c => c.text.toLowerCase().includes('classical') || c.text.toLowerCase().includes('preference'))) && !directSynthesis.toLowerCase().includes('classical jyotish')) {
-        directSynthesis = `In classical Jyotish, ${directSynthesis.charAt(0).toLowerCase() + directSynthesis.slice(1)}`;
-      }
-    } else {
-      directSynthesis = `The verified chart indications support ${domainLabel} for the queried timeframe.`;
-    }
-
-    const paragraphs: string[] = [directSynthesis];
-
-    const supportingItems = pack?.supportingFactors || claims.filter(c => c.type === 'factual' && c.strength !== 'mixed').map(c => c.text);
-    if (supportingItems.length > 0) {
-      paragraphs.push(`Looking at your chart: ${supportingItems.slice(0, 2).join(' ')}`);
-    }
-
-    const restrictingItems = pack?.restrictingFactors || claims.filter(c => c.strength === 'mixed' || c.text.toLowerCase().includes('discipline') || c.text.toLowerCase().includes('patience')).map(c => c.text);
-    if (restrictingItems.length > 0) {
-      paragraphs.push(`Here is the important qualification: ${restrictingItems.slice(0, 1).join(' ')}`);
-    } else {
-      paragraphs.push("Here is the important qualification: In classical Jyotish, planetary activations yield their highest results when paired with conscious discipline, patient perseverance, and ethical responsibility.");
-    }
-
-    const timingItems = pack?.timingWindows || [];
-    if (timingItems.length > 0) {
-      const windowLabel = timingItems[0].label ? `${timingItems[0].label.replace('Moon - Venus', 'Moon–Venus')} ` : '';
-      const dashaLabel = (rawLower.includes('dasha') || rawLower.includes('mahadasha')) ? 'active Moon Mahadasha ' : '';
-      paragraphs.push(`Regarding timing: your ${dashaLabel}${windowLabel}window runs ${timingItems[0].periodText}.`);
+    if (paragraphs.length === 0) {
+      return "I don't have enough approved chart-specific evidence to explain this accurately yet. I'd rather verify the relevant chart factors than fill the gap with a generic prediction.";
     }
 
     return paragraphs.join('\n\n');
