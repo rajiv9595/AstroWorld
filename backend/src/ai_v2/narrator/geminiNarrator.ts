@@ -599,7 +599,23 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     // infer a placement, yoga, dasha, transit, event, or classical rule from the wording alone.
     const directAnswer = (pack?.directAnswerDirection || synthesisClaim?.text || '').trim();
     const paragraphs: string[] = [];
-    if (directAnswer) {
+    const transitFocus = pack?.transitFocus;
+    const hasVerifiedTransitFocus =
+      transitFocus?.hasVerifiedTransitEvidence === true &&
+      typeof transitFocus.transitingPlanet === 'string' &&
+      transitFocus.transitingPlanet.trim().length > 0 &&
+      typeof transitFocus.activationSummary === 'string' &&
+      transitFocus.activationSummary.trim().length > 0;
+
+    if (hasVerifiedTransitFocus) {
+      // The transit lead is derived only from a verified transit claim in the context pack.
+      // A generic transit phrase is never emitted merely because the user mentioned a planet.
+      const transitLead =
+        `The transit of ${transitFocus.transitingPlanet} is calculated as follows: ${transitFocus.activationSummary.trim()}.`;
+      const qualification =
+        'A key qualification: a transit alone cannot confirm a specific event; it must be read alongside the natal chart and running dasha.';
+      paragraphs.push([transitLead, directAnswer, qualification].filter(Boolean).join(' '));
+    } else if (directAnswer) {
       paragraphs.push(directAnswer);
     }
 
@@ -611,6 +627,10 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     const supporting = rawSupporting
       .filter(item => typeof item === 'string' && item.trim().length > 0)
       .filter(item => !directAnswer || item.trim().toLowerCase() !== directAnswer.toLowerCase())
+      .filter(item =>
+        !hasVerifiedTransitFocus ||
+        item.trim().toLowerCase() !== transitFocus.activationSummary.trim().toLowerCase()
+      )
       .slice(0, responsePlan.requestedDepth === 'deep' ? 4 : 2);
     if (supporting.length > 0) {
       paragraphs.push('The main chart factors are: ' + supporting.join(' '));
@@ -652,7 +672,7 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
       return "I don't have enough approved chart-specific evidence to explain this accurately yet. I'd rather verify the relevant chart factors than fill the gap with a generic prediction.";
     }
 
-    return paragraphs.join('\n\n');
+    return paragraphs.slice(0, 4).join('\\n\\n');
   }
 
   /**
