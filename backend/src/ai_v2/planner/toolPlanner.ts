@@ -147,9 +147,18 @@ export class ToolPlanner {
     }
 
     // B. Domain Specific Questions
-    if (domain === 'career' || intent === 'career' || intent === 'job_change' || intent === 'promotion_timing') {
+    if (domain === 'career' || intent === 'career' || intent === 'job_change' || intent === 'promotion_timing' || intent === 'career_timing') {
       addTool('get_birth_chart', { birthProfile }, [], 10);
       addTool('get_divisional_chart', { birthProfile, vargaCode: 'D10' as VargaCode }, [], 9);
+
+      // Preserve additional plan layers (such as D4 for a foreign-career question)
+      // without duplicating the primary domain's default divisional chart.
+      for (const varga of chartLayers) {
+        if (varga !== 'D1' && varga !== 'D10') {
+          addTool('get_divisional_chart', { birthProfile, vargaCode: varga }, [], 8);
+        }
+      }
+
       addTool('get_current_dasha', { birthProfile }, [], 8);
       addTool('get_active_yogas', { birthProfile }, [], 7);
 
@@ -173,6 +182,26 @@ export class ToolPlanner {
           addTool('get_dasha_at', { birthProfile, targetDateIso: targetDate }, ['get_current_dasha'], 6);
           addTool('get_transits', { birthProfile, targetDateIso: targetDate }, ['get_birth_chart'], 6);
         }
+      }
+      return;
+    }
+
+    if (domain === 'travel' || intent === 'travel') {
+      addTool('get_birth_chart', { birthProfile }, [], 10);
+      addTool('get_divisional_chart', { birthProfile, vargaCode: 'D4' as VargaCode }, [], 9);
+      addTool('get_current_dasha', { birthProfile }, [], 8);
+
+      if (
+        temporalScope.type === 'upcoming' ||
+        temporalScope.type === 'specific_date' ||
+        targetDatesIso.length > 0
+      ) {
+        const targetDate =
+          targetDatesIso[0] ||
+          temporalScope.startIso ||
+          new Date(new Date().getFullYear() + 1, 0, 1).toISOString();
+        addTool('get_dasha_at', { birthProfile, targetDateIso: targetDate }, ['get_current_dasha'], 7);
+        addTool('get_transits', { birthProfile, targetDateIso: targetDate }, ['get_birth_chart'], 7);
       }
       return;
     }
