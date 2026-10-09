@@ -56,25 +56,6 @@ async function runPhase4ESuite(): Promise<void> {
   const responseText = canonicalResult.finalResponse.text;
   const contextPack = canonicalResult.responsePlan.contextPack;
 
-  console.log('[Transit diagnostics summary]', JSON.stringify({
-    question: canonicalResult.questionPlan.rawQuestion,
-    plan: {
-      intent: canonicalResult.questionPlan.intent,
-      domain: canonicalResult.questionPlan.domain,
-      temporalScope: canonicalResult.questionPlan.temporalScope,
-      targetDatesIso: canonicalResult.questionPlan.targetDatesIso,
-      planetFocus: canonicalResult.questionPlan.planetFocus,
-      houseFocus: canonicalResult.questionPlan.houseFocus,
-    },
-    transitTool: canonicalResult.evidencePacket.toolResults.find((tool: any) => tool.toolName === 'get_transits')?.success,
-    transitFactCount: canonicalResult.evidencePacket.facts.filter((fact: any) => fact.category === 'transit').length,
-    transitClaimCount: canonicalResult.approvedClaimSet.claims.filter((claim: any) => claim.factorType === 'transit').length,
-    selectedClaimIds: contextPack?.selectedClaimIds,
-    selectedSupportingFactors: contextPack?.supportingFactors,
-    selectedTransitFactors: contextPack?.transitFactors,
-    transitFocus: contextPack?.transitFocus,
-  }));
-  
   console.log('--------------------------------------------------');
   console.log(responseText);
   console.log('--------------------------------------------------\n');
@@ -88,11 +69,21 @@ async function runPhase4ESuite(): Promise<void> {
     'Jupiter transit is clearly identified as the primary subject without natal confusion'
   );
 
-  // Assert 2: House Activation relative to Moon/Lagna is grounded
+  // Assert 2: Transit house positions must match the deterministic engine's actual result.
+  // Never hard-code a preferred astrological conclusion into a regression benchmark.
+  const jupiterTransitFact = canonicalResult.evidencePacket.facts.find(
+    fact => fact.category === 'transit' && fact.entity === 'Jupiter (Transit)' && fact.verified,
+  );
+  const expectedMoonHouse = jupiterTransitFact?.value.match(/House\\s+(\\d+)\\s+from Moon/i)?.[1];
+  const expectedLagnaHouse = jupiterTransitFact?.value.match(/House\\s+(\\d+)\\s+from Lagna/i)?.[1];
   assert(
-    responseText.includes('10th house') && responseText.includes('Moon'),
-    'Step 1 & 3: Grounded House Activation',
-    'Activates the 10th house authority sector from natal Moon based on verified transit evidence'
+    Boolean(jupiterTransitFact) &&
+      Boolean(expectedMoonHouse) &&
+      Boolean(expectedLagnaHouse) &&
+      responseText.includes(`House ${expectedMoonHouse} from Moon`) &&
+      responseText.includes(`House ${expectedLagnaHouse} from Lagna`),
+    'Step 1 & 3: Grounded Transit House Positions',
+    'Narration preserves the calculated Jupiter house positions from verified transit evidence',
   );
 
   // Assert 3: D10 divisional capacity & Dasha context are distinctly linked
@@ -114,15 +105,13 @@ async function runPhase4ESuite(): Promise<void> {
     'Grounded in verified multi-layer confluence window without zero-length placeholder dates'
   );
 
-  // Assert 5: Restriction & Discipline Qualification
+  // Assert 5: Preserve uncertainty without inventing chart-specific obstacles.
   assert(
-    responseText.toLowerCase().includes('qualification') ||
-      responseText.toLowerCase().includes('patience') ||
-      responseText.toLowerCase().includes('discipline') ||
-      responseText.toLowerCase().includes('responsibility') ||
-      responseText.toLowerCase().includes('persistence'),
-    'Step 7 & 10: Structural Qualification & Non-Fatalism',
-    'Balances supportive momentum with conscious patience and structured discipline'
+    responseText.toLowerCase().includes('qualification') &&
+      responseText.toLowerCase().includes('dasha') &&
+      !responseText.toLowerCase().includes('guaranteed'),
+    'Step 7 & 10: Qualification & Non-Fatalism',
+    'Explains that transit is not a guarantee and must be considered with the running dasha',
   );
 
   // =========================================================================
