@@ -264,6 +264,6 @@ export class ResponseEvidenceSelector {
 
     return applicableRules
       .map(rule => `${rule.citation}: ${rule.interpretationSummary}`)
-      .join('\\n');
+      .join('\n');
   }
 }
