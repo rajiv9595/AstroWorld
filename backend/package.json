@@ -66,7 +66,8 @@
     "test:phase13:evidence-source": "tsx scripts/verify-phase13-evidence-source-hardening.ts",
     "test:phase14:conversation-persistence": "tsx scripts/verify-phase14-conversation-persistence.ts",
     "test:phase15:operational-closure": "tsx scripts/verify-phase15-production-operational-closure.ts",
-    "test:production:certification": "npm run build && npm run test:phase15:operational-closure && npm run test:phase14:conversation-persistence && npm run test:phase12:independent-lunar && npm run test:phase13:evidence-source && npm run test:phase9:all && npm run test:ai-v2-precision && npm run test:phase10:calculation-truth && npm run test:phase10:source-integrity && npm run test:phase10:audit-repair"
+    "test:ai-v3:narration-integrity": "tsx scripts/verify-ai-v3-narration-integrity.ts",
+    "test:production:certification": "npm run build && npm run test:ai-v3:narration-integrity && npm run test:phase15:operational-closure && npm run test:phase14:conversation-persistence && npm run test:phase12:independent-lunar && npm run test:phase13:evidence-source && npm run test:phase9:all && npm run test:ai-v2-precision && npm run test:phase10:calculation-truth && npm run test:phase10:source-integrity && npm run test:phase10:audit-repair"
   },
   "dependencies": {
     "@astroworld/shared": "*",
