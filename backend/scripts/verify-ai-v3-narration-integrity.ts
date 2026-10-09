@@ -311,6 +311,44 @@ function testVerifiedTransitEvidenceReachesResponseContextAndFallback(): void {
   );
 }
 
+
+function testClassicalContextIsConversationalAndCitationModeAware(): void {
+  const { plan, reasoning, claimSet } = fixture();
+  reasoning.appliedRules = [{
+    ruleId: 'rule_career_10th_house',
+    sourceId: 'source_bphs_14',
+    citation: 'BPHS Ch. 14, Sl. 1–12',
+    interpretationSummary:
+      'Foundational career principles: 10th house represents vocation and public authority. Evaluation requires assessing the 10th house sign and its lord.',
+    applicabilityStatus: 'applied',
+    evidenceIds: ['fact_jupiter'],
+  }];
+
+  const selector = new ResponseEvidenceSelector();
+  const normal = selector.selectEvidence(plan, reasoning, claimSet, 'normal').classicalContextSummary;
+  const technical = selector.selectEvidence(plan, reasoning, claimSet, 'technical').classicalContextSummary;
+
+  assert(
+    normal.includes('10th house represents vocation and public authority') &&
+      !normal.includes('BPHS Ch.') &&
+      !normal.includes('Foundational career principles:'),
+    'Normal narration should use a concise principle, not dump source headers or metadata.',
+  );
+  assert(
+    technical.includes('BPHS Ch. 14') &&
+      technical.includes('Evaluation requires assessing'),
+    'Technical mode should preserve citation and the full interpretation for traceability.',
+  );
+
+  const normalized = selector.normalizeClaimText(
+    'The verified chart placement of Jupiter (Transit) (position: in Leo; at 02° 12\' 26\") provides supporting astrological background.',
+  );
+  assert(
+    normalized.includes('in Leo') && !normalized.includes('in in Leo'),
+    'Position normalization must not duplicate the preposition from canonical transit evidence.',
+  );
+}
+
 async function main(): Promise<void> {
   testConclusionIsPassedToNarratorContext();
   testNoInventedClassicalContextWithoutApplicableRule();
@@ -318,8 +356,9 @@ async function main(): Promise<void> {
   testLowReasoningConfidenceProducesHighUncertainty();
   testDeterministicFallbackUsesTheSuppliedChartInsteadOfAFixedOne();
   testVerifiedTransitEvidenceReachesResponseContextAndFallback();
+  testClassicalContextIsConversationalAndCitationModeAware();
   await testTransitToolDataIsMappedIntoVerifiedEvidence();
-  console.log('AI V3 NARRATION INTEGRITY: PASS (7 contracts)');
+  console.log('AI V3 NARRATION INTEGRITY: PASS (8 contracts)');
 }
 
 try {
