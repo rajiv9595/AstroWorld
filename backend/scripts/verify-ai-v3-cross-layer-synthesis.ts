@@ -130,8 +130,8 @@ async function main(): Promise<void> {
   );
 
   const divisionalLayers = packet.confluence.layers.filter(layer => layer.layer === 'Varga');
-  const d10 = divisionalLayers.find(layer => /\\bD10\\b/.test(layer.factorDescription));
-  const d4 = divisionalLayers.find(layer => /\\bD4\\b/.test(layer.factorDescription));
+  const d10 = divisionalLayers.find(layer => /\bD10\b/.test(layer.factorDescription));
+  const d4 = divisionalLayers.find(layer => /\bD4\b/.test(layer.factorDescription));
 
   assert(
     Boolean(d10 && d4),
