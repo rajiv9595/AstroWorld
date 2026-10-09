@@ -36,9 +36,8 @@ export class ResponseEvidenceSelector {
     const candidateRestricting: Array<{ claim: ClaimItem; score: number }> = [];
 
     const isTransitQuestion =
-      plan.intent.includes('transit') ||
-      plan.rawQuestion.toLowerCase().includes('transit') ||
-      plan.rawQuestion.toLowerCase().includes('jupiter');
+      plan.intent.toLowerCase().includes('transit') ||
+      /\b(transits?|gochara)\b/i.test(plan.rawQuestion);
 
     const queriedPlanets = plan.planetFocus.map(p => p.toLowerCase());
     const queriedDomain = plan.domain.toLowerCase();
@@ -47,10 +46,11 @@ export class ResponseEvidenceSelector {
     const isLagnaQuestion = rawLower.includes('lagna') || rawLower.includes('ascendant');
 
     for (const claim of claims) {
-      if (claim.type === 'qualified_prediction') continue;
+      // The approved synthesis claim is the direct answer. Preserve it alongside evidence.
+
 
       const textLower = claim.text.toLowerCase();
-      let score = 0;
+      let score = claim.type === 'qualified_prediction' ? 100 : 0;
 
       // 0. Direct Lagna / Ascendant Match (Highest Priority for Lagna inquiries)
       if (isLagnaQuestion) {
@@ -112,7 +112,9 @@ export class ResponseEvidenceSelector {
       }
 
       const isRestriction =
-        claim.type !== 'factual' && (
+        claim.type !== 'factual' &&
+        claim.type !== 'qualified_prediction' &&
+        (
           claim.strength === 'mixed' ||
           textLower.includes('structural') ||
           textLower.includes('discipline') ||
@@ -203,7 +205,9 @@ export class ResponseEvidenceSelector {
     const textLower = claim.text.toLowerCase();
     const factorType: any =
       claim.factorType ||
-      (textLower.includes('transit') || textLower.includes('gochara')
+      (claim.type === 'qualified_prediction'
+        ? 'interpretation'
+        : textLower.includes('transit') || textLower.includes('gochara')
         ? 'transit'
         : textLower.includes('dasha') || textLower.includes('vimshottari')
         ? 'dasha'
@@ -249,16 +253,17 @@ export class ResponseEvidenceSelector {
     }
   }
 
-  private buildClassicalContextSummary(plan: QuestionPlan, reasoning: ReasoningPacket): string {
-    if (plan.domain === 'career' || plan.intent === 'promotion_timing') {
-      return 'Classically (BPHS & Phaladeepika), transit activations across beneficial houses from natal Moon and Kendra-Trikona lord dashas signify major professional milestones with elevated leadership capacity.';
+  private buildClassicalContextSummary(_plan: QuestionPlan, reasoning: ReasoningPacket): string {
+    const applicableRules = (reasoning.appliedRules || [])
+      .filter(rule => rule.applicabilityStatus === 'applied')
+      .slice(0, 3);
+
+    if (applicableRules.length === 0) {
+      return 'No directly applicable classical rule passed verified prerequisite checks for this question. Do not present a named classical rule as established.';
     }
-    if (plan.domain === 'relationship') {
-      return 'Classically, matrimonial milestones activate through 7th lord transit alignments and Navamsha (D9) dignity harmony.';
-    }
-    if (plan.domain === 'finance') {
-      return 'Classically, Dhana yogas connecting 2nd house accumulations and 11th house gains activate during periods of favorable planetary confluence.';
-    }
-    return 'Classical principles indicate that converging dasha and transit influences produce constructive life developments.';
+
+    return applicableRules
+      .map(rule => `${rule.citation}: ${rule.interpretationSummary}`)
+      .join('\\n');
   }
 }
