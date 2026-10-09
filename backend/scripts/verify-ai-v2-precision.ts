@@ -56,6 +56,26 @@ async function runPhase4ESuite(): Promise<void> {
   const responseText = canonicalResult.finalResponse.text;
   const contextPack = canonicalResult.responsePlan.contextPack;
 
+  console.log('[Temporary transit diagnostics]', JSON.stringify({
+    plan: {
+      intent: canonicalResult.questionPlan.intent,
+      domain: canonicalResult.questionPlan.domain,
+      temporalScope: canonicalResult.questionPlan.temporalScope,
+      targetDatesIso: canonicalResult.questionPlan.targetDatesIso,
+      planetFocus: canonicalResult.questionPlan.planetFocus,
+      houseFocus: canonicalResult.questionPlan.houseFocus,
+    },
+    tools: canonicalResult.evidencePacket.toolResults.map((tool: any) => ({
+      toolName: tool.toolName,
+      success: tool.success,
+      dataKeys: Object.keys(tool.data || {}),
+      error: tool.error,
+    })),
+    transitFacts: canonicalResult.evidencePacket.facts.filter((fact: any) => fact.category === 'transit'),
+    transitClaims: canonicalResult.approvedClaimSet.claims.filter((claim: any) => claim.factorType === 'transit'),
+    transitFocus: contextPack?.transitFocus,
+  }, null, 2));
+
   console.log('\n[Canonical Final Generated Response]:');
   console.log('--------------------------------------------------');
   console.log(responseText);
