@@ -303,8 +303,8 @@ export class ResponseEvidenceSelector {
 
     const concisePrinciples = applicableRules.map(rule => {
       let summary = String(rule.interpretationSummary || '').trim();
-      summary = summary.replace(/^[^:]{1,100}:\\s*/, '');
-      const end = summary.search(/[.!?](?:\\s|$)/);
+      summary = summary.replace(/^[^:]{1,100}:\s*/, '');
+      const end = summary.search(/[.!?](?:\s|$)/);
       if (end >= 0) summary = summary.slice(0, end + 1);
       return summary.trim();
     }).filter(Boolean);
