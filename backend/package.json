@@ -69,7 +69,8 @@
     "test:ai-v3:narration-integrity": "tsx scripts/verify-ai-v3-narration-integrity.ts",
     "test:ai-v3:production-memory-repository": "tsx scripts/verify-ai-v3-production-memory-repository.ts",
     "test:ai-v3:question-planning": "tsx scripts/verify-ai-v3-question-planning.ts",
-    "test:production:certification": "npm run build && npm run test:ai-v3:narration-integrity && npm run test:ai-v3:production-memory-repository && npm run test:ai-v3:question-planning && npm run test:phase15:operational-closure && npm run test:phase14:conversation-persistence && npm run test:phase12:independent-lunar && npm run test:phase13:evidence-source && npm run test:phase9:all && npm run test:ai-v2-precision && npm run test:phase10:calculation-truth && npm run test:phase10:source-integrity && npm run test:phase10:audit-repair"
+    "test:ai-v3:cross-layer-synthesis": "tsx scripts/verify-ai-v3-cross-layer-synthesis.ts",
+    "test:production:certification": "npm run build && npm run test:ai-v3:narration-integrity && npm run test:ai-v3:production-memory-repository && npm run test:ai-v3:question-planning && npm run test:ai-v3:cross-layer-synthesis && npm run test:phase15:operational-closure && npm run test:phase14:conversation-persistence && npm run test:phase12:independent-lunar && npm run test:phase13:evidence-source && npm run test:phase9:all && npm run test:ai-v2-precision && npm run test:phase10:calculation-truth && npm run test:phase10:source-integrity && npm run test:phase10:audit-repair"
   },
   "dependencies": {
     "@astroworld/shared": "*",
