@@ -87,7 +87,66 @@ async function main(): Promise<void> {
     'A normal promotion question should retain D10 without unrelated relocation tools.',
   );
 
-  console.log('AI V3 QUESTION-TO-EVIDENCE PLANNING: PASS (3 scenarios)');
+  // Case 4: Compound questions preserve more than one life-domain and their date window.
+  const compoundQuestion = 'Will I get a promotion and improve my income between 2027 and 2029?';
+  const compoundPlan = await questionPlanner.plan(compoundQuestion);
+  const compoundGraph = toolPlanner.planTools(compoundPlan, PROFILE);
+  const compoundTools = compoundGraph.allPlannedTools.map(tool => tool.toolName);
+  const compoundSecondaryDomains = (compoundPlan as any).secondaryDomains || [];
+
+  assert(
+    compoundPlan.domain === 'career' && compoundSecondaryDomains.includes('finance'),
+    'A compound career-and-income question must preserve finance as an additional evidence domain.',
+  );
+  assert(
+    compoundPlan.temporalScope.type === 'date_range' &&
+      compoundPlan.temporalScope.startIso?.startsWith('2027-01-01') &&
+      compoundPlan.temporalScope.endIso?.startsWith('2029-12-31') &&
+      compoundPlan.targetDatesIso.length === 3,
+    'A multi-year question must preserve its complete date range and representative dates.',
+  );
+  assert(
+    compoundTools.includes('get_ashtakavarga') && compoundTools.includes('get_active_yogas'),
+    'Compound financial questions must add financial evidence even when career remains the primary domain.',
+  );
+
+  // Case 5: An elliptical follow-up adds a new dimension without dropping prior intent or timing.
+  const priorQuestion = 'Will I get a promotion between 2027 and 2029?';
+  const followUpPlan = await questionPlanner.plan('What about abroad?', { prevUserText: priorQuestion });
+  const followUpGraph = toolPlanner.planTools(followUpPlan, PROFILE);
+  const followUpTools = followUpGraph.allPlannedTools.map(tool => tool.toolName);
+  const followUpVargas = followUpGraph.allPlannedTools
+    .filter(tool => tool.toolName === 'get_divisional_chart')
+    .map(tool => tool.parameters.vargaCode);
+
+  assert(
+    followUpPlan.domain === 'travel' && ((followUpPlan as any).secondaryDomains || []).includes('career'),
+    'An elliptical abroad follow-up must retain the prior career domain as secondary evidence.',
+  );
+  assert(
+    followUpVargas.includes('D4') && followUpVargas.includes('D10'),
+    'A career follow-up about relocation must include both D4 and D10 evidence.',
+  );
+  assert(
+    followUpPlan.temporalScope.type === 'date_range' &&
+      followUpPlan.temporalScope.startIso?.startsWith('2027-01-01') &&
+      followUpPlan.temporalScope.endIso?.startsWith('2029-12-31'),
+    'An undated follow-up must inherit the prior question’s full time window.',
+  );
+  assert(
+    followUpTools.includes('get_dasha_at') && followUpTools.includes('get_transits'),
+    'The inherited date window must continue to trigger target-period timing evidence.',
+  );
+
+  // Case 6: Safety against over-planning vague prompts remains intact.
+  const ambiguousPlan = await questionPlanner.plan('What should I do?');
+  const ambiguousGraph = toolPlanner.planTools(ambiguousPlan, PROFILE);
+  assert(
+    ambiguousPlan.clarificationRequired && ambiguousGraph.allPlannedTools.length === 0,
+    'A genuinely ambiguous question must still pause for clarification rather than guess evidence.',
+  );
+
+  console.log('AI V3 QUESTION-TO-EVIDENCE PLANNING: PASS (6 scenarios)');
 }
 
 try {
