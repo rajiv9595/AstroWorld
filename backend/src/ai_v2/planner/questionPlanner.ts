@@ -366,7 +366,7 @@ export class QuestionPlanner {
     // Preserve relocation/foreign-settlement as an additional evidence dimension even when
     // the primary domain is career (for example, "Will my career take me abroad?").
     const asksForeignRelocation =
-      /\\b(abroad|overseas|foreign|relocat(?:e|ion|ing)|emigrat(?:e|ion|ing)|settle abroad|move abroad|move overseas|settle overseas|international move)\\b/i.test(lower);
+      /\b(abroad|overseas|foreign|relocat(?:e|ion|ing)|emigrat(?:e|ion|ing)|settle abroad|move abroad|move overseas|settle overseas|international move)\b/i.test(lower);
     if (asksForeignRelocation && !chartLayers.includes('D4')) {
       chartLayers.push('D4');
     }
