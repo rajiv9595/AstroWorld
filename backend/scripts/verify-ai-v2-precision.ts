@@ -56,7 +56,8 @@ async function runPhase4ESuite(): Promise<void> {
   const responseText = canonicalResult.finalResponse.text;
   const contextPack = canonicalResult.responsePlan.contextPack;
 
-  console.log('[Temporary transit diagnostics]', JSON.stringify({
+  console.log('[Transit diagnostics summary]', JSON.stringify({
+    question: canonicalResult.questionPlan.rawQuestion,
     plan: {
       intent: canonicalResult.questionPlan.intent,
       domain: canonicalResult.questionPlan.domain,
@@ -65,18 +66,15 @@ async function runPhase4ESuite(): Promise<void> {
       planetFocus: canonicalResult.questionPlan.planetFocus,
       houseFocus: canonicalResult.questionPlan.houseFocus,
     },
-    tools: canonicalResult.evidencePacket.toolResults.map((tool: any) => ({
-      toolName: tool.toolName,
-      success: tool.success,
-      dataKeys: Object.keys(tool.data || {}),
-      error: tool.error,
-    })),
-    transitFacts: canonicalResult.evidencePacket.facts.filter((fact: any) => fact.category === 'transit'),
-    transitClaims: canonicalResult.approvedClaimSet.claims.filter((claim: any) => claim.factorType === 'transit'),
+    transitTool: canonicalResult.evidencePacket.toolResults.find((tool: any) => tool.toolName === 'get_transits')?.success,
+    transitFactCount: canonicalResult.evidencePacket.facts.filter((fact: any) => fact.category === 'transit').length,
+    transitClaimCount: canonicalResult.approvedClaimSet.claims.filter((claim: any) => claim.factorType === 'transit').length,
+    selectedClaimIds: contextPack?.selectedClaimIds,
+    selectedSupportingFactors: contextPack?.supportingFactors,
+    selectedTransitFactors: contextPack?.transitFactors,
     transitFocus: contextPack?.transitFocus,
-  }, null, 2));
-
-  console.log('\n[Canonical Final Generated Response]:');
+  }));
+  
   console.log('--------------------------------------------------');
   console.log(responseText);
   console.log('--------------------------------------------------\n');
