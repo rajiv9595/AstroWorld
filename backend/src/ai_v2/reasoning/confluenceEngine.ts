@@ -115,18 +115,32 @@ export class ConfluenceEngine {
       );
     }
 
-    const vargaFacts = evidence.facts.filter(f => f.category === 'varga');
+    const vargaFacts = evidence.facts.filter(f => f.category === 'varga' && f.verified);
     const vargaFactors = [
       ...factorsForLayer('Varga', primaryFactors),
       ...factorsForLayer('Varga', restrictingFactors),
     ];
-    if (vargaFacts.length > 0 && vargaFactors.length > 0) {
-      const targetVarga = plan.chartLayers.find(l => l !== 'D1') || 'D10';
+    const extractVargaCode = (entity: string): string | undefined =>
+      entity.match(/\\bD(?:1|2|3|4|7|9|10|12|16|20|24|27|30|40|45|60)\\b/i)?.[0].toUpperCase();
+
+    // Keep each actual divisional chart as an independent signal. Pooling D4 and
+    // D10 scores into one Varga bucket can hide disagreement and misattribute evidence.
+    const vargaCodes = Array.from(new Set(vargaFacts.map(f => extractVargaCode(f.entity)).filter(Boolean))) as string[];
+    const vargaGroups = vargaCodes.length > 0 ? vargaCodes : ['Varga'];
+    for (const code of vargaGroups) {
+      const factsForVarga = vargaFacts.filter(f =>
+        (extractVargaCode(f.entity) || 'Varga') === code
+      );
+      const factorsForVarga = vargaFactors.filter(f =>
+        (extractVargaCode(f.entity) || 'Varga') === code
+      );
+      if (factsForVarga.length === 0 || factorsForVarga.length === 0) continue;
+
       pushLayer(
         'Varga',
-        `${targetVarga} divisional evidence: ${vargaFacts.slice(0, 2).map(f => f.value).join(', ')}`,
-        vargaFacts[0].id,
-        vargaFactors,
+        `${code === 'Varga' ? 'Divisional' : code} divisional evidence: ${factsForVarga.slice(0, 2).map(f => f.value).join(', ')}`,
+        factsForVarga[0].id,
+        factorsForVarga,
       );
     }
 
