@@ -131,9 +131,13 @@ export class ConfluenceEngine {
       const factsForVarga = vargaFacts.filter(f =>
         (extractVargaCode(f.entity) || 'Varga') === code
       );
-      const factorsForVarga = vargaFactors.filter(f =>
-        (extractVargaCode(f.entity) || 'Varga') === code
-      );
+      const factorsForVarga = vargaFactors.filter(f => {
+        // Evidence lineage is authoritative for chart identity: some callers keep the
+        // planet name in ClassifiedFactor.entity rather than repeating "in D10".
+        const sourceFact = evidence.facts.find(fact => fact.id === f.evidenceId);
+        const factorVarga = extractVargaCode(sourceFact?.entity || f.entity) || 'Varga';
+        return factorVarga === code;
+      });
       if (factsForVarga.length === 0 || factorsForVarga.length === 0) continue;
 
       pushLayer(
