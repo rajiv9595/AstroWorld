@@ -107,7 +107,6 @@ export class ResponsePlanner {
       transitFocus: isTransitQuestion &&
         hasVerifiedTransitEvidence &&
         Boolean(plan.planetFocus[0]) &&
-        plan.houseFocus.length > 0 &&
         transitFactors.length > 0
         ? {
             isTransitQuestion: true,
