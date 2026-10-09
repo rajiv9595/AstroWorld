@@ -69,6 +69,7 @@ export class ToolPlanner {
     } else {
       // 2. Otherwise, infer the exact minimal tool set deterministically from intent, domain, layers, and temporal scope
       this.inferToolsFromPlan(plan, birthProfile, addTool);
+      this.inferSecondaryEvidenceFromPlan(plan, birthProfile, addTool);
     }
 
     const allPlannedTools = Array.from(toolMap.values()).sort((a, b) => (b.priority || 1) - (a.priority || 1));
@@ -162,11 +163,7 @@ export class ToolPlanner {
       addTool('get_current_dasha', { birthProfile }, [], 8);
       addTool('get_active_yogas', { birthProfile }, [], 7);
 
-      if (temporalScope.type === 'upcoming' || temporalScope.type === 'specific_date' || targetDatesIso.length > 0) {
-        const targetDate = targetDatesIso[0] || temporalScope.startIso || new Date(new Date().getFullYear() + 1, 0, 1).toISOString();
-        addTool('get_dasha_at', { birthProfile, targetDateIso: targetDate }, ['get_current_dasha'], 6);
-        addTool('get_transits', { birthProfile, targetDateIso: targetDate }, ['get_birth_chart'], 6);
-      }
+      this.addTemporalEvidence(plan, birthProfile, addTool, 6, 6);
       return;
     }
 
@@ -176,13 +173,7 @@ export class ToolPlanner {
       addTool('get_current_dasha', { birthProfile }, [], 8);
       addTool('get_jaimini_details', { birthProfile }, [], 7);
 
-      if (temporalScope.type === 'upcoming' || temporalScope.type === 'specific_date' || targetDatesIso.length > 0) {
-        const targetDate = targetDatesIso[0] || temporalScope.startIso;
-        if (targetDate) {
-          addTool('get_dasha_at', { birthProfile, targetDateIso: targetDate }, ['get_current_dasha'], 6);
-          addTool('get_transits', { birthProfile, targetDateIso: targetDate }, ['get_birth_chart'], 6);
-        }
-      }
+      this.addTemporalEvidence(plan, birthProfile, addTool, 6, 6);
       return;
     }
 
@@ -191,18 +182,7 @@ export class ToolPlanner {
       addTool('get_divisional_chart', { birthProfile, vargaCode: 'D4' as VargaCode }, [], 9);
       addTool('get_current_dasha', { birthProfile }, [], 8);
 
-      if (
-        temporalScope.type === 'upcoming' ||
-        temporalScope.type === 'specific_date' ||
-        targetDatesIso.length > 0
-      ) {
-        const targetDate =
-          targetDatesIso[0] ||
-          temporalScope.startIso ||
-          new Date(new Date().getFullYear() + 1, 0, 1).toISOString();
-        addTool('get_dasha_at', { birthProfile, targetDateIso: targetDate }, ['get_current_dasha'], 7);
-        addTool('get_transits', { birthProfile, targetDateIso: targetDate }, ['get_birth_chart'], 7);
-      }
+      this.addTemporalEvidence(plan, birthProfile, addTool, 7, 7);
       return;
     }
 
@@ -232,4 +212,86 @@ export class ToolPlanner {
     addTool('get_birth_chart', { birthProfile }, [], 10);
     addTool('get_current_dasha', { birthProfile }, [], 8);
   }
+  /**
+   * Adds evidence for domains beyond the primary intent instead of making the
+   * primary-domain branch suppress the rest of a compound question.
+   */
+  private inferSecondaryEvidenceFromPlan(
+    plan: QuestionPlan,
+    birthProfile: BirthProfileInput,
+    addTool: (toolName: string, parameters: Record<string, any>, dependsOn?: string[], priority?: number) => void
+  ): void {
+    const secondaryDomains = Array.from(new Set(plan.secondaryDomains || []));
+    if (secondaryDomains.length === 0) return;
+
+    for (const domain of secondaryDomains) {
+      if (domain === 'career') {
+        addTool('get_divisional_chart', { birthProfile, vargaCode: 'D10' as VargaCode }, [], 8);
+        addTool('get_active_yogas', { birthProfile }, [], 7);
+        addTool('get_current_dasha', { birthProfile }, [], 7);
+      } else if (domain === 'relationship') {
+        addTool('get_divisional_chart', { birthProfile, vargaCode: 'D9' as VargaCode }, [], 8);
+        addTool('get_current_dasha', { birthProfile }, [], 7);
+        addTool('get_jaimini_details', { birthProfile }, [], 7);
+      } else if (domain === 'travel') {
+        addTool('get_divisional_chart', { birthProfile, vargaCode: 'D4' as VargaCode }, [], 8);
+        addTool('get_current_dasha', { birthProfile }, [], 7);
+      } else if (domain === 'finance') {
+        addTool('get_active_yogas', { birthProfile }, [], 8);
+        addTool('get_ashtakavarga', { birthProfile }, [], 8);
+        addTool('get_current_dasha', { birthProfile }, [], 7);
+      } else if (domain === 'health') {
+        addTool('get_planetary_strength', { birthProfile }, [], 8);
+        addTool('get_current_dasha', { birthProfile }, [], 7);
+      } else if (domain === 'spirituality') {
+        addTool('get_divisional_chart', { birthProfile, vargaCode: 'D9' as VargaCode }, [], 8);
+        addTool('get_jaimini_details', { birthProfile }, [], 7);
+      } else if (domain === 'education') {
+        addTool('get_divisional_chart', { birthProfile, vargaCode: 'D24' as VargaCode }, [], 8);
+        addTool('get_active_yogas', { birthProfile }, [], 7);
+        addTool('get_current_dasha', { birthProfile }, [], 7);
+      }
+    }
+
+    // Shared time evidence is deduplicated with the primary domain's requests.
+    this.addTemporalEvidence(plan, birthProfile, addTool, 6, 6);
+  }
+
+  /**
+   * Date ranges are sampled at their actual boundaries. Other scopes use all
+   * dates when there are at most two, or the first and last samples for larger
+   * sets, keeping the evidence request count bounded and deterministic.
+   */
+  private addTemporalEvidence(
+    plan: QuestionPlan,
+    birthProfile: BirthProfileInput,
+    addTool: (toolName: string, parameters: Record<string, any>, dependsOn?: string[], priority?: number) => void,
+    dashaPriority: number,
+    transitPriority: number
+  ): void {
+    const scope = plan.temporalScope;
+    const isTimeScoped =
+      scope.type === 'upcoming' ||
+      scope.type === 'specific_date' ||
+      scope.type === 'date_range' ||
+      (plan.targetDatesIso || []).length > 0;
+    if (!isTimeScoped) return;
+
+    let targetDates: string[];
+    if (scope.type === 'date_range' && scope.startIso && scope.endIso) {
+      targetDates = [scope.startIso, scope.endIso];
+    } else {
+      const requestedDates = plan.targetDatesIso || [];
+      targetDates = requestedDates.length > 2
+        ? [requestedDates[0], requestedDates[requestedDates.length - 1]]
+        : requestedDates.slice();
+      if (targetDates.length === 0 && scope.startIso) targetDates = [scope.startIso];
+    }
+
+    for (const targetDateIso of Array.from(new Set(targetDates))) {
+      addTool('get_dasha_at', { birthProfile, targetDateIso }, ['get_current_dasha'], dashaPriority);
+      addTool('get_transits', { birthProfile, targetDateIso }, ['get_birth_chart'], transitPriority);
+    }
+  }
+
 }
