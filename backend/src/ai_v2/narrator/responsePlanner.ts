@@ -69,7 +69,7 @@ export class ResponsePlanner {
 
     const isTransitQuestion =
       plan.intent.toLowerCase().includes('transit') ||
-      /\\b(transits?|gochara)\\b/i.test(plan.rawQuestion);
+      /\b(transits?|gochara)\b/i.test(plan.rawQuestion);
 
     const hasVerifiedTransitEvidence = approvedClaimSet.claims.some(claim =>
       claim.allowed &&
