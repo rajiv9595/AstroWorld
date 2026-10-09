@@ -600,18 +600,18 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     const directAnswer = (pack?.directAnswerDirection || synthesisClaim?.text || '').trim();
     const paragraphs: string[] = [];
     const transitFocus = pack?.transitFocus;
+    const transitActivationSummary = transitFocus?.activationSummary?.trim() || '';
     const hasVerifiedTransitFocus =
       transitFocus?.hasVerifiedTransitEvidence === true &&
       typeof transitFocus.transitingPlanet === 'string' &&
       transitFocus.transitingPlanet.trim().length > 0 &&
-      typeof transitFocus.activationSummary === 'string' &&
-      transitFocus.activationSummary.trim().length > 0;
+      transitActivationSummary.length > 0;
 
     if (hasVerifiedTransitFocus) {
       // The transit lead is derived only from a verified transit claim in the context pack.
       // A generic transit phrase is never emitted merely because the user mentioned a planet.
       const transitLead =
-        `The transit of ${transitFocus.transitingPlanet} is calculated as follows: ${transitFocus.activationSummary.trim()}.`;
+        `The transit of ${transitFocus.transitingPlanet} is calculated as follows: ${transitActivationSummary}.`;
       const qualification =
         'A key qualification: a transit alone cannot confirm a specific event; it must be read alongside the natal chart and running dasha.';
       paragraphs.push([transitLead, directAnswer, qualification].filter(Boolean).join(' '));
@@ -629,7 +629,7 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
       .filter(item => !directAnswer || item.trim().toLowerCase() !== directAnswer.toLowerCase())
       .filter(item =>
         !hasVerifiedTransitFocus ||
-        item.trim().toLowerCase() !== transitFocus.activationSummary.trim().toLowerCase()
+        item.trim().toLowerCase() !== transitActivationSummary.toLowerCase()
       )
       .slice(0, responsePlan.requestedDepth === 'deep' ? 4 : 2);
     if (supporting.length > 0) {
