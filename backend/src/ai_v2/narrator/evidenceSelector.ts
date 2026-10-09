@@ -138,7 +138,34 @@ export class ResponseEvidenceSelector {
     const maxRestrictions = Math.min(2, Math.max(1, Math.floor(budget * 0.3)));
     const maxSupporting = budget - maxRestrictions;
 
-    const selectedSupporting = candidateSupporting.slice(0, maxSupporting).map(c => this.toSelectedSummary(c.claim, false, technicalMode));
+    const rankedSupporting = candidateSupporting.slice(0, maxSupporting);
+
+    // For transit questions, reserve one slot for the verified transit of the queried planet.
+    // A generic natal placement or D10 fact must not crowd out the exact event the user asked about.
+    if (isTransitQuestion && queriedPlanets.length > 0 && maxSupporting > 0) {
+      const queriedTransit = candidateSupporting.find(({ claim }) => {
+        if (claim.type !== 'factual' || claim.factorType !== 'transit') return false;
+        const entityMatch = (claim.astrologicalEntities || []).some(entity =>
+          queriedPlanets.some(planet => entity.toLowerCase().startsWith(planet)),
+        );
+        const text = claim.text.toLowerCase();
+        const textMatch = queriedPlanets.some(planet => text.includes(`${planet} (transit)`));
+        return entityMatch || textMatch;
+      });
+
+      if (
+        queriedTransit &&
+        !rankedSupporting.some(candidate => candidate.claim.claimId === queriedTransit.claim.claimId)
+      ) {
+        if (rankedSupporting.length >= maxSupporting) {
+          rankedSupporting[rankedSupporting.length - 1] = queriedTransit;
+        } else {
+          rankedSupporting.push(queriedTransit);
+        }
+      }
+    }
+
+    const selectedSupporting = rankedSupporting.map(c => this.toSelectedSummary(c.claim, false, technicalMode));
     const selectedRestricting = candidateRestricting.slice(0, maxRestrictions).map(c => this.toSelectedSummary(c.claim, true, technicalMode));
 
     const selectedClaims = [...selectedSupporting, ...selectedRestricting];
