@@ -392,7 +392,7 @@ export class QuestionPlanner {
     // change does not accidentally inherit unrelated evidence.
     const isEllipticalFollowUp =
       Boolean(prevText) &&
-      /^(?:what about|how about|and\\b|also\\b|then\\b|what if\\b|in that case\\b|why(?:\\b|\\?)|how so\\b)/i.test(lower);
+      /^(?:what about|how about|and\b|also\b|then\b|what if\b|in that case\b|why(?:\b|\?)|how so\b)/i.test(lower);
     const evidenceText = isEllipticalFollowUp ? `${lower} ${prevText}` : lower;
     const detectedDomains = this.extractEvidenceDomains(evidenceText);
     const secondaryDomains = detectedDomains.filter(candidate => candidate !== domain);
@@ -443,13 +443,13 @@ export class QuestionPlanner {
 
   private extractEvidenceDomains(lower: string): string[] {
     const candidates: Array<[string, RegExp]> = [
-      ['career', /\\b(career|job|promotion|work|profession|employment|business)\\b/i],
-      ['relationship', /\\b(marriage|spouse|relationship|partner|love|wedding|romance)\\b/i],
-      ['finance', /\\b(money|wealth|finance|financial|investment|income|salary|earnings|savings|debt|assets?)\\b/i],
-      ['travel', /\\b(travel|foreign|abroad|overseas|relocation|relocate|relocating|emigrate|emigration|emigrating|international move|move abroad|settle abroad)\\b/i],
-      ['health', /\\b(health|disease|vitality|illness)\\b/i],
-      ['spirituality', /\\b(spirituality|spiritual|moksha|dharma)\\b/i],
-      ['education', /\\b(education|study|studies|exam|academic|university|degree)\\b/i],
+      ['career', /\b(career|job|promotion|work|profession|employment|business)\b/i],
+      ['relationship', /\b(marriage|spouse|relationship|partner|love|wedding|romance)\b/i],
+      ['finance', /\b(money|wealth|finance|financial|investment|income|salary|earnings|savings|debt|assets?)\b/i],
+      ['travel', /\b(travel|foreign|abroad|overseas|relocation|relocate|relocating|emigrate|emigration|emigrating|international move|move abroad|settle abroad)\b/i],
+      ['health', /\b(health|disease|vitality|illness)\b/i],
+      ['spirituality', /\b(spirituality|spiritual|moksha|dharma)\b/i],
+      ['education', /\b(education|study|studies|exam|academic|university|degree)\b/i],
     ];
     return candidates.filter(([, pattern]) => pattern.test(lower)).map(([domain]) => domain);
   }
