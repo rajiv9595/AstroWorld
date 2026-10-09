@@ -74,8 +74,8 @@ async function runPhase4ESuite(): Promise<void> {
   const jupiterTransitFact = canonicalResult.evidencePacket.facts.find(
     fact => fact.category === 'transit' && fact.entity === 'Jupiter (Transit)' && fact.verified,
   );
-  const expectedMoonHouse = jupiterTransitFact?.value.match(/House\\s+(\\d+)\\s+from Moon/i)?.[1];
-  const expectedLagnaHouse = jupiterTransitFact?.value.match(/House\\s+(\\d+)\\s+from Lagna/i)?.[1];
+  const expectedMoonHouse = jupiterTransitFact?.value.match(/House\s+(\d+)\s+from Moon/i)?.[1];
+  const expectedLagnaHouse = jupiterTransitFact?.value.match(/House\s+(\d+)\s+from Lagna/i)?.[1];
   assert(
     Boolean(jupiterTransitFact) &&
       Boolean(expectedMoonHouse) &&
