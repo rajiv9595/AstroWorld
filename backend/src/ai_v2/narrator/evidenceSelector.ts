@@ -209,7 +209,7 @@ export class ResponseEvidenceSelector {
 
       // DEF-04: Clean up database parenthetical formats
       text = text
-        .replace(/\(position:\s*([^)]+)\)/gi, 'in $1')
+        .replace(/\(position:\s*(?:in\s+)?([^)]+)\)/gi, 'in $1')
         .replace(/\(sign:\s*([^)]+)\)/gi, 'is in $1')
         .replace(/\((House\s+\d+)\)/gi, 'in $1');
     }
