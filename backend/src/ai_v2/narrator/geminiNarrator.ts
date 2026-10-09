@@ -600,7 +600,7 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     const directAnswer = (pack?.directAnswerDirection || synthesisClaim?.text || '').trim();
     const paragraphs: string[] = [];
     const transitFocus = pack?.transitFocus;
-    const transitActivationSummary = transitFocus?.activationSummary?.trim() || '';
+    const transitActivationSummary = (transitFocus?.activationSummary?.trim() || '').replace(/[.!?]+$/, '');
     const hasVerifiedTransitFocus =
       transitFocus?.hasVerifiedTransitEvidence === true &&
       typeof transitFocus.transitingPlanet === 'string' &&
