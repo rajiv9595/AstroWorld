@@ -121,7 +121,7 @@ export class ConfluenceEngine {
       ...factorsForLayer('Varga', restrictingFactors),
     ];
     const extractVargaCode = (entity: string): string | undefined =>
-      entity.match(/\\bD(?:1|2|3|4|7|9|10|12|16|20|24|27|30|40|45|60)\\b/i)?.[0].toUpperCase();
+      entity.match(/\bD(?:1|2|3|4|7|9|10|12|16|20|24|27|30|40|45|60)\b/i)?.[0].toUpperCase();
 
     // Keep each actual divisional chart as an independent signal. Pooling D4 and
     // D10 scores into one Varga bucket can hide disagreement and misattribute evidence.
