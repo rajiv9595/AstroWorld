@@ -672,7 +672,7 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
       return "I don't have enough approved chart-specific evidence to explain this accurately yet. I'd rather verify the relevant chart factors than fill the gap with a generic prediction.";
     }
 
-    return paragraphs.slice(0, 4).join('\\n\\n');
+    return paragraphs.slice(0, 4).join('\n\n');
   }
 
   /**
