@@ -9,6 +9,8 @@
 import { ResponseEvidenceSelector } from '../src/ai_v2/narrator/evidenceSelector.ts';
 import { ResponsePlanner } from '../src/ai_v2/narrator/responsePlanner.ts';
 import { GeminiNarrator } from '../src/ai_v2/narrator/geminiNarrator.ts';
+import { QuestionPlanner } from '../src/ai_v2/planner/questionPlanner.ts';
+import { ToolExecutionOrchestrator } from '../src/ai_v2/orchestrator/toolOrchestrator.ts';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);
@@ -216,17 +218,112 @@ function testDeterministicFallbackUsesTheSuppliedChartInsteadOfAFixedOne(): void
   assert(!text.toLowerCase().includes('taurus'), 'Fallback must not substitute the benchmark chart’s fixed D10 Lagna.');
 }
 
-function main(): void {
+
+async function testTransitToolDataIsMappedIntoVerifiedEvidence(): Promise<void> {
+  const profile: any = {
+    name: 'AI V3 transit regression',
+    year: 1990,
+    month: 5,
+    day: 15,
+    hour: 14,
+    minute: 30,
+    second: 0,
+    latitude: 28.6139,
+    longitude: 77.209,
+    timezone: 'Asia/Kolkata',
+    gender: 'male',
+  };
+
+  const plan: any = await new QuestionPlanner().plan(
+    'How does the upcoming transit of Jupiter support my promotion timing?',
+  );
+  plan.domain = 'career';
+  plan.intent = 'promotion_timing';
+  plan.planetFocus = ['Jupiter'];
+  plan.houseFocus = [10];
+  plan.chartLayers = ['D1', 'D10'];
+  plan.temporalScope = {
+    type: 'upcoming',
+    startIso: '2027-01-01T00:00:00.000Z',
+    endIso: '2027-12-31T23:59:59.999Z',
+  };
+  plan.targetDatesIso = ['2027-06-15T00:00:00.000Z'];
+  plan.requiredTools = [];
+
+  const evidence = await new ToolExecutionOrchestrator().orchestrate(plan, profile);
+  const transitResult = evidence.toolResults.find((result: any) => result.toolName === 'get_transits');
+
+  assert(transitResult?.success === true, 'The planned get_transits calculation must execute successfully.');
+  assert(
+    Array.isArray(transitResult.data?.planets) && transitResult.data.planets.length > 0,
+    'The get_transits tool contract exposes its calculated transit rows under data.planets.',
+  );
+  assert(
+    evidence.facts.some((fact: any) =>
+      fact.category === 'transit' && fact.sourceTool === 'get_transits' && fact.verified === true
+    ),
+    'Calculated data.planets must be normalized into verified transit facts; the engine returns planets, not data.transits.',
+  );
+}
+
+function testVerifiedTransitEvidenceReachesResponseContextAndFallback(): void {
+  const { plan, reasoning, claimSet } = fixture({
+    rawQuestion: 'How does the upcoming transit of Jupiter support my promotion timing?',
+    normalizedQuestion: 'How does the upcoming transit of Jupiter support my promotion timing?',
+    intent: 'promotion_timing',
+    domain: 'career',
+    planetFocus: ['Jupiter'],
+    houseFocus: [10],
+    chartLayers: ['D1', 'D10'],
+    temporalScope: { type: 'upcoming', startIso: '2027-01-01T00:00:00.000Z' },
+    targetDatesIso: ['2027-06-15T00:00:00.000Z'],
+  });
+  const transitClaim: any = {
+    claimId: 'claim_verified_transit_jupiter',
+    text: 'Jupiter (Transit) is in Gemini, House 10 from Moon and House 2 from Lagna.',
+    type: 'factual',
+    factorType: 'transit',
+    strength: 'strong',
+    evidenceIds: ['fact_transit_jupiter'],
+    ruleIds: [],
+    sourceIds: [],
+    relevance: 'high',
+    allowed: true,
+  };
+  claimSet.claims.push(transitClaim);
+
+  const responsePlan = new ResponsePlanner().planResponse(plan, reasoning, claimSet);
+  assert(
+    responsePlan.contextPack?.transitFocus?.hasVerifiedTransitEvidence === true,
+    'A relevant transit query with evidence-backed transit claims must create a verified transit focus.',
+  );
+
+  const result = new GeminiNarrator({ forceMockMode: true }).synthesizeDeterministicNarrative(
+    plan,
+    responsePlan as any,
+    claimSet,
+  );
+  assert(
+    result.toLowerCase().includes('transit of jupiter') &&
+      result.toLowerCase().includes('moon') &&
+      result.includes('10'),
+    'The deterministic fallback must explain the verified Jupiter transit and its supplied house context, not replace it with generic claims.',
+  );
+}
+
+async function main(): Promise<void> {
   testConclusionIsPassedToNarratorContext();
   testNoInventedClassicalContextWithoutApplicableRule();
   testNatalJupiterQuestionIsNotAutomaticallyATransitQuestion();
   testLowReasoningConfidenceProducesHighUncertainty();
   testDeterministicFallbackUsesTheSuppliedChartInsteadOfAFixedOne();
-  console.log('AI V3 NARRATION INTEGRITY: PASS (5 contracts)');
+  testVerifiedTransitEvidenceReachesResponseContextAndFallback();
+  await testTransitToolDataIsMappedIntoVerifiedEvidence();
+  console.log('AI V3 NARRATION INTEGRITY: PASS (7 contracts)');
 }
 
 try {
-  main();
+  await main();
 } catch (error) {
   console.error('AI V3 NARRATION INTEGRITY: FAIL');
   console.error(error);
