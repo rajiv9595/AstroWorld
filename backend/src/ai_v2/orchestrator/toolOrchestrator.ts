@@ -421,15 +421,41 @@ export class ToolExecutionOrchestrator {
       });
     }
 
-    if (toolName === 'get_transits' && Array.isArray(data.transits)) {
-      for (const t of data.transits) {
+    if (toolName === 'get_transits') {
+      // executeGetTransits exposes the canonical TransitFacts object as { queryDateIso, planets, sadeSati }.
+      // Accept the older "transits" alias as a compatibility path, but normalize canonical field names.
+      const transitPlanets = Array.isArray(data.planets)
+        ? data.planets
+        : Array.isArray(data.transits)
+        ? data.transits
+        : [];
+
+      for (const t of transitPlanets) {
+        if (!t || typeof t.planet !== 'string') continue;
+        const transitSign = t.sign || t.currentSign;
+        const houseFromMoon = t.chandraLagnaHouse ?? t.houseFromMoon;
+        const houseFromLagna = t.natalLagnaHouse ?? t.houseFromLagna;
+        const parts = [
+          transitSign ? `in ${transitSign}` : undefined,
+          t.formattedDegree ? `at ${t.formattedDegree}` : undefined,
+          typeof houseFromMoon === 'number' ? `House ${houseFromMoon} from Moon` : undefined,
+          typeof houseFromLagna === 'number' ? `House ${houseFromLagna} from Lagna` : undefined,
+          t.retrograde === true ? 'retrograde' : undefined,
+          typeof t.ashtakavargaBindus === 'number' ? `${t.ashtakavargaBindus} SAV bindus` : undefined,
+        ].filter((part): part is string => Boolean(part));
+
         facts.push({
-          id: `fact_transit_${(t.planet || '').toLowerCase()}`,
+          id: `fact_transit_${t.planet.toLowerCase()}`,
           category: 'transit',
           entity: `${t.planet} (Transit)`,
-          property: 'house_from_moon',
-          value: `House ${t.houseFromMoon} from Moon, House ${t.houseFromLagna} from Lagna`,
-          sign: t.currentSign,
+          property: 'position',
+          value: parts.join('; ') || `calculated for ${data.queryDateIso || 'the requested date'}`,
+          sign: transitSign,
+          house: typeof houseFromLagna === 'number'
+            ? houseFromLagna
+            : typeof houseFromMoon === 'number'
+            ? houseFromMoon
+            : undefined,
           sourceTool: toolName,
           verified: true,
         });
