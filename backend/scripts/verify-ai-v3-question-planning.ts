@@ -110,6 +110,24 @@ async function main(): Promise<void> {
     'Compound financial questions must add financial evidence even when career remains the primary domain.',
   );
 
+  const compoundDashaDates = compoundGraph.allPlannedTools
+    .filter(tool => tool.toolName === 'get_dasha_at')
+    .map(tool => tool.parameters.targetDateIso);
+  const compoundTransitDates = compoundGraph.allPlannedTools
+    .filter(tool => tool.toolName === 'get_transits')
+    .map(tool => tool.parameters.targetDateIso);
+  assert(
+    compoundDashaDates.includes('2027-01-01T00:00:00.000Z') &&
+      compoundDashaDates.includes('2029-12-31T23:59:59.999Z') &&
+      compoundTransitDates.includes('2027-01-01T00:00:00.000Z') &&
+      compoundTransitDates.includes('2029-12-31T23:59:59.999Z'),
+    'A multi-year question must schedule both start- and end-boundary dasha and transit evidence.',
+  );
+  assert(
+    compoundGraph.allPlannedTools.length <= 10,
+    'Compound question evidence must remain within the deterministic ten-tool planning budget.',
+  );
+
   // Case 5: An elliptical follow-up adds a new dimension without dropping prior intent or timing.
   const priorQuestion = 'Will I get a promotion between 2027 and 2029?';
   const followUpPlan = await questionPlanner.plan('What about abroad?', { prevUserText: priorQuestion });
