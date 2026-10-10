@@ -16,7 +16,7 @@ import {
   FinalResponse,
   validateFinalResponse,
 } from '../schemas/responsePlan.ts';
-import { getNarratorSystemInstruction, buildNarratorUserPrompt } from './narratorPrompt.ts';
+import { getNarratorSystemInstruction, buildNarratorUserPrompt, getQuestionCoverageLimitations } from './narratorPrompt.ts';
 import { ResponseClaimExtractor } from './claimExtractor.ts';
 import { PostResponseGroundingValidator } from './postResponseValidator.ts';
 
@@ -554,7 +554,11 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     }
 
     if (claims.length === 0) {
-      return "I don't have enough approved chart-specific evidence in this response to give you a reliable interpretation. I'd rather check the relevant placements and timing than guess.";
+      const coverageLimitations = getQuestionCoverageLimitations(approvedClaimSet);
+      return [
+        "I don't have enough approved chart-specific evidence in this response to give you a reliable interpretation. I'd rather check the relevant placements and timing than guess.",
+        ...coverageLimitations,
+      ].join(' ');
     }
 
     // Memory recall must be grounded in user-provided memory and must not append a chart prediction.
@@ -619,19 +623,58 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
       paragraphs.push(directAnswer);
     }
 
+    const coverageLimitations = getQuestionCoverageLimitations(approvedClaimSet);
+    if (coverageLimitations.length > 0) {
+      paragraphs.push(coverageLimitations.join(' '));
+    }
+
     const rawSupporting = pack?.supportingFactors?.length
       ? pack.supportingFactors
       : factualClaims
           .filter(claim => claim.type === 'factual' && claim.strength !== 'mixed')
           .map(claim => this.normalizeSimpleFact(claim.text));
-    const supporting = rawSupporting
+    const cleanedSupporting = rawSupporting
       .filter(item => typeof item === 'string' && item.trim().length > 0)
       .filter(item => !directAnswer || item.trim().toLowerCase() !== directAnswer.toLowerCase())
       .filter(item =>
         !hasVerifiedTransitFocus ||
         item.trim().toLowerCase() !== transitActivationSummary.toLowerCase()
-      )
-      .slice(0, responsePlan.requestedDepth === 'deep' ? 4 : 2);
+      );
+
+    // Keep at least one relevant approved factor for the primary and each requested
+    // secondary domain. The ordinary concise-response budget must not silently erase
+    // a facet the user explicitly asked about.
+    const domainSignals: Record<string, string[]> = {
+      career: ['career', 'job', 'promotion', 'profession', 'employment', 'work', 'd10', 'leadership'],
+      finance: ['finance', 'financial', 'money', 'wealth', 'income', 'salary', 'earnings', 'savings', 'investment', 'ashtakavarga', 'dhana', '11th house', '2nd house'],
+      relationship: ['relationship', 'marriage', 'spouse', 'partner', 'wedding', 'love', 'navamsha', 'd9'],
+      travel: ['travel', 'abroad', 'overseas', 'foreign', 'relocation', 'relocate', 'emigration', 'd4'],
+      education: ['education', 'study', 'studies', 'exam', 'academic', 'university', 'degree', 'd24'],
+      health: ['health', 'vitality', 'well-being', 'wellbeing', 'illness'],
+      spirituality: ['spirituality', 'spiritual', 'moksha', 'dharma'],
+    };
+    const requestedDomains = Array.from(new Set([
+      ...(pack?.domain ? [pack.domain] : []),
+      ...(pack?.secondaryDomains || []),
+    ])).map(domain => domain.toLowerCase());
+    const supporting: string[] = [];
+    for (const domain of requestedDomains) {
+      const signals = domainSignals[domain] || [domain];
+      const domainFactor = cleanedSupporting.find(item =>
+        signals.some(signal => item.toLowerCase().includes(signal)),
+      );
+      if (domainFactor && !supporting.includes(domainFactor)) supporting.push(domainFactor);
+    }
+
+    // Fill remaining space with the highest-priority remaining factors; a compound
+    // response may exceed the single-domain baseline only when needed to cover facets.
+    const ordinarySupportLimit = responsePlan.requestedDepth === 'deep' ? 4 : 2;
+    const supportLimit = Math.max(ordinarySupportLimit, supporting.length);
+    for (const item of cleanedSupporting) {
+      if (supporting.length >= supportLimit) break;
+      if (!supporting.includes(item)) supporting.push(item);
+    }
+
     if (supporting.length > 0) {
       paragraphs.push('The main chart factors are: ' + supporting.join(' '));
     }
