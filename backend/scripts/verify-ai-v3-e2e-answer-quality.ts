@@ -249,9 +249,26 @@ async function main(): Promise<void> {
     (domain: string) => domain.toLowerCase() === 'finance',
   );
   const coverage = consultation.approvedClaimSet.questionCoverage;
+  const financeToolSucceeded = consultation.evidencePacket.toolResults.some(
+    (tool: any) => tool.toolName === 'get_ashtakavarga' && tool.success,
+  );
   const financeCovered = Boolean(coverage?.coveredDomains?.some(
     (domain: string) => domain.toLowerCase() === 'finance',
   ));
+  const evidenceDiagnostics = {
+    tools: consultation.evidencePacket.toolResults.map((tool: any) => ({ toolName: tool.toolName, success: tool.success })),
+    financeFacts: consultation.evidencePacket.facts
+      .filter((fact: any) => fact.category === 'ashtakavarga' || /ashtakavarga|11th house|2nd house/i.test(fact.entity))
+      .map((fact: any) => ({ entity: fact.entity, value: fact.value })),
+    financeClaims: consultation.approvedClaimSet.claims
+      .filter((claim: any) => /ashtakavarga|11th house|2nd house|income|savings|financial|wealth/i.test(claim.text))
+      .map((claim: any) => claim.text),
+  };
+  check(
+    financeToolSucceeded,
+    'Full consultation executes the secondary finance evidence tool',
+    JSON.stringify(evidenceDiagnostics).slice(0, 1600),
+  );
   const financeInFinalAnswer = /income|savings|financial|finance|wealth|ashtakavarga|11th house/i.test(finalText);
   const financeGapDisclosed = /not enough verified.*(finance|income|financial)|can't assess.*(finance|income|financial)|cannot assess.*(finance|income|financial)|won't guess/i.test(finalText);
   check(
