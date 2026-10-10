@@ -269,6 +269,11 @@ async function main(): Promise<void> {
     'Full consultation executes the secondary finance evidence tool',
     JSON.stringify(evidenceDiagnostics).slice(0, 1600),
   );
+  check(
+    evidenceDiagnostics.financeFacts.length > 0,
+    'Canonical Ashtakavarga output is normalized into verified evidence',
+    JSON.stringify(evidenceDiagnostics).slice(0, 1600),
+  );
   const financeInFinalAnswer = /income|savings|financial|finance|wealth|ashtakavarga|11th house/i.test(finalText);
   const financeGapDisclosed = /not enough verified.*(finance|income|financial)|can't assess.*(finance|income|financial)|cannot assess.*(finance|income|financial)|won't guess/i.test(finalText);
   check(
@@ -279,7 +284,7 @@ async function main(): Promise<void> {
   check(
     financeCovered ? financeInFinalAnswer : financeGapDisclosed,
     'Full consultation either answers the finance facet from approved evidence or discloses the evidence gap',
-    `coverageComplete=${coverage?.complete}, financeCovered=${financeCovered}, finalAnswerMentionsFinance=${financeInFinalAnswer}, gapDisclosed=${financeGapDisclosed}`,
+    `responseType=${consultation.responsePlan.responseType}, direction=${consultation.reasoningPacket.direction}, coverageComplete=${coverage?.complete}, missing=${JSON.stringify(coverage?.missing)}, financeCovered=${financeCovered}, finalAnswerMentionsFinance=${financeInFinalAnswer}, gapDisclosed=${financeGapDisclosed}, response=${consultation.finalResponse.text}`,
   );
   check(
     !/\b(guaranteed|100% certain|will definitely happen|inevitable)\b/i.test(finalText),
