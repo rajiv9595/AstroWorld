@@ -409,16 +409,29 @@ export class ToolExecutionOrchestrator {
       }
     }
 
-    if (toolName === 'get_ashtakavarga' && data.sarvashtakavarga) {
-      facts.push({
-        id: `fact_sav_total_${Date.now()}`,
-        category: 'ashtakavarga',
-        entity: 'Sarvashtakavarga',
-        property: 'total_bindus',
-        value: data.sarvashtakavarga.totalBindus || 337,
-        sourceTool: toolName,
-        verified: true,
-      });
+    if (toolName === 'get_ashtakavarga') {
+      // The current calculator returns sarvashtakavargaTotal and sav directly.
+      // Accept the older nested sarvashtakavarga object as a compatibility path,
+      // but never fabricate a fallback 337-point total when the source is absent.
+      const totalBindus = typeof data.sarvashtakavargaTotal === 'number' &&
+          Number.isFinite(data.sarvashtakavargaTotal)
+        ? data.sarvashtakavargaTotal
+        : typeof data.sarvashtakavarga?.totalBindus === 'number' &&
+            Number.isFinite(data.sarvashtakavarga.totalBindus)
+        ? data.sarvashtakavarga.totalBindus
+        : undefined;
+
+      if (totalBindus !== undefined) {
+        facts.push({
+          id: `fact_sav_total_${Date.now()}`,
+          category: 'ashtakavarga',
+          entity: 'Sarvashtakavarga',
+          property: 'total_bindus',
+          value: totalBindus,
+          sourceTool: toolName,
+          verified: true,
+        });
+      }
     }
 
     if (toolName === 'get_transits') {
