@@ -100,6 +100,7 @@ export class ResponsePlanner {
     const contextPack: NarratorContextPack = {
       originalQuestion: plan.rawQuestion,
       domain: plan.domain,
+      secondaryDomains: Array.from(new Set(plan.secondaryDomains || [])).filter(domain => domain.toLowerCase() !== plan.domain.toLowerCase()),
       intent: plan.intent,
       responseType,
       technicalMode,
