@@ -550,7 +550,11 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
       if (plan.clarification?.question) {
         return (plan.clarification.reason || 'I need one detail to give you a focused reading.') + ' ' + plan.clarification.question;
       }
-      return "I don't have enough verified chart evidence to answer that reliably yet. Which life area and timeframe should I focus on?";
+      const baseResponse = "I don't have enough verified chart evidence to answer that reliably yet. Which life area and timeframe should I focus on?";
+      const coverageLimitations = responsePlan.responseType === 'insufficient_evidence'
+        ? getQuestionCoverageLimitations(approvedClaimSet)
+        : [];
+      return [baseResponse, ...coverageLimitations].join(' ');
     }
 
     if (claims.length === 0) {
