@@ -254,13 +254,46 @@ async function main(): Promise<void> {
     'The narrator context must explicitly retain secondary domains for answer planning.',
   );
 
+  // Combined transit + finance question: neither the exact transit claim nor the
+  // reserved secondary-domain claim may be evicted by the other's priority rule.
+  const transitPlan: QuestionPlan = {
+    ...plan,
+    rawQuestion: 'How does Jupiter transit affect my career and income in 2027?',
+    normalizedQuestion: 'How does Jupiter transit affect my career and income in 2027?',
+    planetFocus: ['Jupiter'],
+  };
+  const transitClaim = {
+    claimId: 'claim_jupiter_transit',
+    text: 'A verified transit activation contributes to the timing assessment.',
+    type: 'factual',
+    factorType: 'transit',
+    strength: 'moderate',
+    evidenceIds: ['fact_career_synthesis'],
+    ruleIds: [],
+    sourceIds: [],
+    astrologicalEntities: ['Jupiter'],
+    relevance: 'high',
+    allowed: true,
+  };
+  const combinedSelection = new ResponseEvidenceSelector().selectEvidence(
+    transitPlan,
+    reasoning,
+    claimSet([...claims, transitClaim]),
+  );
+  assert(
+    combinedSelection.selectedClaimIds.includes('claim_jupiter_transit') &&
+      combinedSelection.selectedClaimIds.includes('claim_income_sav') &&
+      combinedSelection.selectedClaimIds.includes('claim_direct_synthesis'),
+    'Transit prioritization must coexist with the direct synthesis and secondary finance coverage.',
+  );
+
   const prompt = buildNarratorUserPrompt(plan.rawQuestion, responsePlan, fullClaims);
   assert(
     prompt.toLowerCase().includes('secondary domains') && prompt.toLowerCase().includes('finance'),
     'The narrator prompt must instruct the model to cover secondary domains rather than answering only the primary topic.',
   );
 
-  console.log('AI V3 ANSWER QUALITY: PASS (6 contracts)');
+  console.log('AI V3 ANSWER QUALITY: PASS (7 contracts)');
 }
 
 try {
