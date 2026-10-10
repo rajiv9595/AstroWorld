@@ -48,8 +48,9 @@ export function buildNarratorUserPrompt(
     const timingList = pack.timingWindows.length > 0
       ? pack.timingWindows.map(w => `- ${w.label}: ${w.periodText} (${w.type.replace(/_/g, ' ')})`).join('\n')
       : '- Active current period';
-    const secondaryDomainSection = (pack.secondaryDomains || []).length > 0
-      ? `SECONDARY DOMAINS TO COVER (required): ${pack.secondaryDomains.join(', ')}`
+    const secondaryDomains = pack.secondaryDomains || [];
+    const secondaryDomainSection = secondaryDomains.length > 0
+      ? `SECONDARY DOMAINS TO COVER (required): ${secondaryDomains.join(', ')}`
       : '';
 
     const transitSection = pack.transitFocus
