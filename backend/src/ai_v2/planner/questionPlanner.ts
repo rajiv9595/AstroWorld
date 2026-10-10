@@ -172,7 +172,9 @@ export class QuestionPlanner {
       if (houses.length === 0 && (lower.startsWith('why') || lower.includes('what makes'))) {
         houses = this.extractHouses(prevText);
       }
-      if (temporalScope.type === 'natal' && (lower.startsWith('why') || lower.includes('what makes') || lower.includes('how long'))) {
+      // An elliptical follow-up without its own date inherits the parent question's
+      // scope (including date-range boundaries and representative evaluation dates).
+      if (temporalScope.type === 'natal') {
         const prevScope = this.extractTemporalScope(prevText);
         if (prevScope.temporalScope.type !== 'natal') {
           temporalScope = prevScope.temporalScope;
@@ -363,6 +365,14 @@ export class QuestionPlanner {
       intent = 'transit_analysis';
     }
 
+    // Preserve relocation/foreign-settlement as an additional evidence dimension even when
+    // the primary domain is career (for example, "Will my career take me abroad?").
+    const asksForeignRelocation =
+      /\b(abroad|overseas|foreign|relocat(?:e|ion|ing)|emigrat(?:e|ion|ing)|settle abroad|move abroad|move overseas|settle overseas|international move)\b/i.test(lower);
+    if (asksForeignRelocation && !chartLayers.includes('D4')) {
+      chartLayers.push('D4');
+    }
+
     // Apply contextPack overrides for follow-up turns
     if (contextPack) {
       if (contextPack.resolvedReferents?.requestedExplanation) {
@@ -377,6 +387,24 @@ export class QuestionPlanner {
       }
     }
 
+    // Preserve all requested evidence domains. Only combine the parent topic when the
+    // current turn is elliptical (for example, "What about abroad?") so a true topic
+    // change does not accidentally inherit unrelated evidence.
+    const isEllipticalFollowUp =
+      Boolean(prevText) &&
+      /^(?:what about|how about|and\b|also\b|then\b|what if\b|in that case\b|why(?:\b|\?)|how so\b)/i.test(lower);
+    const evidenceText = isEllipticalFollowUp ? `${lower} ${prevText}` : lower;
+    const detectedDomains = this.extractEvidenceDomains(evidenceText);
+    const secondaryDomains = detectedDomains.filter(candidate => candidate !== domain);
+
+    // Secondary domain requirements are also reflected in the plan's chart layers.
+    for (const secondaryDomain of secondaryDomains) {
+      if (secondaryDomain === 'career' && !chartLayers.includes('D10')) chartLayers.push('D10');
+      if (secondaryDomain === 'relationship' && !chartLayers.includes('D9')) chartLayers.push('D9');
+      if (secondaryDomain === 'travel' && !chartLayers.includes('D4')) chartLayers.push('D4');
+      if (secondaryDomain === 'education' && !chartLayers.includes('D24')) chartLayers.push('D24');
+    }
+
     // Deduplicate chart layers and ensure D1 is included if empty
     const uniqueLayers = Array.from(new Set(chartLayers)) as VargaCode[];
     if (uniqueLayers.length === 0) {
@@ -389,6 +417,7 @@ export class QuestionPlanner {
       normalizedQuestion: rawQuestion.trim(),
       intent,
       domain,
+      secondaryDomains,
       event,
       planetFocus: planets,
       houseFocus: houses,
@@ -410,6 +439,19 @@ export class QuestionPlanner {
       version: 'ai-v2-plan-1',
       createdAtIso: new Date().toISOString(),
     };
+  }
+
+  private extractEvidenceDomains(lower: string): string[] {
+    const candidates: Array<[string, RegExp]> = [
+      ['career', /\b(career|job|promotion|work|profession|employment|business)\b/i],
+      ['relationship', /\b(marriage|spouse|relationship|partner|love|wedding|romance)\b/i],
+      ['finance', /\b(money|wealth|finance|financial|investment|income|salary|earnings|savings|debt|assets?)\b/i],
+      ['travel', /\b(travel|foreign|abroad|overseas|relocation|relocate|relocating|emigrate|emigration|emigrating|international move|move abroad|settle abroad)\b/i],
+      ['health', /\b(health|disease|vitality|illness)\b/i],
+      ['spirituality', /\b(spirituality|spiritual|moksha|dharma)\b/i],
+      ['education', /\b(education|study|studies|exam|academic|university|degree)\b/i],
+    ];
+    return candidates.filter(([, pattern]) => pattern.test(lower)).map(([domain]) => domain);
   }
 
   private extractPlanets(lower: string): string[] {
@@ -489,7 +531,7 @@ export class QuestionPlanner {
       }
 
       return {
-        temporalScope: { type: 'specific_date', startIso, endIso },
+        temporalScope: { type: 'date_range', startIso, endIso },
         targetDatesIso,
       };
     }

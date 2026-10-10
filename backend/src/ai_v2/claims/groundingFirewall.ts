@@ -360,11 +360,33 @@ export class GroundingFirewall {
       }
     }
 
-    // Check Domain Focus
+    // Check Primary Domain Focus
     if (combinedText.includes(plan.domain.toLowerCase()) || plan.domain === 'general' || plan.domain === 'astrological') {
       coveredDomains.push(plan.domain);
     } else {
       missing.push(`Domain "${plan.domain}" not adequately covered`);
+    }
+
+    // Compound questions are incomplete until each explicitly requested secondary
+    // domain is represented by at least one approved claim. Match natural domain
+    // language as well as formal labels so "income" can cover finance, for example.
+    const domainSignals: Record<string, string[]> = {
+      career: ['career', 'job', 'promotion', 'profession', 'employment', 'work', 'd10', 'leadership'],
+      finance: ['finance', 'financial', 'money', 'wealth', 'income', 'salary', 'earnings', 'savings', 'investment', 'ashtakavarga', 'dhana', '11th house', '2nd house'],
+      relationship: ['relationship', 'marriage', 'spouse', 'partner', 'wedding', 'love', 'navamsha', 'd9'],
+      travel: ['travel', 'abroad', 'overseas', 'foreign', 'relocation', 'relocate', 'emigration', 'd4'],
+      education: ['education', 'study', 'studies', 'exam', 'academic', 'university', 'degree', 'd24'],
+      health: ['health', 'vitality', 'well-being', 'wellbeing', 'illness'],
+      spirituality: ['spirituality', 'spiritual', 'moksha', 'dharma'],
+    };
+    for (const secondaryDomain of Array.from(new Set(plan.secondaryDomains || []))) {
+      if (secondaryDomain.toLowerCase() === plan.domain.toLowerCase()) continue;
+      const signals = domainSignals[secondaryDomain.toLowerCase()] || [secondaryDomain.toLowerCase()];
+      if (signals.some(signal => combinedText.includes(signal))) {
+        coveredDomains.push(secondaryDomain);
+      } else {
+        missing.push(`Secondary domain "${secondaryDomain}" not adequately covered`);
+      }
     }
 
     const complete = missing.length === 0;

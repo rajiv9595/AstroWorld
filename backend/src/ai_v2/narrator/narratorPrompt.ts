@@ -6,6 +6,43 @@
 import { ResponsePlan } from '../schemas/responsePlan.ts';
 import { ApprovedClaimSet } from '../schemas/claimPacket.ts';
 
+/**
+ * Convert firewall coverage gaps into concise user-safe disclosures. Internal
+ * validator wording is never copied verbatim into a final answer.
+ */
+export function getQuestionCoverageLimitations(approvedClaimSet: ApprovedClaimSet): string[] {
+  const missing: string[] = Array.isArray(approvedClaimSet.questionCoverage?.missing)
+    ? approvedClaimSet.questionCoverage.missing
+    : [];
+  const labels: Record<string, string> = {
+    career: 'the career portion of your question',
+    finance: 'the income and savings portion of your question',
+    wealth: 'the income and savings portion of your question',
+    relationship: 'the relationship portion of your question',
+    travel: 'the travel or relocation portion of your question',
+    education: 'the education portion of your question',
+    health: 'health-related themes in your question',
+    spirituality: 'the spirituality portion of your question',
+  };
+  const disclosures: string[] = [];
+
+  for (const item of missing) {
+    const secondary = item.match(/Secondary domain\s+"([^"]+)"/i);
+    const primary = item.match(/\bDomain\s+"([^"]+)"/i);
+    const planet = item.match(/Planet focus\s+"([^"]+)"/i);
+    const domain = (secondary?.[1] || primary?.[1] || '').trim().toLowerCase();
+
+    if (domain) {
+      const topic = labels[domain] || `the ${domain} portion of your question`;
+      disclosures.push(`I don't have enough verified chart evidence to assess ${topic} reliably, so I won't guess about it.`);
+    } else if (planet?.[1]) {
+      disclosures.push(`I don't have enough verified evidence to assess the requested ${planet[1]} factor reliably, so I won't guess about it.`);
+    }
+  }
+
+  return Array.from(new Set(disclosures)).slice(0, 3);
+}
+
 export function getNarratorSystemInstruction(): string {
   return `You are AstroWorld's Conversational Astrologer — a warm, highly knowledgeable, articulate Vedic astrology mentor having a natural one-on-one dialogue with the user.
 
@@ -48,6 +85,14 @@ export function buildNarratorUserPrompt(
     const timingList = pack.timingWindows.length > 0
       ? pack.timingWindows.map(w => `- ${w.label}: ${w.periodText} (${w.type.replace(/_/g, ' ')})`).join('\n')
       : '- Active current period';
+    const secondaryDomains = pack.secondaryDomains || [];
+    const secondaryDomainSection = secondaryDomains.length > 0
+      ? `SECONDARY DOMAINS TO COVER (required where approved evidence exists): ${secondaryDomains.join(', ')}`
+      : '';
+    const coverageLimitations = getQuestionCoverageLimitations(approvedClaimSet);
+    const coverageLimitationsSection = coverageLimitations.length > 0
+      ? `COVERAGE LIMITATIONS (required to disclose plainly):\n${coverageLimitations.map(item => `- ${item}`).join('\n')}`
+      : '';
 
     const transitSection = pack.transitFocus
       ? `TRANSIT FOCUS:
@@ -64,6 +109,10 @@ RESPONSE PLAN:
 - Direct Answer Direction: ${pack.directAnswerDirection}
 - Depth: ${pack.requestedDepth}
 - Mode: ${pack.technicalMode}
+
+${secondaryDomainSection}
+
+${coverageLimitationsSection}
 
 ${transitSection}
 
@@ -84,6 +133,8 @@ Write a warm, concise, knowledgeable response directly to the user.
 - Start with the direct answer in the very first sentence.
 - If this is a transit question, lead with the transit activation.
 - Explain the key why using the supporting factors and dasha overlap.
+- Cover the primary domain and every listed secondary domain with approved evidence where available.
+- Disclose every listed coverage limitation plainly; do not present an unsupported facet as assessed and do not guess.
 - Mention the qualification / conscious discipline required.
 - State the timing period naturally in months/years.
 - Do NOT use internal metadata phrases like "verified chart placement" or list all planets.`;
@@ -94,12 +145,19 @@ Write a warm, concise, knowledgeable response directly to the user.
     .map(c => `- ${c.text}`)
     .join('\n');
 
+  const coverageLimitations = getQuestionCoverageLimitations(approvedClaimSet);
+  const coverageLimitationsSection = coverageLimitations.length > 0
+    ? `COVERAGE LIMITATIONS (required to disclose plainly):\n${coverageLimitations.map(item => `- ${item}`).join('\n')}`
+    : '';
+
   return `USER QUESTION:
 "${rawQuestion}"
 
 APPROVED CLAIMS:
 ${claimsList}
 
+${coverageLimitationsSection}
+
 INSTRUCTION:
-Write a natural, direct, answer-first response using only these verified claims. Do not use robotic boilerplate.`;
+Write a natural, direct, answer-first response using only these verified claims. Disclose each coverage limitation plainly and do not guess about unsupported facets. Do not use robotic boilerplate.`;
 }

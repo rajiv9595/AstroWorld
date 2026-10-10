@@ -36,9 +36,8 @@ export class ResponseEvidenceSelector {
     const candidateRestricting: Array<{ claim: ClaimItem; score: number }> = [];
 
     const isTransitQuestion =
-      plan.intent.includes('transit') ||
-      plan.rawQuestion.toLowerCase().includes('transit') ||
-      plan.rawQuestion.toLowerCase().includes('jupiter');
+      plan.intent.toLowerCase().includes('transit') ||
+      /\b(transits?|gochara)\b/i.test(plan.rawQuestion);
 
     const queriedPlanets = plan.planetFocus.map(p => p.toLowerCase());
     const queriedDomain = plan.domain.toLowerCase();
@@ -47,10 +46,11 @@ export class ResponseEvidenceSelector {
     const isLagnaQuestion = rawLower.includes('lagna') || rawLower.includes('ascendant');
 
     for (const claim of claims) {
-      if (claim.type === 'qualified_prediction') continue;
+      // The approved synthesis claim is the direct answer. Preserve it alongside evidence.
+
 
       const textLower = claim.text.toLowerCase();
-      let score = 0;
+      let score = claim.type === 'qualified_prediction' ? 100 : 0;
 
       // 0. Direct Lagna / Ascendant Match (Highest Priority for Lagna inquiries)
       if (isLagnaQuestion) {
@@ -112,7 +112,9 @@ export class ResponseEvidenceSelector {
       }
 
       const isRestriction =
-        claim.type !== 'factual' && (
+        claim.type !== 'factual' &&
+        claim.type !== 'qualified_prediction' &&
+        (
           claim.strength === 'mixed' ||
           textLower.includes('structural') ||
           textLower.includes('discipline') ||
@@ -136,14 +138,104 @@ export class ResponseEvidenceSelector {
     const maxRestrictions = Math.min(2, Math.max(1, Math.floor(budget * 0.3)));
     const maxSupporting = budget - maxRestrictions;
 
-    const selectedSupporting = candidateSupporting.slice(0, maxSupporting).map(c => this.toSelectedSummary(c.claim, false, technicalMode));
+    const rankedSupporting = candidateSupporting.slice(0, maxSupporting);
+
+    // Reserve capacity for each requested secondary domain. Keep the approved
+    // direct synthesis claim, but swap out the lowest-ranked ordinary fact when
+    // the primary-domain inventory would otherwise crowd a compound facet out.
+    const reservedDomainClaimIds = new Set<string>();
+    const domainSignals: Record<string, string[]> = {
+      career: ['career', 'job', 'promotion', 'profession', 'employment', 'work', 'd10', 'leadership'],
+      finance: ['finance', 'financial', 'money', 'wealth', 'income', 'salary', 'earnings', 'savings', 'investment', 'ashtakavarga', 'dhana', '11th house', '2nd house'],
+      relationship: ['relationship', 'marriage', 'spouse', 'partner', 'wedding', 'love', 'navamsha', 'd9'],
+      travel: ['travel', 'abroad', 'overseas', 'foreign', 'relocation', 'relocate', 'emigration', 'd4'],
+      education: ['education', 'study', 'studies', 'exam', 'academic', 'university', 'degree', 'd24'],
+      health: ['health', 'vitality', 'well-being', 'wellbeing', 'illness'],
+      spirituality: ['spirituality', 'spiritual', 'moksha', 'dharma'],
+    };
+    for (const secondaryDomain of Array.from(new Set(plan.secondaryDomains || []))) {
+      if (secondaryDomain.toLowerCase() === queriedDomain) continue;
+      const signals = domainSignals[secondaryDomain.toLowerCase()] || [secondaryDomain.toLowerCase()];
+      const domainCandidate = candidateSupporting.find(({ claim }) =>
+        signals.some(signal => claim.text.toLowerCase().includes(signal)),
+      );
+      if (!domainCandidate) continue;
+
+      const existingIndex = rankedSupporting.findIndex(
+        candidate => candidate.claim.claimId === domainCandidate.claim.claimId,
+      );
+      if (existingIndex >= 0) {
+        reservedDomainClaimIds.add(domainCandidate.claim.claimId);
+        continue;
+      }
+
+      if (rankedSupporting.length < maxSupporting) {
+        rankedSupporting.push(domainCandidate);
+        reservedDomainClaimIds.add(domainCandidate.claim.claimId);
+        continue;
+      }
+
+      let replacementIndex = -1;
+      for (let index = rankedSupporting.length - 1; index >= 0; index--) {
+        const candidate = rankedSupporting[index].claim;
+        if (candidate.type !== 'qualified_prediction' && !reservedDomainClaimIds.has(candidate.claimId)) {
+          replacementIndex = index;
+          break;
+        }
+      }
+      if (replacementIndex >= 0) {
+        rankedSupporting[replacementIndex] = domainCandidate;
+        reservedDomainClaimIds.add(domainCandidate.claim.claimId);
+      }
+    }
+
+    // For transit questions, reserve one slot for the verified transit of the queried planet.
+    // A generic natal placement or D10 fact must not crowd out the exact event the user asked about.
+    if (isTransitQuestion && queriedPlanets.length > 0 && maxSupporting > 0) {
+      const queriedTransit = candidateSupporting.find(({ claim }) => {
+        if (claim.type !== 'factual' || claim.factorType !== 'transit') return false;
+        const entityMatch = (claim.astrologicalEntities || []).some(entity =>
+          queriedPlanets.some(planet => entity.toLowerCase().startsWith(planet)),
+        );
+        const text = claim.text.toLowerCase();
+        const textMatch = queriedPlanets.some(planet => text.includes(`${planet} (transit)`));
+        return entityMatch || textMatch;
+      });
+
+      if (
+        queriedTransit &&
+        !rankedSupporting.some(candidate => candidate.claim.claimId === queriedTransit.claim.claimId)
+      ) {
+        // The transit is a required facet too, but never evict the direct answer
+        // or the only selected claim reserved for a secondary domain.
+        let replacementIndex = -1;
+        for (let index = rankedSupporting.length - 1; index >= 0; index--) {
+          const selectedClaim = rankedSupporting[index].claim;
+          if (
+            selectedClaim.type !== 'qualified_prediction' &&
+            !reservedDomainClaimIds.has(selectedClaim.claimId)
+          ) {
+            replacementIndex = index;
+            break;
+          }
+        }
+
+        if (replacementIndex >= 0) {
+          rankedSupporting[replacementIndex] = queriedTransit;
+        } else if (rankedSupporting.length < maxSupporting) {
+          rankedSupporting.push(queriedTransit);
+        }
+      }
+    }
+
+    const selectedSupporting = rankedSupporting.map(c => this.toSelectedSummary(c.claim, false, technicalMode));
     const selectedRestricting = candidateRestricting.slice(0, maxRestrictions).map(c => this.toSelectedSummary(c.claim, true, technicalMode));
 
     const selectedClaims = [...selectedSupporting, ...selectedRestricting];
     const selectedClaimIds = selectedClaims.map(c => c.claimId);
     const selectedEvidenceIds = Array.from(new Set(selectedClaims.flatMap(c => c.evidenceIds)));
 
-    const classicalContextSummary = this.buildClassicalContextSummary(plan, reasoning);
+    const classicalContextSummary = this.buildClassicalContextSummary(plan, reasoning, technicalMode);
 
     return {
       budget,
@@ -180,7 +272,7 @@ export class ResponseEvidenceSelector {
 
       // DEF-04: Clean up database parenthetical formats
       text = text
-        .replace(/\(position:\s*([^)]+)\)/gi, 'in $1')
+        .replace(/\(position:\s*(?:in\s+)?([^)]+)\)/gi, 'in $1')
         .replace(/\(sign:\s*([^)]+)\)/gi, 'is in $1')
         .replace(/\((House\s+\d+)\)/gi, 'in $1');
     }
@@ -203,7 +295,9 @@ export class ResponseEvidenceSelector {
     const textLower = claim.text.toLowerCase();
     const factorType: any =
       claim.factorType ||
-      (textLower.includes('transit') || textLower.includes('gochara')
+      (claim.type === 'qualified_prediction'
+        ? 'interpretation'
+        : textLower.includes('transit') || textLower.includes('gochara')
         ? 'transit'
         : textLower.includes('dasha') || textLower.includes('vimshottari')
         ? 'dasha'
@@ -249,16 +343,35 @@ export class ResponseEvidenceSelector {
     }
   }
 
-  private buildClassicalContextSummary(plan: QuestionPlan, reasoning: ReasoningPacket): string {
-    if (plan.domain === 'career' || plan.intent === 'promotion_timing') {
-      return 'Classically (BPHS & Phaladeepika), transit activations across beneficial houses from natal Moon and Kendra-Trikona lord dashas signify major professional milestones with elevated leadership capacity.';
+  private buildClassicalContextSummary(
+    _plan: QuestionPlan,
+    reasoning: ReasoningPacket,
+    technicalMode: 'normal' | 'technical' = 'normal',
+  ): string {
+    const applicableRules = (reasoning.appliedRules || [])
+      .filter(rule => rule.applicabilityStatus === 'applied')
+      .slice(0, 3);
+
+    if (applicableRules.length === 0) {
+      return 'No directly applicable classical rule passed verified prerequisite checks for this question. Do not present a named classical rule as established.';
     }
-    if (plan.domain === 'relationship') {
-      return 'Classically, matrimonial milestones activate through 7th lord transit alignments and Navamsha (D9) dignity harmony.';
+
+    // Source lineage belongs in technical mode. Normal conversation should explain the
+    // relevant principle without dumping citation headers and long catalogue-like passages.
+    if (technicalMode === 'technical') {
+      return applicableRules
+        .map(rule => `${rule.citation}: ${rule.interpretationSummary}`)
+        .join('\n');
     }
-    if (plan.domain === 'finance') {
-      return 'Classically, Dhana yogas connecting 2nd house accumulations and 11th house gains activate during periods of favorable planetary confluence.';
-    }
-    return 'Classical principles indicate that converging dasha and transit influences produce constructive life developments.';
+
+    const concisePrinciples = applicableRules.map(rule => {
+      let summary = String(rule.interpretationSummary || '').trim();
+      summary = summary.replace(/^[^:]{1,100}:\s*/, '');
+      const end = summary.search(/[.!?](?:\s|$)/);
+      if (end >= 0) summary = summary.slice(0, end + 1);
+      return summary.trim();
+    }).filter(Boolean);
+
+    return Array.from(new Set(concisePrinciples)).slice(0, 2).join(' ');
   }
 }
