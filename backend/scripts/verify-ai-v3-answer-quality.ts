@@ -275,10 +275,51 @@ async function main(): Promise<void> {
     relevance: 'high',
     allowed: true,
   };
+  const competingJupiterClaims = [
+    {
+      claimId: 'claim_jupiter_natal_career',
+      text: 'Jupiter is a relevant natal factor for the career question.',
+      type: 'factual',
+      factorType: 'natal',
+      strength: 'moderate',
+      evidenceIds: ['fact_career_synthesis'],
+      ruleIds: [],
+      sourceIds: [],
+      astrologicalEntities: ['Jupiter'],
+      relevance: 'high',
+      allowed: true,
+    },
+    {
+      claimId: 'claim_jupiter_d10_career',
+      text: 'Jupiter in D10 adds another career indicator.',
+      type: 'factual',
+      factorType: 'varga',
+      strength: 'moderate',
+      evidenceIds: ['fact_d10_1'],
+      ruleIds: [],
+      sourceIds: [],
+      astrologicalEntities: ['Jupiter'],
+      relevance: 'high',
+      allowed: true,
+    },
+    {
+      claimId: 'claim_jupiter_house_career',
+      text: 'Jupiter is relevant to the career and promotion question.',
+      type: 'factual',
+      factorType: 'natal',
+      strength: 'moderate',
+      evidenceIds: ['fact_d10_2'],
+      ruleIds: [],
+      sourceIds: [],
+      astrologicalEntities: ['Jupiter'],
+      relevance: 'high',
+      allowed: true,
+    },
+  ];
   const combinedSelection = new ResponseEvidenceSelector().selectEvidence(
     transitPlan,
     reasoning,
-    claimSet([...claims, transitClaim]),
+    claimSet([...claims, ...competingJupiterClaims, transitClaim]),
   );
   assert(
     combinedSelection.selectedClaimIds.includes('claim_jupiter_transit') &&
