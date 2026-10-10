@@ -206,9 +206,23 @@ export class ResponseEvidenceSelector {
         queriedTransit &&
         !rankedSupporting.some(candidate => candidate.claim.claimId === queriedTransit.claim.claimId)
       ) {
-        if (rankedSupporting.length >= maxSupporting) {
-          rankedSupporting[rankedSupporting.length - 1] = queriedTransit;
-        } else {
+        // The transit is a required facet too, but never evict the direct answer
+        // or the only selected claim reserved for a secondary domain.
+        let replacementIndex = -1;
+        for (let index = rankedSupporting.length - 1; index >= 0; index--) {
+          const selectedClaim = rankedSupporting[index].claim;
+          if (
+            selectedClaim.type !== 'qualified_prediction' &&
+            !reservedDomainClaimIds.has(selectedClaim.claimId)
+          ) {
+            replacementIndex = index;
+            break;
+          }
+        }
+
+        if (replacementIndex >= 0) {
+          rankedSupporting[replacementIndex] = queriedTransit;
+        } else if (rankedSupporting.length < maxSupporting) {
           rankedSupporting.push(queriedTransit);
         }
       }
