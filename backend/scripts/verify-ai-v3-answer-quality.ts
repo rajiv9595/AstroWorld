@@ -260,7 +260,7 @@ async function main(): Promise<void> {
     'The narrator prompt must instruct the model to cover secondary domains rather than answering only the primary topic.',
   );
 
-  console.log('AI V3 ANSWER QUALITY: PASS (5 contracts)');
+  console.log('AI V3 ANSWER QUALITY: PASS (6 contracts)');
 }
 
 try {
