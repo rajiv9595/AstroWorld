@@ -140,6 +140,55 @@ export class ResponseEvidenceSelector {
 
     const rankedSupporting = candidateSupporting.slice(0, maxSupporting);
 
+    // Reserve capacity for each requested secondary domain. Keep the approved
+    // direct synthesis claim, but swap out the lowest-ranked ordinary fact when
+    // the primary-domain inventory would otherwise crowd a compound facet out.
+    const reservedDomainClaimIds = new Set<string>();
+    const domainSignals: Record<string, string[]> = {
+      career: ['career', 'job', 'promotion', 'profession', 'employment', 'work', 'd10', 'leadership'],
+      finance: ['finance', 'financial', 'money', 'wealth', 'income', 'salary', 'earnings', 'savings', 'investment', 'ashtakavarga', 'dhana', '11th house', '2nd house'],
+      relationship: ['relationship', 'marriage', 'spouse', 'partner', 'wedding', 'love', 'navamsha', 'd9'],
+      travel: ['travel', 'abroad', 'overseas', 'foreign', 'relocation', 'relocate', 'emigration', 'd4'],
+      education: ['education', 'study', 'studies', 'exam', 'academic', 'university', 'degree', 'd24'],
+      health: ['health', 'vitality', 'well-being', 'wellbeing', 'illness'],
+      spirituality: ['spirituality', 'spiritual', 'moksha', 'dharma'],
+    };
+    for (const secondaryDomain of Array.from(new Set(plan.secondaryDomains || []))) {
+      if (secondaryDomain.toLowerCase() === queriedDomain) continue;
+      const signals = domainSignals[secondaryDomain.toLowerCase()] || [secondaryDomain.toLowerCase()];
+      const domainCandidate = candidateSupporting.find(({ claim }) =>
+        signals.some(signal => claim.text.toLowerCase().includes(signal)),
+      );
+      if (!domainCandidate) continue;
+
+      const existingIndex = rankedSupporting.findIndex(
+        candidate => candidate.claim.claimId === domainCandidate.claim.claimId,
+      );
+      if (existingIndex >= 0) {
+        reservedDomainClaimIds.add(domainCandidate.claim.claimId);
+        continue;
+      }
+
+      if (rankedSupporting.length < maxSupporting) {
+        rankedSupporting.push(domainCandidate);
+        reservedDomainClaimIds.add(domainCandidate.claim.claimId);
+        continue;
+      }
+
+      let replacementIndex = -1;
+      for (let index = rankedSupporting.length - 1; index >= 0; index--) {
+        const candidate = rankedSupporting[index].claim;
+        if (candidate.type !== 'qualified_prediction' && !reservedDomainClaimIds.has(candidate.claimId)) {
+          replacementIndex = index;
+          break;
+        }
+      }
+      if (replacementIndex >= 0) {
+        rankedSupporting[replacementIndex] = domainCandidate;
+        reservedDomainClaimIds.add(domainCandidate.claim.claimId);
+      }
+    }
+
     // For transit questions, reserve one slot for the verified transit of the queried planet.
     // A generic natal placement or D10 fact must not crowd out the exact event the user asked about.
     if (isTransitQuestion && queriedPlanets.length > 0 && maxSupporting > 0) {
