@@ -48,6 +48,9 @@ export function buildNarratorUserPrompt(
     const timingList = pack.timingWindows.length > 0
       ? pack.timingWindows.map(w => `- ${w.label}: ${w.periodText} (${w.type.replace(/_/g, ' ')})`).join('\n')
       : '- Active current period';
+    const secondaryDomainSection = (pack.secondaryDomains || []).length > 0
+      ? `SECONDARY DOMAINS TO COVER (required): ${pack.secondaryDomains.join(', ')}`
+      : '';
 
     const transitSection = pack.transitFocus
       ? `TRANSIT FOCUS:
@@ -64,6 +67,8 @@ RESPONSE PLAN:
 - Direct Answer Direction: ${pack.directAnswerDirection}
 - Depth: ${pack.requestedDepth}
 - Mode: ${pack.technicalMode}
+
+${secondaryDomainSection}
 
 ${transitSection}
 
@@ -84,6 +89,7 @@ Write a warm, concise, knowledgeable response directly to the user.
 - Start with the direct answer in the very first sentence.
 - If this is a transit question, lead with the transit activation.
 - Explain the key why using the supporting factors and dasha overlap.
+- Cover the primary domain and every listed secondary domain with approved evidence; if a facet lacks approved support, say so explicitly rather than guessing.
 - Mention the qualification / conscious discipline required.
 - State the timing period naturally in months/years.
 - Do NOT use internal metadata phrases like "verified chart placement" or list all planets.`;
