@@ -91,7 +91,7 @@ export function buildNarratorUserPrompt(
       : '';
     const coverageLimitations = getQuestionCoverageLimitations(approvedClaimSet);
     const coverageLimitationsSection = coverageLimitations.length > 0
-      ? `COVERAGE LIMITATIONS (required to disclose plainly):\n${coverageLimitations.map(item => `- ${item}`).join('\\n')}`
+      ? `COVERAGE LIMITATIONS (required to disclose plainly):\n${coverageLimitations.map(item => `- ${item}`).join('\n')}`
       : '';
 
     const transitSection = pack.transitFocus
@@ -147,7 +147,7 @@ Write a warm, concise, knowledgeable response directly to the user.
 
   const coverageLimitations = getQuestionCoverageLimitations(approvedClaimSet);
   const coverageLimitationsSection = coverageLimitations.length > 0
-    ? `COVERAGE LIMITATIONS (required to disclose plainly):\n${coverageLimitations.map(item => `- ${item}`).join('\\n')}`
+    ? `COVERAGE LIMITATIONS (required to disclose plainly):\n${coverageLimitations.map(item => `- ${item}`).join('\n')}`
     : '';
 
   return `USER QUESTION:
