@@ -312,6 +312,12 @@ async function main(): Promise<void> {
     'Full consultation does not leak raw internal calculation property names',
     consultation.finalResponse.text,
   );
+  const repeatedEleventhHouseScore = finalText.match(/ashtakavarga score for the 11th house/gi) || [];
+  check(
+    repeatedEleventhHouseScore.length === 1,
+    'Full consultation mentions the selected 11th-house score once rather than repeating it',
+    `occurrences=${repeatedEleventhHouseScore.length}`,
+  );
   check(
     !/\b(guaranteed|100% certain|will definitely happen|inevitable)\b/i.test(finalText),
     'Full consultation avoids fatalistic certainty language',
