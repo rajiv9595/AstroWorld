@@ -301,6 +301,18 @@ async function main(): Promise<void> {
     `responseType=${consultation.responsePlan.responseType}, direction=${consultation.reasoningPacket.direction}, coverageComplete=${coverage?.complete}, missing=${JSON.stringify(coverage?.missing)}, financeCovered=${financeCovered}, finalAnswerMentionsFinance=${financeInFinalAnswer}, gapDisclosed=${financeGapDisclosed}, response=${consultation.finalResponse.text}`,
   );
   check(
+    financeCovered
+      ? /income and savings|income\/savings|for income and savings|financial portion/i.test(finalText)
+      : financeGapDisclosed,
+    'Full consultation explicitly frames the house score as context for the requested income/savings facet',
+    consultation.finalResponse.text,
+  );
+  check(
+    !/\b(bindu_score|total_bindus|varga_sign|active_periods|evidence_id|rule_id|source_id)\b/i.test(finalText),
+    'Full consultation does not leak raw internal calculation property names',
+    consultation.finalResponse.text,
+  );
+  check(
     !/\b(guaranteed|100% certain|will definitely happen|inevitable)\b/i.test(finalText),
     'Full consultation avoids fatalistic certainty language',
   );
