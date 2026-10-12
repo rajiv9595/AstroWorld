@@ -15,9 +15,15 @@ function assert(condition: boolean, message: string): asserts condition {
 }
 
 async function main(): Promise<void> {
-  if (!process.argv.includes('--confirm-writes')) {
+  const confirmedWrites =
+    process.argv.includes('--confirm-writes') ||
+    process.argv.includes('confirm-writes') ||
+    process.env.ASTROWORLD_CONFIRM_WRITES === 'true' ||
+    process.env.CONFIRM_WRITES === 'true';
+
+  if (!confirmedWrites) {
     throw new Error(
-      'This smoke test writes and deletes temporary records. Re-run with -- --confirm-writes only after reviewing the script.',
+      'This smoke test writes and deletes temporary records. Re-run with -- --confirm-writes (or $env:ASTROWORLD_CONFIRM_WRITES = "true") only after reviewing the script.',
     );
   }
 

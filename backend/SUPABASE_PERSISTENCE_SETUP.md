@@ -27,10 +27,13 @@ For an existing deployment with the table inventory described above, **do not ru
 9. For a real persistence round-trip, run the opt-in smoke test against one of your own Auth user IDs. Find the UUID in **Authentication → Users** and keep it local; do not paste it into chat or commit it. This test writes temporary uniquely named conversation/message/memory rows, verifies reads, and deletes those rows by exact unique IDs:
    ```powershell
    $env:ASTROWORLD_PERSISTENCE_SMOKE_USER_ID = "YOUR-OWN-SUPABASE-AUTH-UUID"
-   npm --workspace=@astroworld/backend run audit:ai-v3:persistence-roundtrip -- --confirm-writes
+   $env:ASTROWORLD_CONFIRM_WRITES = "true"
+   npm --workspace=@astroworld/backend run audit:ai-v3:persistence-roundtrip
    Remove-Item Env:ASTROWORLD_PERSISTENCE_SMOKE_USER_ID
+   Remove-Item Env:ASTROWORLD_CONFIRM_WRITES
    ```
-   Review the script before opting in. Run it only against the intended project after taking a backup. The script requires the explicit `--confirm-writes` flag, prints no user ID/row contents/credentials, and fails if it cannot clean up the temporary records.
+   *(Note: In PowerShell, if passing flags directly via npm, use `npm --workspace=@astroworld/backend run audit:ai-v3:persistence-roundtrip -- -- --confirm-writes` because PowerShell treats the first `--` as a parameter stop-parsing token).*
+   Review the script before opting in. Run it only against the intended project after taking a backup. The script requires explicit write confirmation, prints no user ID/row contents/credentials, and fails if it cannot clean up the temporary records.
 
 ## Read-only verification query
 
