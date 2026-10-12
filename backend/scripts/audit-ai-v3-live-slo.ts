@@ -2,8 +2,9 @@ import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'node:url';
 
-const scriptDir = path.dirname(new URL(import.meta.url).pathname);
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(scriptDir, '../../.env') });
 dotenv.config({ path: path.resolve(scriptDir, '../.env') });
 
