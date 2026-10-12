@@ -278,7 +278,10 @@ export class QuestionPlanner {
     } else if (lower.includes('yoga') || lower.includes('dosha') || lower.includes('gajakesari') || lower.includes('raja yoga')) {
       intent = 'yoga_analysis';
       domain = 'astrological';
-    } else if (lower.includes('shadbala') || lower.includes('strength')) {
+    } else if (
+      lower.includes('shadbala') ||
+      /\b(?:shadbala|planetary strength|planet strength|strength of (?:the )?(?:sun|moon|mars|mercury|jupiter|venus|saturn|rahu|ketu|planets?))\b/i.test(lower)
+    ) {
       intent = 'planet_question';
       domain = 'astrological';
     } else if (
@@ -308,6 +311,11 @@ export class QuestionPlanner {
       } else if (lower.includes('change') || lower.includes('switch')) {
         intent = 'job_change';
         event = 'job_change';
+      } else if (
+        (lower.includes('strength') || lower.includes('strengths')) &&
+        (lower.includes('limit') || lower.includes('challeng') || lower.includes('weakness') || lower.includes('obstacle'))
+      ) {
+        intent = 'career_strengths_limitations';
       } else if (temporalScope.type === 'upcoming' || temporalScope.type === 'specific_date') {
         intent = 'career_timing';
       } else {

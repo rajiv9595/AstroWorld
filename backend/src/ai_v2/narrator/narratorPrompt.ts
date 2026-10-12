@@ -101,6 +101,23 @@ export function buildNarratorUserPrompt(
 - Activation: ${pack.transitFocus.activationSummary}`
       : '';
 
+    const rawLower = rawQuestion.toLowerCase();
+    const asksEvidenceVsInterpretation =
+      rawLower.includes('calculated') && (rawLower.includes('interpretation') || rawLower.includes('interpretations'));
+    const asksStrengthsAndLimits =
+      rawLower.includes('strength') && (rawLower.includes('limit') || rawLower.includes('challeng') || rawLower.includes('weakness'));
+    const asksMissingEvidence =
+      rawLower.includes('missing') || rawLower.includes('missing evidence') || rawLower.includes('unavailable');
+
+    const compoundInstructions = (asksEvidenceVsInterpretation || asksStrengthsAndLimits || asksMissingEvidence)
+      ? `\nCOMPOUND CONSULTATION REQUIREMENTS:
+- Clearly separate directly calculated chart facts from astrological interpretations.
+- Include both supportive strengths and structural limiting factors/challenges.
+- Plainly disclose missing evidence (e.g. exact birth time sensitivity for varga charts, uncalculated real-time transits, non-astrological career context).
+- Avoid guaranteed predictions or unsupported certainty.
+- Do not repeat generic textbook definitions of D10.`
+      : '';
+
     return `USER QUESTION:
 "${rawQuestion}"
 
@@ -137,7 +154,7 @@ Write a warm, concise, knowledgeable response directly to the user.
 - Disclose every listed coverage limitation plainly; do not present an unsupported facet as assessed and do not guess.
 - Mention the qualification / conscious discipline required.
 - State the timing period naturally in months/years.
-- Do NOT use internal metadata phrases like "verified chart placement" or list all planets.`;
+- Do NOT use internal metadata phrases like "verified chart placement" or list all planets.${compoundInstructions}`;
   }
 
   // Fallback to claim list if contextPack is missing

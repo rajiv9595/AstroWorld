@@ -182,7 +182,14 @@ export class ResponsePlanner {
       return 'timing_analysis';
     }
 
-    if (plan.chartLayers.length >= 2 || plan.intent === 'yoga_analysis' || plan.intent === 'deep_analysis') {
+    if (
+      plan.chartLayers.length >= 2 ||
+      plan.intent === 'yoga_analysis' ||
+      plan.intent === 'deep_analysis' ||
+      plan.intent === 'career_strengths_limitations' ||
+      (plan.rawQuestion.toLowerCase().includes('strength') && plan.rawQuestion.toLowerCase().includes('limit')) ||
+      (plan.rawQuestion.toLowerCase().includes('calculated') && plan.rawQuestion.toLowerCase().includes('interpretation'))
+    ) {
       return 'deep_analysis';
     }
 

@@ -184,7 +184,16 @@ export class AstrologyReasoner {
 
       // A. Career Domain Classification
       if (domain === 'career') {
-        if (
+        const valStr = typeof fact.value === 'string' ? fact.value : '';
+        const isD10 = fact.category === 'varga' && (fact.vargaCode === 'D10' || fact.entity.includes('D10'));
+        const isD10Dusthana = isD10 && (valStr.includes('House 12') || valStr.includes('House 8'));
+        const isD10House6 = isD10 && valStr.includes('House 6');
+
+        if (isD10Dusthana) {
+          restrictingFactors.push(this.createFactor(fact, 'restricting', 'high', 'Placement in D10 Dusthana (House 8/12) represents vocational friction or a need for conscious navigation'));
+        } else if (isD10House6) {
+          restrictingFactors.push(this.createFactor(fact, 'restricting', 'medium', 'Placement in D10 6th house highlights workplace competition and service demands'));
+        } else if (
           fact.house === 10 ||
           fact.house === 6 ||
           fact.category === 'varga' ||
@@ -192,8 +201,8 @@ export class AstrologyReasoner {
           fact.entity === 'Sun' ||
           fact.entity === 'Saturn'
         ) {
-          if (fact.dignity === 'DEBILITATED') {
-            restrictingFactors.push(this.createFactor(fact, 'restricting', 'high', 'Debilitation indicates discipline/challenge'));
+          if (fact.dignity === 'DEBILITATED' || fact.house === 8 || fact.house === 12) {
+            restrictingFactors.push(this.createFactor(fact, 'restricting', 'high', 'Structural placement or dignity demands patience and discipline'));
           } else {
             primaryFactors.push(this.createFactor(fact, 'primary', 'high', 'Direct career house or authority karaka'));
           }
@@ -304,20 +313,33 @@ export class AstrologyReasoner {
     for (const derived of evidence.derivedFacts) {
       if (derived.type === 'Yoga') {
         const isNegativeYoga = derived.id.toLowerCase().endsWith('_absence');
-        primaryFactors.push({
-          id: derived.id,
-          entity: derived.description,
-          property: isNegativeYoga ? 'presence' : 'classical_yoga',
-          value: derived.ruleCitation || 'Brihat Parashara Hora Shastra',
-          role: 'primary',
-          relevance: 'high',
-          rationale: isNegativeYoga
-            ? 'Verified deterministic yoga engine explicitly reported this classical formation as absent'
-            : 'Classical combination verified in the deterministic rule engine',
-          sourceTool: derived.sourceTool,
-          evidenceId: derived.id,
-          weight: 1.0,
-        });
+        if (isNegativeYoga) {
+          restrictingFactors.push({
+            id: derived.id,
+            entity: derived.description,
+            property: 'presence',
+            value: derived.ruleCitation || 'Brihat Parashara Hora Shastra',
+            role: 'restricting',
+            relevance: 'medium',
+            rationale: 'Verified deterministic yoga engine explicitly reported this classical formation as absent',
+            sourceTool: derived.sourceTool,
+            evidenceId: derived.id,
+            weight: 0.7,
+          });
+        } else {
+          primaryFactors.push({
+            id: derived.id,
+            entity: derived.description,
+            property: 'classical_yoga',
+            value: derived.ruleCitation || 'Brihat Parashara Hora Shastra',
+            role: 'primary',
+            relevance: 'high',
+            rationale: 'Classical combination verified in the deterministic rule engine',
+            sourceTool: derived.sourceTool,
+            evidenceId: derived.id,
+            weight: 1.0,
+          });
+        }
       }
     }
 

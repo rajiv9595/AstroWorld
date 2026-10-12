@@ -108,8 +108,10 @@ export class PostResponseGroundingValidator {
     }
 
     // 3. Check Contradiction Suppression (Mixed State)
+    const lowerDraft = fullDraftText.toLowerCase();
+    const lowerQuestion = plan.rawQuestion.toLowerCase();
+
     if (reasoning.direction === 'mixed') {
-      const lowerDraft = fullDraftText.toLowerCase();
       const mentionsDisciplineOrConstraint =
         lowerDraft.includes('discipline') ||
         lowerDraft.includes('constraint') ||
@@ -122,6 +124,47 @@ export class PostResponseGroundingValidator {
         suppressedContradictions = true;
         violations.push('Contradiction suppression: Mixed chart indications were flattened into unconstrained optimism.');
       }
+    }
+
+    // 4. Check Compound Consultation Facet Grounding
+    const asksEvidenceVsInterpretation =
+      lowerQuestion.includes('calculated') && (lowerQuestion.includes('interpretation') || lowerQuestion.includes('interpretations'));
+    if (asksEvidenceVsInterpretation) {
+      const distinguishesFactAndInterpretation =
+        (lowerDraft.includes('calculated') || lowerDraft.includes('chart evidence') || lowerDraft.includes('factual')) &&
+        lowerDraft.includes('interpretation');
+      if (!distinguishesFactAndInterpretation) {
+        violations.push('Compound question violation: Draft fails to clearly distinguish calculated chart evidence from interpretations.');
+      }
+    }
+
+    const asksStrengthsAndLimits =
+      lowerQuestion.includes('strength') && (lowerQuestion.includes('limit') || lowerQuestion.includes('challeng') || lowerQuestion.includes('weakness'));
+    if (asksStrengthsAndLimits) {
+      const mentionsStrengths =
+        lowerDraft.includes('strength') || lowerDraft.includes('support') || lowerDraft.includes('advantage');
+      const mentionsLimits =
+        lowerDraft.includes('limit') || lowerDraft.includes('challeng') || lowerDraft.includes('discipline') || lowerDraft.includes('structural') || lowerDraft.includes('constraint');
+      if (!mentionsStrengths || !mentionsLimits) {
+        violations.push('Compound question violation: Draft fails to cover both supportive strengths and limiting/challenging factors.');
+      }
+    }
+
+    const asksMissingEvidence =
+      lowerQuestion.includes('missing') || lowerQuestion.includes('missing evidence') || lowerQuestion.includes('unavailable');
+    if (asksMissingEvidence) {
+      const disclosesMissingEvidence =
+        lowerDraft.includes('missing') || lowerDraft.includes('disclosure') || lowerDraft.includes('limitation') || lowerDraft.includes('unverified') || lowerDraft.includes('sensitivity') || lowerDraft.includes('not evaluated');
+      if (!disclosesMissingEvidence) {
+        violations.push('Compound question violation: Draft fails to explicitly disclose missing evidence or analytical limitations.');
+      }
+    }
+
+    // 5. Check Repetition of Standard Classical Rule Phrases
+    const d10RulePattern = /The Dashamsha chart \(D10\) refines the 10th house/gi;
+    const d10Matches = fullDraftText.match(d10RulePattern);
+    if (d10Matches && d10Matches.length > 1) {
+      violations.push('Repetition violation: Standard D10 classical explanation repeated verbatim across paragraphs.');
     }
 
     const valid = violations.length === 0;

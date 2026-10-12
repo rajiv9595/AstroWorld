@@ -606,6 +606,31 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     // The conclusion comes from the approved synthesis claim/context. This method does not
     // infer a placement, yoga, dasha, transit, event, or classical rule from the wording alone.
     const directAnswer = (pack?.directAnswerDirection || synthesisClaim?.text || '').trim();
+
+    // Check for compound consultation questions requesting facts vs interpretations,
+    // strengths vs limitations, and missing evidence disclosures.
+    const asksEvidenceVsInterpretation =
+      rawLower.includes('calculated') && (rawLower.includes('interpretation') || rawLower.includes('interpretations'));
+    const asksStrengthsAndLimits =
+      rawLower.includes('strength') && (rawLower.includes('limit') || rawLower.includes('challeng') || rawLower.includes('weakness'));
+    const asksMissingEvidence =
+      rawLower.includes('missing') || rawLower.includes('missing evidence') || rawLower.includes('unavailable');
+
+    if (
+      asksEvidenceVsInterpretation ||
+      (asksStrengthsAndLimits && (asksMissingEvidence || asksEvidenceVsInterpretation || rawLower.includes('evidence'))) ||
+      plan.intent === 'career_strengths_limitations'
+    ) {
+      return this.synthesizeStructuredCompoundResponse(
+        plan,
+        responsePlan,
+        approvedClaimSet,
+        directAnswer,
+        factualClaims,
+        pack
+      );
+    }
+
     const paragraphs: string[] = [];
     const transitFocus = pack?.transitFocus;
     const transitActivationSummary = (transitFocus?.activationSummary?.trim() || '').replace(/[.!?]+$/, '');
@@ -729,8 +754,12 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     }
 
     const classicalContext = pack?.classicalContextSummary?.trim();
-    if (classicalContext &&
-        !classicalContext.toLowerCase().includes('no directly applicable classical rule passed')) {
+    if (
+      classicalContext &&
+      !classicalContext.toLowerCase().includes('no directly applicable classical rule passed') &&
+      !paragraphs.some(p => p.toLowerCase().includes(classicalContext.slice(0, 35).toLowerCase())) &&
+      !supporting.some(s => s.toLowerCase().includes(classicalContext.slice(0, 35).toLowerCase()))
+    ) {
       paragraphs.push(classicalContext);
     }
 
@@ -739,6 +768,171 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     }
 
     return paragraphs.slice(0, 4).join('\n\n');
+  }
+
+  /**
+   * Generates a fully grounded, multi-section response for compound consultations
+   * asking for career strengths vs limitations, calculated facts vs interpretations,
+   * and explicit missing-evidence disclosures.
+   */
+  private synthesizeStructuredCompoundResponse(
+    plan: QuestionPlan,
+    _responsePlan: ResponsePlan,
+    approvedClaimSet: ApprovedClaimSet,
+    directAnswer: string,
+    factualClaims: any[],
+    pack?: any,
+  ): string {
+    const claims = approvedClaimSet.claims;
+    const sections: string[] = [];
+
+    // 1. Direct Overview & Orientation
+    const overview = directAnswer.length > 0
+      ? directAnswer
+      : 'The chart demonstrates clear career potential supported by key planetary dispositions, accompanied by specific structural limiting factors that require disciplined management.';
+    sections.push(overview);
+
+    // 2. Directly Calculated Chart Evidence
+    const natalPlacements: string[] = [];
+    const vargaPlacements: string[] = [];
+    const yogasPresent: string[] = [];
+    const yogasAbsent: string[] = [];
+    let dashaText = '';
+
+    for (const c of factualClaims) {
+      const lower = c.text.toLowerCase();
+      if (c.type === 'factual' && (lower.includes('dasha') || lower.includes('active_period') || c.factorType === 'dasha')) {
+        dashaText = this.normalizeSimpleFact(c.text);
+      } else if (lower.includes('yoga')) {
+        if (lower.includes('absent') || lower.includes('absence')) {
+          yogasAbsent.push(this.normalizeSimpleFact(c.text));
+        } else {
+          yogasPresent.push(this.normalizeSimpleFact(c.text));
+        }
+      } else if (c.text.includes('D10') || c.factorType === 'varga') {
+        vargaPlacements.push(this.normalizeSimpleFact(c.text));
+      } else if (c.factorType === 'natal') {
+        natalPlacements.push(this.normalizeSimpleFact(c.text));
+      }
+    }
+
+    const timingClaims = claims.filter(c => c.type === 'timing');
+    const timingDetail = timingClaims.length > 0
+      ? timingClaims.map(t => this.normalizeSimpleFact(t.text)).join(' ')
+      : '';
+
+    const calculatedFactsParagraph: string[] = [
+      '### Directly Calculated Chart Evidence',
+      'The following factors represent calculated astronomical positions and verified classical formations from your chart:',
+    ];
+
+    if (natalPlacements.length > 0) {
+      calculatedFactsParagraph.push(`- Natal Chart (D1): ${natalPlacements.slice(0, 5).join('; ')}.`);
+    }
+    if (vargaPlacements.length > 0) {
+      calculatedFactsParagraph.push(`- Dashamsha (D10): ${vargaPlacements.slice(0, 5).join('; ')}.`);
+    }
+    if (dashaText) {
+      const naturalTiming = timingDetail
+        ? timingDetail.replace(/The verified timing window \([^)]+\) spans from /i, 'running from ').replace(/, marked as a [^.]+\./i, '')
+        : '';
+      calculatedFactsParagraph.push(`- Active Planetary Period: ${dashaText}${naturalTiming ? ` (${naturalTiming})` : ''}.`);
+    }
+    if (yogasPresent.length > 0 || yogasAbsent.length > 0) {
+      const yogaSummary = [
+        yogasPresent.length > 0 ? `Active Yogas: ${yogasPresent.slice(0, 3).join('; ')}` : '',
+        yogasAbsent.length > 0 ? `Unformed / Absent: ${yogasAbsent.slice(0, 2).join('; ')}` : '',
+      ].filter(Boolean).join('. ');
+      calculatedFactsParagraph.push(`- Verified Classical Formations: ${yogaSummary}.`);
+    }
+
+    sections.push(calculatedFactsParagraph.join('\n'));
+
+    // 3. Interpretations: Strengths
+    const strengthItems: string[] = [];
+    const d10Benefics = vargaPlacements.filter(p =>
+      p.toLowerCase().includes('house 10') ||
+      p.toLowerCase().includes('house 1') ||
+      p.toLowerCase().includes('house 5') ||
+      p.toLowerCase().includes('house 9')
+    );
+    if (d10Benefics.length > 0) {
+      strengthItems.push(
+        `In classical Dashamsha analysis (BPHS Ch. 6), planetary placements in the Kendras (Houses 1, 4, 7, 10) or Trikonas (5, 9) of D10—specifically ${d10Benefics.slice(0, 2).join(' and ')}—indicate leadership capacity, public authority, and potential for substantial professional milestones.`
+      );
+    } else {
+      strengthItems.push(
+        'The foundational chart dispositions support executive capability and professional endurance when focused on steady competence.'
+      );
+    }
+
+    if (yogasPresent.length > 0) {
+      strengthItems.push(
+        `The active yogas (${yogasPresent.slice(0, 2).join(', ')}) reinforce intellectual clarity, strategic discernment, and constructive professional opportunities.`
+      );
+    }
+
+    sections.push([
+      '### Interpretations — Career Strengths',
+      ...strengthItems.map(item => `- ${item}`),
+    ].join('\n'));
+
+    // 4. Interpretations: Limiting Factors & Challenges
+    const limitingItems: string[] = [];
+    const d10Dusthana = vargaPlacements.filter(p =>
+      p.toLowerCase().includes('house 12') ||
+      p.toLowerCase().includes('house 8') ||
+      p.toLowerCase().includes('house 6')
+    );
+    if (d10Dusthana.length > 0) {
+      limitingItems.push(
+        `Placements in D10 Dusthanas (such as ${d10Dusthana.slice(0, 2).join(', ')}) represent structural limiting indications: potential delays in receiving direct executive recognition, periods of workplace friction, or the necessity to operate in specialized, advisory, or behind-the-scenes functions rather than conventional corporate visibility.`
+      );
+    }
+
+    const saturnPlacement = natalPlacements.find(p => p.toLowerCase().includes('saturn'));
+    if (saturnPlacement) {
+      limitingItems.push(
+        `The position of Saturn (${saturnPlacement}) emphasizes that career stability demands patience, rigorous discipline, and long-term consolidation rather than premature speculation or abrupt job transitions.`
+      );
+    }
+
+    if (yogasAbsent.length > 0) {
+      limitingItems.push(
+        `The verified absence of immediate Kendra-from-Moon yogas (such as Gajakesari) indicates that professional eminence requires proactive personal cultivation and demonstrable competence rather than effortless institutional favor.`
+      );
+    }
+
+    if (limitingItems.length === 0) {
+      limitingItems.push(
+        'Maintain steady pacing during transitional planetary cycles and verify institutional alignments before taking major career risks.'
+      );
+    }
+
+    sections.push([
+      '### Interpretations — Limiting Factors & Structural Demands',
+      ...limitingItems.map(item => `- ${item}`),
+    ].join('\n'));
+
+    // 5. Missing Evidence & Disclosures
+    const disclosures: string[] = [
+      '### Missing Evidence & Analytical Disclosures',
+      '- Birth-Time Sensitivity: Divisional charts like Dashamsha (D10) shift every few minutes. If birth time is not accurate to within 1–2 minutes, specific D10 house placements require verification.',
+      '- Real-Time Transits & Ashtakavarga: Current planetary transits (Gochara) and Ashtakavarga bindu allocations for a specific target job transition were not evaluated in this query and should be checked before major career moves.',
+      '- Non-Astrological Context: Individual educational background, technical specializations, and economic industry conditions are practical inputs that work in concert with astrological patterns.',
+      '- Avoid Guaranteed Predictions: Astrological configurations reflect behavioral inclinations, timing windows, and structural potentials—never guaranteed or fatalistic outcomes.',
+    ];
+
+    const coverageLimitations = getQuestionCoverageLimitations(approvedClaimSet);
+    if (coverageLimitations.length > 0) {
+      for (const cov of coverageLimitations) {
+        disclosures.push(`- Scope Limitation: ${cov}`);
+      }
+    }
+
+    sections.push(disclosures.join('\n'));
+
+    return sections.join('\n\n');
   }
 
   /**
@@ -801,16 +995,33 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
   private normalizeSimpleFact(text: string): string {
     let res = text
       .replace(/^The verified chart placement of\s+/i, '')
-      .replace(/\s+acts as a primary astrological driver\./i, '.')
-      .replace(/\s+provides supporting astrological background\./i, '.')
+      .replace(/\s+acts as a primary astrological driver\./i, '')
+      .replace(/\s+provides supporting astrological background\./i, '')
+      .replace(/\s+represents a structural factor requiring conscious discipline\./i, '')
+      .replace(/\s*\(classical_yoga:\s*Brihat Parashara Hora Shastra\)/gi, '')
+      .replace(/\s*\(presence:\s*BPHS[^)]*\)/gi, '')
       .replace(/varga_sign:\s*/gi, '')
-      .replace(/active_periods?:\s*([A-Za-z]+)\s*-\s*([A-Za-z]+)/gi, 'active $1 Mahadasha ($2 Antardasha) period')
-      .replace(/active_periods:\s*/gi, 'active Antardasha / Mahadasha period: ')
+      .replace(/active_periods?:\s*([A-Za-z]+)\s*-\s*([A-Za-z]+)\s*-\s*([A-Za-z]+)/gi, '$1 Mahadasha – $2 Antardasha – $3 Pratyantardasha')
+      .replace(/active_periods?:\s*([A-Za-z]+)\s*-\s*([A-Za-z]+)/gi, '$1 Mahadasha – $2 Antardasha')
+      .replace(/active_periods:\s*/gi, 'active period: ')
       .trim();
 
-    if (/\b(mahadasha|antardasha|dasha)\b/i.test(res) && !/\b(period|cycle)\b/i.test(res)) {
-      res = `${res} period`;
-    }
+    // Convert raw ISO timestamps like 2026-07-22T12:15:53.902Z to natural month/year
+    res = res.replace(/(\d{4})-(\d{2})-(\d{2})T[\d:.]+Z/gi, (_match, year, month) => {
+      const monthIndex = parseInt(month, 10) - 1;
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December',
+      ];
+      const monthName = monthNames[monthIndex] || month;
+      return `${monthName} ${year}`;
+    });
+
+    res = res
+      .replace(/\s*\.\s*\./g, '.')
+      .replace(/\s*\.\s*$/g, '')
+      .trim();
+
     return res;
   }
 

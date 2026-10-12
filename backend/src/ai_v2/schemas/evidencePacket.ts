@@ -16,6 +16,7 @@ export interface FactItem {
   degree?: number;
   nakshatra?: string;
   dignity?: string;
+  vargaCode?: string;
   sourceTool: string;
   verified: boolean;
 }

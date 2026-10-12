@@ -191,7 +191,22 @@ export class ClaimSetGenerator {
    * Constructs controlled synthesis phrasing strictly avoiding forbidden certainty words.
    */
   private buildSynthesisText(reasoning: ReasoningPacket, plan: QuestionPlan): string {
-    const domainStr = plan.domain.toLowerCase();
+    let domainStr = plan.domain.toLowerCase();
+    if (domainStr === 'astrological' || domainStr === 'general') {
+      domainStr = plan.secondaryDomains?.[0]?.toLowerCase() || 'your inquiry';
+    }
+
+    const rawLower = plan.rawQuestion.toLowerCase();
+    const asksStrengthsAndLimits =
+      plan.intent === 'career_strengths_limitations' ||
+      (rawLower.includes('strength') && (rawLower.includes('limit') || rawLower.includes('challeng') || rawLower.includes('weakness')));
+
+    if (asksStrengthsAndLimits) {
+      if (reasoning.restrictingFactors.length > 0) {
+        return `The chart displays significant career strengths supported by key placements and classical yogas, balanced by ${reasoning.restrictingFactors.length} structural limiting factor(s) requiring disciplined navigation.`;
+      }
+      return `The chart demonstrates clear foundational career strengths across key placements, with supportive factors leading the evaluation.`;
+    }
 
     if (reasoning.direction === 'supportive') {
       if (reasoning.strength === 'strong') {

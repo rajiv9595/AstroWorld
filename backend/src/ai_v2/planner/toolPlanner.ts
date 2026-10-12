@@ -148,7 +148,14 @@ export class ToolPlanner {
     }
 
     // B. Domain Specific Questions
-    if (domain === 'career' || intent === 'career' || intent === 'job_change' || intent === 'promotion_timing' || intent === 'career_timing') {
+    if (
+      domain === 'career' ||
+      intent === 'career' ||
+      intent === 'job_change' ||
+      intent === 'promotion_timing' ||
+      intent === 'career_timing' ||
+      intent === 'career_strengths_limitations'
+    ) {
       addTool('get_birth_chart', { birthProfile }, [], 10);
       addTool('get_divisional_chart', { birthProfile, vargaCode: 'D10' as VargaCode }, [], 9);
 
