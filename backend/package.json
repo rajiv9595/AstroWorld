@@ -75,7 +75,8 @@
     "test:ai-v3:e2e-answer-quality": "tsx scripts/verify-ai-v3-e2e-answer-quality.ts",
     "test:ai-v3:release-gate-metrics": "tsx scripts/verify-ai-v3-release-gate-metrics.ts",
     "audit:ai-v3:live-slo": "tsx scripts/audit-ai-v3-live-slo.ts",
-    "audit:ai-v3:persistence-runtime": "tsx scripts/audit-ai-v3-persistence-runtime.ts"
+    "audit:ai-v3:persistence-runtime": "tsx scripts/audit-ai-v3-persistence-runtime.ts",
+    "audit:ai-v3:persistence-roundtrip": "tsx scripts/audit-ai-v3-persistence-roundtrip.ts"
   },
   "dependencies": {
     "@astroworld/shared": "*",
