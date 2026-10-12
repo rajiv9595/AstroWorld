@@ -667,7 +667,22 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
       const domainFactor = cleanedSupporting.find(item =>
         signals.some(signal => item.toLowerCase().includes(signal)),
       );
-      if (domainFactor && !supporting.includes(domainFactor)) supporting.push(domainFactor);
+      if (!domainFactor || supporting.includes(domainFactor)) continue;
+
+      if (domain === 'finance') {
+        // Make the secondary finance facet visible in ordinary prose without turning
+        // a chart score into a literal earnings prediction.
+        const factorSentence = domainFactor.replace(/[.!?]+$/, '');
+        const normalizedSentence =
+          factorSentence.length > 0
+            ? factorSentence.charAt(0).toLowerCase() + factorSentence.slice(1)
+            : factorSentence;
+        supporting.push(
+          `For the income/savings part of your question, ${normalizedSentence}. This is one chart factor, not a standalone forecast of actual earnings or savings.`,
+        );
+      } else {
+        supporting.push(domainFactor);
+      }
     }
 
     // Fill remaining space with the highest-priority remaining factors; a compound
