@@ -98,6 +98,17 @@ async function main(): Promise<void> {
     compoundPlan.domain === 'career' && compoundSecondaryDomains.includes('finance'),
     'A compound career-and-income question must preserve finance as an additional evidence domain.',
   );
+
+  // Regression: "savings" contains the acronym "SAV" but is not an Ashtakavarga query.
+  const savingsCompoundPlan = await questionPlanner.plan(
+    'How will my career progress and income/savings look between 2027 and 2029, including both supportive and limiting indications?',
+  );
+  assert(
+    savingsCompoundPlan.domain === 'career' &&
+      savingsCompoundPlan.intent !== 'general_chart_question' &&
+      ((savingsCompoundPlan as any).secondaryDomains || []).includes('finance'),
+    'Natural-language "savings" must not trigger the SAV-chart shortcut or erase the career-led compound intent.',
+  );
   assert(
     compoundPlan.temporalScope.type === 'date_range' &&
       compoundPlan.temporalScope.startIso?.startsWith('2027-01-01') &&
@@ -164,7 +175,7 @@ async function main(): Promise<void> {
     'A genuinely ambiguous question must still pause for clarification rather than guess evidence.',
   );
 
-  console.log('AI V3 QUESTION-TO-EVIDENCE PLANNING: PASS (6 scenarios)');
+  console.log('AI V3 QUESTION-TO-EVIDENCE PLANNING: PASS (7 scenarios)');
 }
 
 try {
