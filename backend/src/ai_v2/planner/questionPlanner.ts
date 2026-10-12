@@ -281,7 +281,13 @@ export class QuestionPlanner {
     } else if (lower.includes('shadbala') || lower.includes('strength')) {
       intent = 'planet_question';
       domain = 'astrological';
-    } else if (lower.includes('ashtakavarga') || lower.includes('bindus') || lower.includes('sav')) {
+    } else if (
+      /\bashtakavarga\b/i.test(lower) ||
+      /\bbindus?\b/i.test(lower) ||
+      /\bsav\b/i.test(lower)
+    ) {
+      // Match the Ashtakavarga acronym as a standalone token: "savings" contains
+      // the letters "sav" but is a financial concept, not a request for a SAV chart.
       intent = 'general_chart_question';
       domain = 'astrological';
     }
