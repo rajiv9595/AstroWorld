@@ -17,8 +17,10 @@ function assert(condition: boolean, message: string): asserts condition {
 async function main(): Promise<void> {
   // PowerShell can consume npm's standalone "--" separator in some invocation
   // forms. Keep the CLI opt-in, and also support an explicit environment opt-in.
-  const cliConfirmed = process.argv.includes('--confirm-writes');
-  const envConfirmed = process.env.ASTROWORLD_CONFIRM_WRITES?.trim().toLowerCase() === 'true';
+  const cliConfirmed = process.argv.includes('--confirm-writes') || process.argv.includes('confirm-writes');
+  const envConfirmed =
+    process.env.ASTROWORLD_CONFIRM_WRITES?.trim().toLowerCase() === 'true' ||
+    process.env.CONFIRM_WRITES?.trim().toLowerCase() === 'true';
   if (!cliConfirmed && !envConfirmed) {
     throw new Error(
       'This smoke test writes and deletes temporary records. Review the script, then opt in with --confirm-writes or ASTROWORLD_CONFIRM_WRITES=true.',
