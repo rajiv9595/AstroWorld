@@ -650,7 +650,7 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     // a facet the user explicitly asked about.
     const domainSignals: Record<string, string[]> = {
       career: ['career', 'job', 'promotion', 'profession', 'employment', 'work', 'd10', 'leadership'],
-      finance: ['finance', 'financial', 'money', 'wealth', 'income', 'salary', 'earnings', 'savings', 'investment', 'ashtakavarga', 'dhana', '11th house', '2nd house'],
+      finance: ['finance', 'financial', 'money', 'wealth', 'income', 'salary', 'earnings', 'savings', 'investment', 'dhana', '11th house', '2nd house'],
       relationship: ['relationship', 'marriage', 'spouse', 'partner', 'wedding', 'love', 'navamsha', 'd9'],
       travel: ['travel', 'abroad', 'overseas', 'foreign', 'relocation', 'relocate', 'emigration', 'd4'],
       education: ['education', 'study', 'studies', 'exam', 'academic', 'university', 'degree', 'd24'],
