@@ -288,7 +288,7 @@ async function main(): Promise<void> {
     'Ashtakavarga sign scores are mapped to verified 2nd- and 11th-house finance facts',
     JSON.stringify(evidenceDiagnostics.financeFacts).slice(0, 1400),
   );
-  const financeInFinalAnswer = /income|savings|financial|finance|wealth|ashtakavarga|11th house/i.test(finalText);
+  const financeInFinalAnswer = /income|savings|financial|finance|wealth|11th house|2nd house/i.test(finalText);
   const financeGapDisclosed = /not enough verified.*(finance|income|financial)|can't assess.*(finance|income|financial)|cannot assess.*(finance|income|financial)|won't guess/i.test(finalText);
   check(
     planHasFinance,
