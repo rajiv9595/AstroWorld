@@ -15,6 +15,7 @@ import {
 } from '../schemas/evidencePacket.ts';
 import { ToolPlanner, PlannedExecutionGraph } from '../planner/toolPlanner.ts';
 import { AstrologyToolRegistry } from '../tools/toolRegistry.ts';
+import { ZODIAC_SIGNS } from '../../../../shared/index.ts';
 
 export interface OrchestratorOptions {
   maxToolCalls?: number;
@@ -411,8 +412,8 @@ export class ToolExecutionOrchestrator {
 
     if (toolName === 'get_ashtakavarga') {
       // The current calculator returns sarvashtakavargaTotal and sav directly.
-      // Accept the older nested sarvashtakavarga object as a compatibility path,
-      // but never fabricate a fallback 337-point total when the source is absent.
+      // Accept the older nested total as a compatibility path, but never fabricate
+      // the 337 total when the source did not return it.
       const totalBindus = typeof data.sarvashtakavargaTotal === 'number' &&
           Number.isFinite(data.sarvashtakavargaTotal)
         ? data.sarvashtakavargaTotal
@@ -431,6 +432,39 @@ export class ToolExecutionOrchestrator {
           sourceTool: toolName,
           verified: true,
         });
+      }
+
+      // SAV is computed by zodiac sign. Re-map each sign score to its corresponding
+      // whole-sign house from the same verified ascendant returned with the payload,
+      // so domain reasoning can distinguish finance-related 2nd/11th house evidence.
+      const sav = Array.isArray(data.sav) ? data.sav : undefined;
+      const ascendantSignIndex = data.ascendantSignIndex;
+      if (
+        sav &&
+        sav.length === 12 &&
+        Number.isInteger(ascendantSignIndex) &&
+        ascendantSignIndex >= 0 &&
+        ascendantSignIndex < 12
+      ) {
+        for (let signIndex = 0; signIndex < 12; signIndex++) {
+          const binduScore = sav[signIndex];
+          if (typeof binduScore !== 'number' || !Number.isFinite(binduScore)) continue;
+
+          const house = ((signIndex - ascendantSignIndex + 12) % 12) + 1;
+          const ordinal = house === 1 ? '1st' : house === 2 ? '2nd' : house === 3 ? '3rd' : `${house}th`;
+          const sign = ZODIAC_SIGNS[signIndex];
+          facts.push({
+            id: `fact_sav_house_${house}`,
+            category: 'ashtakavarga',
+            entity: `Ashtakavarga score for the ${ordinal} house (${sign})`,
+            property: 'bindu_score',
+            value: binduScore,
+            sign,
+            house,
+            sourceTool: toolName,
+            verified: true,
+          });
+        }
       }
     }
 
