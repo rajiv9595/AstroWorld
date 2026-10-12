@@ -22,7 +22,7 @@ import { ProductionMetrics } from './productionMetrics.ts';
 import { ChaosManager } from './chaosManager.ts';
 import { ConsultationOrchestrator } from '../consultation/consultationOrchestrator.ts';
 import { IPersistentMemoryRepository } from '../memory/persistentMemoryRepository.ts';
-import { InMemoryPersistentMemoryRepository } from '../memory/persistentMemoryRepository.ts';
+import { createDefaultMemoryRepository } from '../memory/supabasePersistentMemoryRepository.ts';
 import { ConversationStateManager } from '../conversation_state/index.ts';
 
 export interface ProductionServiceDependencies {
@@ -52,7 +52,7 @@ export class ProductionConsultationService {
   private conversationOwners = new Map<string, string>();
 
   constructor(deps: ProductionServiceDependencies = {}) {
-    this.memoryRepository = deps.memoryRepository || new InMemoryPersistentMemoryRepository();
+    this.memoryRepository = deps.memoryRepository || createDefaultMemoryRepository();
     this.stateManager = deps.stateManager || new ConversationStateManager();
     this.rateLimiter = deps.rateLimiter || new RateLimiter();
     this.idempotencyManager = deps.idempotencyManager || new IdempotencyManager();

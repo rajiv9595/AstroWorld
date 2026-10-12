@@ -24,6 +24,8 @@ export interface SelectedClaimSummary {
 export interface NarratorContextPack {
   originalQuestion: string;
   domain: string;
+  /** Additional question facets that must be answered when approved evidence exists. */
+  secondaryDomains?: string[];
   intent: string;
   responseType: string;
   technicalMode: 'normal' | 'technical';

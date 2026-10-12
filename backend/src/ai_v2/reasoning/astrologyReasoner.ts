@@ -255,6 +255,51 @@ export class AstrologyReasoner {
       }
     }
 
+    // Revisit only secondary domains so existing single-domain behavior stays stable.
+    // A fact already classified as primary/restricting remains so; a stronger secondary
+    // domain classification may upgrade a background/irrelevant fact. Each evidence ID
+    // stays in exactly one factor bucket to avoid double-counting it in confluence.
+    const factorBuckets: Array<{ key: 'primaryFactors' | 'supportingFactors' | 'restrictingFactors' | 'conflictingFactors' | 'irrelevantFactors'; factors: ClassifiedFactor[] }> = [
+      { key: 'primaryFactors', factors: primaryFactors },
+      { key: 'supportingFactors', factors: supportingFactors },
+      { key: 'restrictingFactors', factors: restrictingFactors },
+      { key: 'conflictingFactors', factors: conflictingFactors },
+      { key: 'irrelevantFactors', factors: irrelevantFactors },
+    ];
+    const roleRank: Record<ClassifiedFactor['role'], number> = {
+      primary: 4,
+      restricting: 4,
+      conflicting: 4,
+      supporting: 3,
+      background: 2,
+      irrelevant: 0,
+    };
+
+    for (const fact of evidence.facts) {
+      for (const secondaryDomain of Array.from(new Set(plan.secondaryDomains || [])).map(d => String(d).toLowerCase())) {
+        const candidate = this.classifyForSecondaryDomain(fact, secondaryDomain, plan);
+        if (!candidate) continue;
+
+        let existing: ClassifiedFactor | undefined;
+        let existingBucket: ClassifiedFactor[] | undefined;
+        for (const bucket of factorBuckets) {
+          const matched = bucket.factors.find(f => f.evidenceId === fact.id);
+          if (matched) {
+            existing = matched;
+            existingBucket = bucket.factors;
+            break;
+          }
+        }
+
+        if (existing && roleRank[candidate.factor.role] <= roleRank[existing.role]) continue;
+        if (existing && existingBucket) {
+          const existingIndex = existingBucket.findIndex(f => f.evidenceId === fact.id);
+          if (existingIndex >= 0) existingBucket.splice(existingIndex, 1);
+        }
+        factorBuckets.find(bucket => bucket.key === candidate.bucket)?.factors.push(candidate.factor);
+      }
+    }
+
     // Process Derived Facts (Yogas)
     for (const derived of evidence.derivedFacts) {
       if (derived.type === 'Yoga') {
@@ -283,6 +328,102 @@ export class AstrologyReasoner {
       conflictingFactors,
       irrelevantFactors,
     };
+  }
+
+  private classifyForSecondaryDomain(
+    fact: FactItem,
+    domain: string,
+    plan: QuestionPlan,
+  ): { bucket: 'primaryFactors' | 'supportingFactors' | 'restrictingFactors' | 'conflictingFactors' | 'irrelevantFactors'; factor: ClassifiedFactor } | undefined {
+    const isPlanetFocus = plan.planetFocus.some(p => p.toLowerCase() === fact.entity.toLowerCase());
+    const primary = (rationale: string) => ({
+      bucket: 'primaryFactors' as const,
+      factor: this.createFactor(fact, 'primary', 'high', `Secondary ${domain} domain: ${rationale}`),
+    });
+    const restricting = (rationale: string) => ({
+      bucket: 'restrictingFactors' as const,
+      factor: this.createFactor(fact, 'restricting', 'high', `Secondary ${domain} domain: ${rationale}`),
+    });
+    const supporting = (rationale: string) => ({
+      bucket: 'supportingFactors' as const,
+      factor: this.createFactor(fact, 'supporting', 'medium', `Secondary ${domain} domain: ${rationale}`),
+    });
+    const background = (rationale: string) => ({
+      bucket: 'supportingFactors' as const,
+      factor: this.createFactor(fact, 'background', 'low', `Secondary ${domain} domain: ${rationale}`),
+    });
+    const irrelevant = (rationale: string) => ({
+      bucket: 'irrelevantFactors' as const,
+      factor: this.createFactor(fact, 'irrelevant', 'irrelevant', `Secondary ${domain} domain: ${rationale}`),
+    });
+    const ifDebilitated = (why: string) =>
+      fact.dignity === 'DEBILITATED' ? restricting(why) : primary(why);
+
+    if (domain === 'career') {
+      if (fact.house === 10 || fact.house === 6 || fact.category === 'varga' || isPlanetFocus ||
+          fact.entity === 'Sun' || fact.entity === 'Saturn') {
+        return ifDebilitated('direct professional house, D10, or career significator');
+      }
+      if (fact.category === 'dasha' || fact.category === 'transit') return supporting('verified timing activation');
+      if (fact.house === 7 || fact.entity === 'Venus') return irrelevant('relational-only signal for this domain');
+      return background('general professional background');
+    }
+
+    if (domain === 'relationship') {
+      if (fact.house === 7 || fact.house === 2 || fact.category === 'jaimini' ||
+          fact.entity === 'Venus' || fact.entity === 'Jupiter' || isPlanetFocus) {
+        return ifDebilitated('direct relationship house or classical significator');
+      }
+      if (fact.category === 'dasha' || fact.category === 'varga') return supporting('verified D9 or timing context');
+      if (fact.house === 10 || fact.house === 6) return irrelevant('professional-only signal for this domain');
+      return background('general relationship background');
+    }
+
+    if (domain === 'finance' || domain === 'wealth' || domain === 'business') {
+      if (fact.house === 2 || fact.house === 11 || fact.category === 'ashtakavarga' || isPlanetFocus) {
+        return ifDebilitated('direct wealth/gains house or verified Ashtakavarga evidence');
+      }
+      if (fact.category === 'dasha' || fact.category === 'natal') return supporting('verified financial chart disposition');
+      return background('general financial background');
+    }
+
+    if (domain === 'travel') {
+      if (fact.category === 'varga' && /\bD4\b/i.test(fact.entity) ||
+          fact.house === 4 || fact.house === 9 || fact.house === 12) {
+        return ifDebilitated('relocation-related divisional or house evidence');
+      }
+      if (fact.category === 'dasha' || fact.category === 'transit') return supporting('verified relocation timing activation');
+      return background('general relocation background');
+    }
+
+    if (domain === 'health') {
+      if (fact.house === 1 || fact.house === 6 || fact.house === 8 || fact.category === 'shadbala') {
+        return ifDebilitated('health-related house or verified planetary strength');
+      }
+      if (fact.category === 'dasha' || fact.category === 'transit') return supporting('verified timing context');
+      return background('general health background');
+    }
+
+    if (domain === 'spirituality') {
+      if (fact.house === 9 || fact.house === 12 || fact.category === 'jaimini' ||
+          (fact.category === 'varga' && /\bD9\b/i.test(fact.entity)) ||
+          fact.entity === 'Jupiter' || fact.entity === 'Ketu') {
+        return ifDebilitated('spiritual house, D9, or relevant significator');
+      }
+      return background('general spiritual background');
+    }
+
+    if (domain === 'education') {
+      if (fact.house === 4 || fact.house === 5 || fact.house === 9 ||
+          (fact.category === 'varga' && /\bD24\b/i.test(fact.entity)) ||
+          fact.entity === 'Jupiter' || fact.entity === 'Mercury') {
+        return ifDebilitated('education-related house, D24, or learning significator');
+      }
+      if (fact.category === 'dasha' || fact.category === 'transit') return supporting('verified study-period timing');
+      return background('general education background');
+    }
+
+    return undefined;
   }
 
   private createFactor(

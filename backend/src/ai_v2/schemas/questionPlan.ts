@@ -84,6 +84,8 @@ export interface QuestionPlan {
   normalizedQuestion: string;
   intent: QuestionIntent;
   domain: QuestionDomain;
+  /** Additional life domains requested by compound or context-dependent follow-up questions. */
+  secondaryDomains?: QuestionDomain[];
   event?: string;
   planetFocus: string[];
   houseFocus: number[];

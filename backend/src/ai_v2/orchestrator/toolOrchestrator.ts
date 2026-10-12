@@ -15,6 +15,7 @@ import {
 } from '../schemas/evidencePacket.ts';
 import { ToolPlanner, PlannedExecutionGraph } from '../planner/toolPlanner.ts';
 import { AstrologyToolRegistry } from '../tools/toolRegistry.ts';
+import { ZODIAC_SIGNS } from '../../../../shared/index.ts';
 
 export interface OrchestratorOptions {
   maxToolCalls?: number;
@@ -409,27 +410,99 @@ export class ToolExecutionOrchestrator {
       }
     }
 
-    if (toolName === 'get_ashtakavarga' && data.sarvashtakavarga) {
-      facts.push({
-        id: `fact_sav_total_${Date.now()}`,
-        category: 'ashtakavarga',
-        entity: 'Sarvashtakavarga',
-        property: 'total_bindus',
-        value: data.sarvashtakavarga.totalBindus || 337,
-        sourceTool: toolName,
-        verified: true,
-      });
+    if (toolName === 'get_ashtakavarga') {
+      // The current calculator returns sarvashtakavargaTotal and sav directly.
+      // Accept the older nested total as a compatibility path, but never fabricate
+      // the 337 total when the source did not return it.
+      const totalBindus = typeof data.sarvashtakavargaTotal === 'number' &&
+          Number.isFinite(data.sarvashtakavargaTotal)
+        ? data.sarvashtakavargaTotal
+        : typeof data.sarvashtakavarga?.totalBindus === 'number' &&
+            Number.isFinite(data.sarvashtakavarga.totalBindus)
+        ? data.sarvashtakavarga.totalBindus
+        : undefined;
+
+      if (totalBindus !== undefined) {
+        facts.push({
+          id: `fact_sav_total_${Date.now()}`,
+          category: 'ashtakavarga',
+          entity: 'Sarvashtakavarga',
+          property: 'total_bindus',
+          value: totalBindus,
+          sourceTool: toolName,
+          verified: true,
+        });
+      }
+
+      // SAV is computed by zodiac sign. Re-map each sign score to its corresponding
+      // whole-sign house from the same verified ascendant returned with the payload,
+      // so domain reasoning can distinguish finance-related 2nd/11th house evidence.
+      const sav = Array.isArray(data.sav) ? data.sav : undefined;
+      const ascendantSignIndex = data.ascendantSignIndex;
+      if (
+        sav &&
+        sav.length === 12 &&
+        Number.isInteger(ascendantSignIndex) &&
+        ascendantSignIndex >= 0 &&
+        ascendantSignIndex < 12
+      ) {
+        for (let signIndex = 0; signIndex < 12; signIndex++) {
+          const binduScore = sav[signIndex];
+          if (typeof binduScore !== 'number' || !Number.isFinite(binduScore)) continue;
+
+          const house = ((signIndex - ascendantSignIndex + 12) % 12) + 1;
+          const ordinal = house === 1 ? '1st' : house === 2 ? '2nd' : house === 3 ? '3rd' : `${house}th`;
+          const sign = ZODIAC_SIGNS[signIndex];
+          facts.push({
+            id: `fact_sav_house_${house}`,
+            category: 'ashtakavarga',
+            entity: `Ashtakavarga score for the ${ordinal} house (${sign})`,
+            property: 'bindu_score',
+            value: binduScore,
+            sign,
+            house,
+            sourceTool: toolName,
+            verified: true,
+          });
+        }
+      }
     }
 
-    if (toolName === 'get_transits' && Array.isArray(data.transits)) {
-      for (const t of data.transits) {
+    if (toolName === 'get_transits') {
+      // executeGetTransits exposes the canonical TransitFacts object as { queryDateIso, planets, sadeSati }.
+      // Accept the older "transits" alias as a compatibility path, but normalize canonical field names.
+      const transitPlanets = Array.isArray(data.planets)
+        ? data.planets
+        : Array.isArray(data.transits)
+        ? data.transits
+        : [];
+
+      for (const t of transitPlanets) {
+        if (!t || typeof t.planet !== 'string') continue;
+        const transitSign = t.sign || t.currentSign;
+        const houseFromMoon = t.chandraLagnaHouse ?? t.houseFromMoon;
+        const houseFromLagna = t.natalLagnaHouse ?? t.houseFromLagna;
+        const parts = [
+          transitSign ? `in ${transitSign}` : undefined,
+          t.formattedDegree ? `at ${t.formattedDegree}` : undefined,
+          typeof houseFromMoon === 'number' ? `House ${houseFromMoon} from Moon` : undefined,
+          typeof houseFromLagna === 'number' ? `House ${houseFromLagna} from Lagna` : undefined,
+          t.retrograde === true ? 'retrograde' : undefined,
+          typeof t.ashtakavargaBindus === 'number' ? `${t.ashtakavargaBindus} SAV bindus` : undefined,
+        ].filter((part): part is string => Boolean(part));
+
         facts.push({
-          id: `fact_transit_${(t.planet || '').toLowerCase()}`,
+          id: `fact_transit_${t.planet.toLowerCase()}`,
           category: 'transit',
           entity: `${t.planet} (Transit)`,
-          property: 'house_from_moon',
-          value: `House ${t.houseFromMoon} from Moon, House ${t.houseFromLagna} from Lagna`,
-          sign: t.currentSign,
+          property: 'position',
+          value: parts.join('; ') || `calculated for ${data.queryDateIso || 'the requested date'}`,
+          sign: transitSign,
+          house: typeof houseFromLagna === 'number'
+            ? houseFromLagna
+            : typeof houseFromMoon === 'number'
+            ? houseFromMoon
+            : undefined,
           sourceTool: toolName,
           verified: true,
         });
