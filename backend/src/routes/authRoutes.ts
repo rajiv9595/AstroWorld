@@ -135,9 +135,15 @@ authRouter.post('/login', async (req: Request, res: Response) => {
     });
 
     if (error || !data?.user || !data.session?.access_token || !data.session.refresh_token) {
+      if (error) {
+        console.warn('[Auth Login Notice]:', error.message);
+      }
+      const isEmailNotConfirmed = error?.message?.toLowerCase().includes('email not confirmed');
       return res.status(401).json({
         success: false,
-        error: 'Invalid email or password. Please check your credentials or create a new account.',
+        error: isEmailNotConfirmed
+          ? 'Your email address is not confirmed yet. Please verify your email before signing in.'
+          : 'Invalid email or password. Please check your credentials or create a new account.',
       });
     }
 

@@ -21,6 +21,12 @@ export interface StoredConversation {
 
 type QueryClient = any;
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isPostgresUuid(id: string): boolean {
+  return UUID_PATTERN.test(id);
+}
+
 export class ConversationPersistenceRepository {
   private client: QueryClient;
   private configured: boolean;
@@ -34,9 +40,19 @@ export class ConversationPersistenceRepository {
     return this.configured;
   }
 
+  private canQueryRemote(userId: string): boolean {
+    if (!this.configured) return false;
+    // Real Supabase PostgreSQL enforces UUID foreign keys referencing auth.users.
+    // Non-UUID identities (e.g. mock 'default_user') cannot exist in production UUID columns.
+    if (this.client === defaultSupabase && !isPostgresUuid(userId)) {
+      return false;
+    }
+    return true;
+  }
+
   public async load(userId: string, conversationId: string): Promise<StoredConversation | null> {
     this.assertIdentity(userId, conversationId);
-    if (!this.configured) return null;
+    if (!this.canQueryRemote(userId)) return null;
 
     const conversationResult = await this.client
       .from('conversations')
@@ -88,7 +104,7 @@ export class ConversationPersistenceRepository {
     if (!validation.valid) {
       throw new Error(`Cannot persist invalid ConversationState: ${validation.errors.join('; ')}`);
     }
-    if (!this.configured) return;
+    if (!this.canQueryRemote(userId)) return;
 
     const nextVersion = state.stateVersion;
     const title = state.currentTopic || 'AstroWorld Consultation';
@@ -177,7 +193,7 @@ export class ConversationPersistenceRepository {
 
   public async owns(userId: string, conversationId: string): Promise<boolean> {
     this.assertIdentity(userId, conversationId);
-    if (!this.configured) return false;
+    if (!this.canQueryRemote(userId)) return false;
 
     const result = await this.client
       .from('conversations')
@@ -192,7 +208,7 @@ export class ConversationPersistenceRepository {
 
   public async listOwned(userId: string): Promise<string[]> {
     if (!userId || typeof userId !== 'string') throw new Error('Access denied: userId is required.');
-    if (!this.configured) return [];
+    if (!this.canQueryRemote(userId)) return [];
 
     const result = await this.client
       .from('conversations')
@@ -207,7 +223,7 @@ export class ConversationPersistenceRepository {
 
   public async delete(userId: string, conversationId: string): Promise<boolean> {
     this.assertIdentity(userId, conversationId);
-    if (!this.configured) return false;
+    if (!this.canQueryRemote(userId)) return false;
 
     const result = await this.client
       .from('conversations')

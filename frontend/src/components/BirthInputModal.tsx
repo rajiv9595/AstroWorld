@@ -265,7 +265,7 @@ export const BirthInputModal: React.FC<BirthInputModalProps> = ({
                   setCityName(place.cityName);
                   setLatitude(place.latitude);
                   setLongitude(place.longitude);
-                  setTimezone(place.timezone);
+                  setTimezone(place.timezone || 'Asia/Kolkata');
                 }}
                 onRawChange={(text) => setCityName(text)}
                 placeholder="e.g. Hyderabad, India"

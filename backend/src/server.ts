@@ -14,34 +14,41 @@ import { geoRouter } from './routes/geoRoutes.ts';
 import { aiV2Router } from './ai_v2/routes/aiV2Routes.ts';
 import { astrologyRouter } from './routes/astrologyRoutes.ts';
 
-dotenv.config();
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 export const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 app.set('trust proxy', 1);
 
-const configuredOrigins = (process.env.CORS_ORIGINS || process.env.PUBLIC_WEB_ORIGIN || '')
+const configuredOrigins = (process.env.CORS_ORIGINS || process.env.PUBLIC_WEB_ORIGIN || process.env.APP_URL || '')
   .split(',')
-  .map((origin) => origin.trim())
+  .map((origin) => origin.trim().replace(/\/+$/, ''))
   .filter(Boolean);
+const devPort3000Origins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
 const allowedOrigins = new Set([
   ...configuredOrigins,
   ...(process.env.NODE_ENV === 'production'
     ? []
-    : ['http://localhost:5173', 'http://127.0.0.1:5173']),
+    : (['http://localhost:5173', 'http://127.0.0.1:5173'] as string[]).concat(devPort3000Origins)),
 ]);
 
 // Production Security Headers & CORS Middleware
 app.use((req, res, next) => {
   const origin = req.headers.origin;
+  const host = req.headers.host;
+  const isSameOrigin = Boolean(
+    origin && host && (origin === `http://${host}` || origin === `https://${host}`)
+  );
+  const isAllowedOrigin = Boolean(origin && (allowedOrigins.has(origin) || isSameOrigin));
   const unsafeMethod = !['GET', 'HEAD', 'OPTIONS'].includes(req.method.toUpperCase());
 
   // CORS controls browser reads; Origin enforcement also blocks cross-site
   // state-changing requests that could otherwise ride cookie credentials.
-  if (origin && unsafeMethod && !allowedOrigins.has(origin)) {
+  if (origin && unsafeMethod && !isAllowedOrigin) {
     res.status(403).json({ success: false, error: 'Origin not allowed.' });
     return;
   }
@@ -54,7 +61,7 @@ app.use((req, res, next) => {
     res.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
 
-  if (origin && allowedOrigins.has(origin)) {
+  if (origin && isAllowedOrigin) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Vary', 'Origin');

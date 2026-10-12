@@ -21,6 +21,12 @@ import {
 
 type QueryClient = any;
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isPostgresUuid(id: string): boolean {
+  return UUID_PATTERN.test(id);
+}
+
 export class SupabasePersistentMemoryRepository implements IPersistentMemoryRepository {
   private client: QueryClient;
 
@@ -28,11 +34,22 @@ export class SupabasePersistentMemoryRepository implements IPersistentMemoryRepo
     this.client = client;
   }
 
+  private canQueryRemote(userId: string): boolean {
+    // Real Supabase PostgreSQL enforces UUID foreign keys referencing auth.users.
+    // Non-UUID IDs (e.g. mock 'default_user') cannot exist in production UUID columns.
+    if (this.client === defaultSupabase && !isPostgresUuid(userId)) {
+      return false;
+    }
+    return true;
+  }
+
   public async save(memory: PersistentMemory): Promise<PersistentMemory> {
     const validation = validatePersistentMemory(memory);
     if (!validation.valid) {
       throw new Error(`Cannot persist invalid memory: ${validation.errors.join('; ')}`);
     }
+
+    if (!this.canQueryRemote(memory.userId)) return memory;
 
     const row = this.toRow(memory);
     const { data, error } = await this.client
@@ -50,6 +67,7 @@ export class SupabasePersistentMemoryRepository implements IPersistentMemoryRepo
 
   public async getById(userId: string, memoryId: string): Promise<PersistentMemory | undefined> {
     this.assertUser(userId);
+    if (!this.canQueryRemote(userId)) return undefined;
     const { data, error } = await this.client
       .from('persistent_memories')
       .select('*')
@@ -63,6 +81,7 @@ export class SupabasePersistentMemoryRepository implements IPersistentMemoryRepo
 
   public async find(options: MemoryFilterOptions): Promise<PersistentMemory[]> {
     this.assertUser(options.userId);
+    if (!this.canQueryRemote(options.userId)) return [];
 
     let query = this.client
       .from('persistent_memories')
@@ -143,6 +162,7 @@ export class SupabasePersistentMemoryRepository implements IPersistentMemoryRepo
 
   public async delete(userId: string, memoryId: string): Promise<boolean> {
     this.assertUser(userId);
+    if (!this.canQueryRemote(userId)) return false;
     const { data, error } = await this.client
       .from('persistent_memories')
       .delete()
@@ -157,6 +177,7 @@ export class SupabasePersistentMemoryRepository implements IPersistentMemoryRepo
 
   public async clearUser(userId: string): Promise<number> {
     this.assertUser(userId);
+    if (!this.canQueryRemote(userId)) return 0;
     const existing = await this.find({ userId, status: ['active', 'superseded', 'revoked', 'expired', 'pending_validation'], includeExpired: true });
     if (existing.length === 0) return 0;
 

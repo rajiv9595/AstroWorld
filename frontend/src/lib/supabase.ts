@@ -16,11 +16,20 @@ export interface SupabaseUserProfile {
 
 let csrfToken: string | null = null;
 
-export const getCsrfToken = (): string | null => csrfToken;
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
+  return match ? decodeURIComponent(match[3]) : null;
+}
+
+export const getCsrfToken = (): string | null => {
+  return csrfToken || getCookie('aw_csrf_token');
+};
 
 export const authWriteHeaders = (extra: Record<string, string> = {}): Record<string, string> => {
-  return csrfToken
-    ? { ...extra, 'X-CSRF-Token': csrfToken }
+  const token = getCsrfToken();
+  return token
+    ? { ...extra, 'X-CSRF-Token': token }
     : { ...extra };
 };
 

@@ -261,7 +261,7 @@ export const GenerateKundliSection: React.FC<GenerateKundliSectionProps> = ({
                       setCityName(place.cityName);
                       setLatitude(place.latitude);
                       setLongitude(place.longitude);
-                      setTimezone(place.timezone);
+                      setTimezone(place.timezone || 'Asia/Kolkata');
                     }}
                     onRawChange={(text) => setCityName(text)}
                     placeholder="e.g. Hyderabad, New Delhi, London"
