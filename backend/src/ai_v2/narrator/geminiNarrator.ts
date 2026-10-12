@@ -662,17 +662,20 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
       ...(pack?.secondaryDomains || []),
     ])).map(domain => domain.toLowerCase());
     const supporting: string[] = [];
+    const reservedDomainFactors = new Set<string>();
     for (const domain of requestedDomains) {
       const signals = domainSignals[domain] || [domain];
       const domainFactor = cleanedSupporting.find(item =>
         signals.some(signal => item.toLowerCase().includes(signal)),
       );
-      if (!domainFactor || supporting.includes(domainFactor)) continue;
+      if (!domainFactor || reservedDomainFactors.has(domainFactor)) continue;
 
+      reservedDomainFactors.add(domainFactor);
       if (domain === 'finance') {
         // Make the secondary finance facet visible in ordinary prose without turning
         // a chart score into a literal earnings prediction.
-        const factorSentence = domainFactor.replace(/[.!?]+$/, '');
+        const factorSentence = domainFactor.replace(/[.!?]+$/, '')
+          .replace(/^ashtakavarga score for/i, 'the Ashtakavarga score for');
         const normalizedSentence =
           factorSentence.length > 0
             ? factorSentence.charAt(0).toLowerCase() + factorSentence.slice(1)
@@ -691,7 +694,8 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     const supportLimit = Math.max(ordinarySupportLimit, supporting.length);
     for (const item of cleanedSupporting) {
       if (supporting.length >= supportLimit) break;
-      if (!supporting.includes(item)) supporting.push(item);
+      if (reservedDomainFactors.has(item) || supporting.includes(item)) continue;
+      supporting.push(item);
     }
 
     if (supporting.length > 0) {
