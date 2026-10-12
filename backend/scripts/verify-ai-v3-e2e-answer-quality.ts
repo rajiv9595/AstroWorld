@@ -255,11 +255,19 @@ async function main(): Promise<void> {
   const financeCovered = Boolean(coverage?.coveredDomains?.some(
     (domain: string) => domain.toLowerCase() === 'finance',
   ));
+  const financeHouseFacts = consultation.evidencePacket.facts.filter(
+    (fact: any) =>
+      fact.category === 'ashtakavarga' &&
+      fact.property === 'bindu_score' &&
+      [2, 11].includes(fact.house) &&
+      typeof fact.value === 'number' &&
+      Number.isFinite(fact.value),
+  );
   const evidenceDiagnostics = {
     tools: consultation.evidencePacket.toolResults.map((tool: any) => ({ toolName: tool.toolName, success: tool.success })),
     financeFacts: consultation.evidencePacket.facts
       .filter((fact: any) => fact.category === 'ashtakavarga' || /ashtakavarga|11th house|2nd house/i.test(fact.entity))
-      .map((fact: any) => ({ entity: fact.entity, value: fact.value })),
+      .map((fact: any) => ({ entity: fact.entity, property: fact.property, house: fact.house, value: fact.value })),
     financeClaims: consultation.approvedClaimSet.claims
       .filter((claim: any) => /ashtakavarga|11th house|2nd house|income|savings|financial|wealth/i.test(claim.text))
       .map((claim: any) => claim.text),
@@ -273,6 +281,12 @@ async function main(): Promise<void> {
     evidenceDiagnostics.financeFacts.length > 0,
     'Canonical Ashtakavarga output is normalized into verified evidence',
     JSON.stringify(evidenceDiagnostics).slice(0, 1600),
+  );
+  check(
+    financeHouseFacts.some((fact: any) => fact.house === 2) &&
+      financeHouseFacts.some((fact: any) => fact.house === 11),
+    'Ashtakavarga sign scores are mapped to verified 2nd- and 11th-house finance facts',
+    JSON.stringify(evidenceDiagnostics.financeFacts).slice(0, 1400),
   );
   const financeInFinalAnswer = /income|savings|financial|finance|wealth|ashtakavarga|11th house/i.test(finalText);
   const financeGapDisclosed = /not enough verified.*(finance|income|financial)|can't assess.*(finance|income|financial)|cannot assess.*(finance|income|financial)|won't guess/i.test(finalText);
