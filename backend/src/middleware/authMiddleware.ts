@@ -12,6 +12,7 @@
 import crypto from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
 import { supabase } from '../services/supabaseService.ts';
+import { createAuthClient } from '../services/authClient.ts';
 
 export interface AuthenticatedUserContext {
   userId: string;
@@ -227,7 +228,8 @@ export async function authenticateRequest(
     let resolved = await resolveUserFromToken(accessToken);
 
     if (!resolved && cookies[AUTH_REFRESH_COOKIE]) {
-      const { data, error } = await supabase.auth.refreshSession({
+      const authClient = createAuthClient();
+      const { data, error } = await authClient.auth.refreshSession({
         refresh_token: cookies[AUTH_REFRESH_COOKIE],
       });
 

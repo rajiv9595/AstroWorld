@@ -40,3 +40,8 @@ export const supabase: SupabaseClient = createClient(clientUrl, clientKey, {
     persistSession: false,
   },
 });
+
+// Guard: Guarantee that the privileged database client never downgrades or swaps
+// its authorization header to a user session token.
+(supabase as any)._getSessionToken = async () => null;
+

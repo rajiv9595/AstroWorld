@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { supabase } from '../services/supabaseService.ts';
+import { createAuthClient } from '../services/authClient.ts';
 import {
   authenticateRequest,
   clearAuthSessionCookies,
@@ -85,7 +86,8 @@ authRouter.post('/signup', async (req: Request, res: Response) => {
 
     // Create an authenticated session immediately so signup behaves consistently
     // with login while keeping tokens out of browser JavaScript.
-    const { data: sessionData, error: sessionError } = await supabase.auth.signInWithPassword({
+    const authClient = createAuthClient();
+    const { data: sessionData, error: sessionError } = await authClient.auth.signInWithPassword({
       email: cleanEmail,
       password,
     });
@@ -129,7 +131,8 @@ authRouter.post('/login', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'Email and password are required.' });
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const authClient = createAuthClient();
+    const { data, error } = await authClient.auth.signInWithPassword({
       email: cleanEmail,
       password,
     });
@@ -226,7 +229,8 @@ authRouter.post('/forgot-password', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'Please enter a valid email address.' });
     }
 
-    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail);
+    const authClient = createAuthClient();
+    const { error } = await authClient.auth.resetPasswordForEmail(cleanEmail);
     if (error) {
       return res.status(400).json({ success: false, error: 'Unable to start password recovery. Please try again.' });
     }
