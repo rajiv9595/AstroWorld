@@ -524,6 +524,9 @@ export async function executeGetAshtakavarga(args: any): Promise<ToolExecutionRe
       data: {
         sarvashtakavargaTotal: chart.ashtakavarga.sarvashtakavargaTotal,
         sav: chart.ashtakavarga.sav,
+        // Needed to convert the canonical sign-based SAV array to whole-sign houses.
+        ascendantSignIndex: chart.ascendant.signIndex,
+        ascendantSign: chart.ascendant.sign,
         strongSigns: chart.ashtakavarga.strongSigns,
         averageSigns: chart.ashtakavarga.averageSigns,
         weakSigns: chart.ashtakavarga.weakSigns,

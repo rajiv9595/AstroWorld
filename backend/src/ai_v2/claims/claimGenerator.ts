@@ -67,9 +67,18 @@ export class ClaimSetGenerator {
           ? 'varga'
           : 'natal';
 
+      // Present the Ashtakavarga numbers in user-facing terms. Generic property names
+      // such as "bindu_score" and "total_bindus" are internal schema metadata, not prose.
+      const naturalFactText =
+        factor.sourceTool === 'get_ashtakavarga' && factor.property === 'bindu_score'
+          ? `${factor.entity} is ${factor.value} bindus.`
+          : factor.sourceTool === 'get_ashtakavarga' && factor.property === 'total_bindus'
+          ? `The total Sarvashtakavarga score is ${factor.value} bindus across all twelve signs.`
+          : `The verified chart placement of ${factor.entity} (${factor.property}: ${factor.value}) ${roleDescriptor}.`;
+
       claims.push({
         claimId: `claim_fact_${factIdx++}_${factor.evidenceId}`,
-        text: `The verified chart placement of ${factor.entity} (${factor.property}: ${factor.value}) ${roleDescriptor}.`,
+        text: naturalFactText,
         type: 'factual',
         factorType,
         strength: factor.role === 'primary' ? 'strong' : factor.role === 'restricting' ? 'mixed' : 'moderate',

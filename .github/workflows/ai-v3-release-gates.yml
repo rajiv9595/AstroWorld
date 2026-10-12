@@ -1,0 +1,92 @@
+name: AstroWorld AI V3 Release Gates (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      sample_count:
+        description: Number of live Gemini consultations (5–25)
+        required: true
+        type: choice
+        options:
+          - "5"
+          - "10"
+          - "15"
+          - "20"
+          - "25"
+        default: "10"
+      max_total_p95_ms:
+        description: Approved maximum end-to-end p95 latency in milliseconds
+        required: true
+        type: string
+        default: "25000"
+      max_provider_p95_ms:
+        description: Approved maximum successful provider-call p95 latency in milliseconds
+        required: true
+        type: string
+        default: "8000"
+      max_fallback_rate:
+        description: Approved maximum sample fallback rate (0–1)
+        required: true
+        type: choice
+        options:
+          - "0.0"
+          - "0.1"
+          - "0.2"
+          - "0.3"
+          - "0.5"
+        default: "0.2"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astroworld-ai-v3-release-gates
+  cancel-in-progress: false
+
+jobs:
+  release-gates:
+    name: staging-runtime-and-live-model-gates
+    runs-on: ubuntu-latest
+    environment: astroworld-staging
+    timeout-minutes: 30
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ASTROWORLD_LIVE_SLO_SAMPLES: ${{ inputs.sample_count }}
+      ASTROWORLD_LIVE_SLO_MAX_P95_TOTAL_MS: ${{ inputs.max_total_p95_ms }}
+      ASTROWORLD_LIVE_SLO_MAX_P95_PROVIDER_MS: ${{ inputs.max_provider_p95_ms }}
+      ASTROWORLD_LIVE_SLO_MAX_FALLBACK_RATE: ${{ inputs.max_fallback_rate }}
+      ASTROWORLD_LIVE_SLO_MIN_SUCCESS_RATE: "1"
+    steps:
+      - name: Checkout selected revision
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build backend
+        run: npm --workspace=@astroworld/backend run build
+
+      - name: Verify configured persistence runtime (read-only)
+        run: npm --workspace=@astroworld/backend run audit:ai-v3:persistence-runtime
+
+      - name: Measure live Gemini SLO and validated answer path
+        run: npm --workspace=@astroworld/backend run audit:ai-v3:live-slo
+        env:
+          ASTROWORLD_LIVE_SLO_REPORT_PATH: ${{ runner.temp }}/ai-v3-live-slo-report.json
+
+      - name: Upload live SLO and answer-review samples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: astroworld-ai-v3-live-slo-report
+          path: ${{ runner.temp }}/ai-v3-live-slo-report.json
+          if-no-files-found: warn
+          retention-days: 30

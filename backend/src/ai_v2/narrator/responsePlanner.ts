@@ -68,24 +68,29 @@ export class ResponsePlanner {
       sanitizedWindows.find(w => w.type === 'peak_confluence_window');
 
     const isTransitQuestion =
-      plan.intent.includes('transit') ||
-      plan.rawQuestion.toLowerCase().includes('transit') ||
-      plan.rawQuestion.toLowerCase().includes('jupiter') ||
-      plan.rawQuestion.toLowerCase().includes('saturn') ||
-      plan.rawQuestion.toLowerCase().includes('gochara');
+      plan.intent.toLowerCase().includes('transit') ||
+      /\b(transits?|gochara)\b/i.test(plan.rawQuestion);
 
-    const hasVerifiedTransitEvidence =
-      selection.supportingClaims.some(c => c.isTransit || c.factorType === 'transit') ||
-      approvedClaimSet.claims.some(c => c.factorType === 'transit' || c.text.toLowerCase().includes('transit') || c.text.toLowerCase().includes('gochara'));
+    const hasVerifiedTransitEvidence = approvedClaimSet.claims.some(claim =>
+      claim.allowed &&
+      (claim.type === 'factual' && claim.factorType === 'transit' ||
+        claim.type === 'timing' && claim.timingCategory === 'transit_period') &&
+      (claim.evidenceIds?.length || 0) > 0
+    );
 
+    const synthesisClaim = [...selection.supportingClaims, ...selection.restrictingClaims]
+      .find(claim => claim.type === 'qualified_prediction');
     const directAnswerDirection =
-      reasoning.direction === 'supportive'
-        ? 'The astrological cycles indicate supportive momentum for the queried period, with specific qualifications.'
+      synthesisClaim?.naturalText ||
+      (reasoning.direction === 'supportive'
+        ? 'The chart-specific factors lean supportive, with the qualifications described below.'
         : reasoning.direction === 'challenging'
-        ? 'The astrological cycles indicate a period requiring conscious discipline and patience.'
+        ? 'The chart-specific factors suggest additional effort and patience, with the reasons described below.'
         : reasoning.direction === 'mixed'
-        ? 'The astrological cycles present mixed influences — strong opportunities balanced with structural constraints.'
-        : 'The question requires clarification on the specific life domain to examine.';
+        ? 'The chart-specific factors are mixed; the conclusion depends on balancing the supportive and restricting indications.'
+        : reasoning.direction === 'insufficient_evidence'
+        ? 'There is not enough verified evidence to reach a useful conclusion yet.'
+        : 'The chart factors are inconclusive for this question.');
 
     const natalFactors = selection.supportingClaims.filter(c => c.factorType === 'natal').map(c => c.naturalText);
     const transitFactors = selection.supportingClaims.filter(c => c.factorType === 'transit' || c.isTransit).map(c => c.naturalText);
@@ -95,17 +100,21 @@ export class ResponsePlanner {
     const contextPack: NarratorContextPack = {
       originalQuestion: plan.rawQuestion,
       domain: plan.domain,
+      secondaryDomains: Array.from(new Set(plan.secondaryDomains || [])).filter(domain => domain.toLowerCase() !== plan.domain.toLowerCase()),
       intent: plan.intent,
       responseType,
       technicalMode,
       directAnswerDirection,
-      transitFocus: isTransitQuestion
+      transitFocus: isTransitQuestion &&
+        hasVerifiedTransitEvidence &&
+        Boolean(plan.planetFocus[0]) &&
+        transitFactors.length > 0
         ? {
             isTransitQuestion: true,
-            transitingPlanet: plan.planetFocus[0] || 'Jupiter',
-            targetHouse: plan.houseFocus[0] || 10,
-            activationSummary: 'Transit activation evaluated relative to natal Moon and Lagna.',
-            hasVerifiedTransitEvidence,
+            transitingPlanet: plan.planetFocus[0],
+            targetHouse: plan.houseFocus[0],
+            activationSummary: transitFactors[0],
+            hasVerifiedTransitEvidence: true,
           }
         : undefined,
       natalFactors,
@@ -119,7 +128,11 @@ export class ResponsePlanner {
       transitWindow,
       confluenceWindow,
       classicalContextSummary: selection.classicalContextSummary,
-      uncertaintyLevel: reasoning.confidence === 'high' ? 'low' : 'moderate',
+      uncertaintyLevel: reasoning.confidence === 'high'
+        ? 'low'
+        : reasoning.confidence === 'low'
+        ? 'high'
+        : 'moderate',
       requestedDepth,
       selectedClaimIds: selection.selectedClaimIds,
       selectedEvidenceIds: selection.selectedEvidenceIds,
