@@ -58,7 +58,6 @@ jobs:
       ASTROWORLD_LIVE_SLO_MAX_P95_PROVIDER_MS: ${{ inputs.max_provider_p95_ms }}
       ASTROWORLD_LIVE_SLO_MAX_FALLBACK_RATE: ${{ inputs.max_fallback_rate }}
       ASTROWORLD_LIVE_SLO_MIN_SUCCESS_RATE: "1"
-      ASTROWORLD_LIVE_SLO_REPORT_PATH: ${{ runner.temp }}/ai-v3-live-slo-report.json
     steps:
       - name: Checkout selected revision
         uses: actions/checkout@v4
@@ -80,6 +79,8 @@ jobs:
 
       - name: Measure live Gemini SLO and validated answer path
         run: npm --workspace=@astroworld/backend run audit:ai-v3:live-slo
+        env:
+          ASTROWORLD_LIVE_SLO_REPORT_PATH: ${{ runner.temp }}/ai-v3-live-slo-report.json
 
       - name: Upload live SLO and answer-review samples
         if: always()
