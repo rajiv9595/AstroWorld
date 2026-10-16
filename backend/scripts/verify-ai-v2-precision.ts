@@ -43,7 +43,9 @@ async function runPhase4ESuite(): Promise<void> {
     }
   }
 
-  const orchestrator = new ConsultationOrchestrator();
+  // This contract suite must be repeatable and must not depend on Gemini API availability or wording.
+  // Live-provider behavior is exercised by the dedicated live release gates.
+  const orchestrator = new ConsultationOrchestrator({ forceMockMode: true });
   const temporalValidator = new TemporalSanityValidator();
 
   // =========================================================================
@@ -212,7 +214,7 @@ async function runPhase4ESuite(): Promise<void> {
       benchmarkPassed++;
     } else {
       console.warn(
-        `⚠️ Precision Case ${testCase.id} failed: hasExpectedKeywords=${hasExpectedKeywords}, hasForbiddenPhrases=${hasForbiddenPhrases}, withinMaxParagraphs=${withinMaxParagraphs} (${paragraphCount}/${testCase.maxParagraphs || 'N/A'})\nText: "${caseText.slice(0, 100)}..."`
+        `⚠️ Precision Case ${testCase.id} failed: hasExpectedKeywords=${hasExpectedKeywords}, hasForbiddenPhrases=${hasForbiddenPhrases}, withinMaxParagraphs=${withinMaxParagraphs} (${paragraphCount}/${testCase.maxParagraphs || 'N/A'})\nText: "${caseText.slice(0, 600)}${caseText.length > 600 ? '...' : ''}"`
       );
     }
   }
