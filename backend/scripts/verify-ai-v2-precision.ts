@@ -203,6 +203,12 @@ async function runPhase4ESuite(): Promise<void> {
         /\b(ashtakavarga|sarvashtakavarga)\b/i.test(item)
       );
 
+    const hasTransitContext =
+      testCase.id !== 'prec_house_24_ashtakavarga_bindu_strength' ||
+      (caseResult.responsePlan.contextPack?.supportingFactors || []).some((item: string) =>
+        /\b(sun|moon|mars|mercury|jupiter|venus|saturn|rahu|ketu)\s*\(transit\)/i.test(item)
+      );
+
     const hasForbiddenPhrases = testCase.forbiddenPhrases.some(fp =>
       caseTextLower.includes(fp.toLowerCase())
     );
@@ -215,6 +221,7 @@ async function runPhase4ESuite(): Promise<void> {
       validateFinalResponse(caseResult.finalResponse).valid &&
       hasExpectedKeywords &&
       hasAshtakavargaContext &&
+      hasTransitContext &&
       !hasForbiddenPhrases &&
       withinMaxParagraphs;
 
@@ -257,7 +264,7 @@ async function runPhase4ESuite(): Promise<void> {
           })()
         : '';
       console.warn(
-        `⚠️ Precision Case ${testCase.id} failed: hasExpectedKeywords=${hasExpectedKeywords}, hasAshtakavargaContext=${hasAshtakavargaContext}, hasForbiddenPhrases=${hasForbiddenPhrases}, withinMaxParagraphs=${withinMaxParagraphs} (${paragraphCount}/${testCase.maxParagraphs || 'N/A'})\nText: "${caseText.slice(0, 600)}${caseText.length > 600 ? '...' : ''}"${ashtakavargaDiagnostic}`
+        `⚠️ Precision Case ${testCase.id} failed: hasExpectedKeywords=${hasExpectedKeywords}, hasAshtakavargaContext=${hasAshtakavargaContext}, hasTransitContext=${hasTransitContext}, hasForbiddenPhrases=${hasForbiddenPhrases}, withinMaxParagraphs=${withinMaxParagraphs} (${paragraphCount}/${testCase.maxParagraphs || 'N/A'})\nText: "${caseText.slice(0, 600)}${caseText.length > 600 ? '...' : ''}"${ashtakavargaDiagnostic}`
       );
     }
   }
