@@ -8,6 +8,7 @@
 import { RulePrerequisiteMatcher } from '../src/ai_v2/reasoning/ruleMatcher.ts';
 import { ConfluenceEngine } from '../src/ai_v2/reasoning/confluenceEngine.ts';
 import { AstrologyReasoner } from '../src/ai_v2/reasoning/astrologyReasoner.ts';
+import { ClaimSetGenerator } from '../src/ai_v2/claims/claimGenerator.ts';
 import { ClassicalRAGRetriever } from '../src/ai_v2/rag/retriever.ts';
 import type { EvidencePacket } from '../src/ai_v2/schemas/evidencePacket.ts';
 
@@ -183,9 +184,56 @@ function run() {
     }],
   );
   const verifiedAbsenceClassification = (reasoner as any).classifyFactors(gajaPlan, verifiedGajaAbsenceEvidence);
+  const verifiedAbsenceFactor = verifiedAbsenceClassification.primaryFactors.find(
+    (f: any) => f.id === 'yoga_gajakesari_absence',
+  );
   assert(
-    verifiedAbsenceClassification.primaryFactors.some((f: any) => f.id === 'yoga_gajakesari_absence'),
+    Boolean(verifiedAbsenceFactor),
     'Verified negative yoga evidence must be surfaced as an explicit absence factor.',
+  );
+  assert(
+    verifiedAbsenceFactor?.weight === 0 &&
+      !verifiedAbsenceClassification.restrictingFactors.some((f: any) => f.id === 'yoga_gajakesari_absence'),
+    'Absence of a positive yoga must remain neutral rather than being treated as an adverse prediction.',
+  );
+  const absenceClaims = new ClaimSetGenerator().generateClaims(
+    gajaPlan,
+    {
+      questionId: gajaPlan.questionId,
+      direction: 'neutral',
+      strength: 'inconclusive',
+      primaryFactors: verifiedAbsenceClassification.primaryFactors,
+      supportingFactors: verifiedAbsenceClassification.supportingFactors,
+      restrictingFactors: verifiedAbsenceClassification.restrictingFactors,
+      conflictingFactors: verifiedAbsenceClassification.conflictingFactors,
+      irrelevantFactors: verifiedAbsenceClassification.irrelevantFactors,
+      appliedRules: [],
+      confluence: { hasConfluence: false, confluenceStrength: 'inconclusive', convergingLayersCount: 0, layers: [], confluenceSummary: 'neutral' },
+      temporalWindows: [],
+      unresolvedQuestions: [],
+      evidenceLineage: ['yoga_gajakesari_absence'],
+      ruleLineage: [],
+      sourceLineage: [],
+      coverageStatus: 'partial',
+      confidence: 'low',
+      auditTrace: {
+        questionId: gajaPlan.questionId, intent: gajaPlan.intent, domain: gajaPlan.domain,
+        requiredFactsCount: 0, verifiedFactsCount: 1, applicableRulesCount: 0, rejectedRulesCount: 0,
+        supportingFactorsCount: 1, restrictingFactorsCount: 0, conflictingFactorsCount: 0,
+        hasTemporalConfluence: false, stepSequence: [], executionDurationMs: 0,
+      },
+      version: 'phase10-test',
+      createdAtIso: '2026-10-06T00:00:00.000Z',
+      verified: true,
+    } as any,
+    verifiedGajaAbsenceEvidence,
+  );
+  assert(
+    absenceClaims.some((claim: any) =>
+      claim.text.includes('The verified yoga evaluation found no qualifying formation:') &&
+      claim.text.includes('Gajakesari Yoga absent')
+    ),
+    'Verified yoga absence must be described explicitly, without positive-driver boilerplate.',
   );
 
   // 4. A query scope is not a predictive temporal window.
