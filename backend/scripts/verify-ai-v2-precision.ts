@@ -107,11 +107,11 @@ async function runPhase4ESuite(): Promise<void> {
 
   // Assert 5: Preserve uncertainty without inventing chart-specific obstacles.
   assert(
-    responseText.toLowerCase().includes('qualification') &&
+    /cannot confirm a specific event/i.test(responseText) &&
       responseText.toLowerCase().includes('dasha') &&
       !responseText.toLowerCase().includes('guaranteed'),
     'Step 7 & 10: Qualification & Non-Fatalism',
-    'Explains that transit is not a guarantee and must be considered with the running dasha',
+    'Explicitly states uncertainty about a specific event and preserves the running-dasha qualification',
   );
 
   // =========================================================================
