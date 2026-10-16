@@ -800,7 +800,7 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
       : undefined;
     if (ashtakavargaFactor) {
       supporting.push(
-        `For the career-transit question, the verified Ashtakavarga evidence is: ${ashtakavargaFactor} This count is one supporting factor to interpret alongside the natal chart, transits, and running dasha, not as a standalone forecast.`,
+        `The verified Ashtakavarga evidence is: ${ashtakavargaFactor} This count is one supporting factor to interpret alongside the relevant chart placements, transits, and running dasha, not as a standalone forecast.`,
       );
       reservedDomainFactors.add(ashtakavargaFactor);
     }
