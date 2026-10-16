@@ -84,7 +84,7 @@ export class ResponseEvidenceSelector {
       // Give the specifically requested Ashtakavarga evidence a strong relevance boost.
       if (
         isAshtakavargaQuestion &&
-        (textLower.includes('ashtakavarga') || textLower.includes('bindu') || textLower.includes('sarvashtakavarga'))
+        (textLower.includes('ashtakavarga') || textLower.includes('sarvashtakavarga'))
       ) {
         score += 120;
       }
@@ -208,7 +208,7 @@ export class ResponseEvidenceSelector {
       const ashtakavargaClaim = candidateSupporting.find(({ claim }) => {
         const text = claim.text.toLowerCase();
         return claim.type === 'factual' &&
-          (text.includes('ashtakavarga') || text.includes('bindu') || text.includes('sarvashtakavarga'));
+          (text.includes('ashtakavarga') || text.includes('sarvashtakavarga'));
       });
       if (ashtakavargaClaim) {
         const existingIndex = rankedSupporting.findIndex(
@@ -289,7 +289,7 @@ export class ResponseEvidenceSelector {
         claim.allowed &&
         claim.type === 'factual' &&
         (claim.evidenceIds?.length ?? 0) > 0 &&
-        /\b(ashtakavarga|bindus?|sarvashtakavarga)\b/i.test(claim.text)
+        /\b(ashtakavarga|sarvashtakavarga)\b/i.test(claim.text)
       );
       if (
         verifiedAshtakavargaClaim &&
