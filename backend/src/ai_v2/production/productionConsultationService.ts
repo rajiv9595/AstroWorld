@@ -236,7 +236,7 @@ export class ProductionConsultationService {
             consultResult.trace?.deterministicFallbackUsed ||
             (consultResult.trace?.fallbackTriggered && consultResult.trace?.finalExecutionPath === 'deterministic_failsafe')
               ? 'deterministic_fallback'
-              : (consultResult.trace?.repairAttempts && consultResult.trace.repairAttempts > 0 && consultResult.finalResponse.validatorStatus === 'repaired'
+              : ((consultResult.trace?.metrics?.repairAttempts ?? 0) > 0 && consultResult.finalResponse.validatorStatus === 'repaired'
                   ? 'repaired_gemini'
                   : (consultResult.trace?.executionMode === 'live_gemini' ? 'live_gemini' : (consultResult.trace?.executionMode || 'deterministic_fallback'))),
           providerLatencyMs: consultResult.trace?.providerLatencyMs || consultResult.trace?.latencyMs?.narration || 0,
