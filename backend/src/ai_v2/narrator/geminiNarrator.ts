@@ -756,7 +756,7 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
       ? factualClaims.find(claim =>
           claim.type === 'factual' &&
           (claim.evidenceIds?.length ?? 0) > 0 &&
-          /\b(ashtakavarga|bindus?|sarvashtakavarga)\b/i.test(claim.text)
+          /\b(ashtakavarga|sarvashtakavarga)\b/i.test(claim.text)
         )
       : undefined;
     const verifiedAshtakavargaText = verifiedAshtakavargaClaim
@@ -769,7 +769,7 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     if (
       asksAshtakavarga &&
       verifiedAshtakavargaText &&
-      !cleanedSupporting.some(item => /\b(ashtakavarga|bindus?|sarvashtakavarga)\b/i.test(item))
+      !cleanedSupporting.some(item => /\b(ashtakavarga|sarvashtakavarga)\b/i.test(item))
     ) {
       cleanedSupporting.unshift(verifiedAshtakavargaText);
     }
@@ -796,11 +796,11 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     // Explicitly requested Ashtakavarga is a separate evidence facet, not a detail
     // that can be pushed out by the ordinary two-factor narration budget.
     const ashtakavargaFactor = asksAshtakavarga
-      ? cleanedSupporting.find(item => /\b(ashtakavarga|bindus?|sarvashtakavarga)\b/i.test(item))
+      ? cleanedSupporting.find(item => /\b(ashtakavarga|sarvashtakavarga)\b/i.test(item))
       : undefined;
     if (ashtakavargaFactor) {
       supporting.push(
-        `For the Ashtakavarga part of your question, the verified count provides supporting context: ${ashtakavargaFactor} This count should be interpreted alongside transits and the running dasha, not as a standalone forecast.`,
+        `For the career-transit question, the verified Ashtakavarga evidence is: ${ashtakavargaFactor} This count is one supporting factor to interpret alongside the natal chart, transits, and running dasha, not as a standalone forecast.`,
       );
       reservedDomainFactors.add(ashtakavargaFactor);
     }
