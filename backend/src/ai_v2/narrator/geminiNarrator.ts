@@ -751,6 +751,29 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
         item.trim().toLowerCase() !== transitActivationSummary.toLowerCase()
       );
 
+    const asksAshtakavarga = /\\b(ashtakavarga|bindus?|sav)\\b/i.test(rawLower);
+    const verifiedAshtakavargaClaim = asksAshtakavarga
+      ? factualClaims.find(claim =>
+          claim.type === 'factual' &&
+          (claim.evidenceIds?.length ?? 0) > 0 &&
+          /\\b(ashtakavarga|bindus?|sarvashtakavarga)\\b/i.test(claim.text)
+        )
+      : undefined;
+    const verifiedAshtakavargaText = verifiedAshtakavargaClaim
+      ? this.normalizeSimpleFact(verifiedAshtakavargaClaim.text)
+      : undefined;
+
+    // The response pack is the normal source, but the narrator must not lose an
+    // explicit requested facet if its earlier selection was crowded by other facts.
+    // Recover only a factual claim already approved by the grounding firewall.
+    if (
+      asksAshtakavarga &&
+      verifiedAshtakavargaText &&
+      !cleanedSupporting.some(item => /\\b(ashtakavarga|bindus?|sarvashtakavarga)\\b/i.test(item))
+    ) {
+      cleanedSupporting.unshift(verifiedAshtakavargaText);
+    }
+
     // Keep at least one relevant approved factor for the primary and each requested
     // secondary domain. The ordinary concise-response budget must not silently erase
     // a facet the user explicitly asked about.
@@ -769,6 +792,19 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     ])).map(domain => domain.toLowerCase());
     const supporting: string[] = [];
     const reservedDomainFactors = new Set<string>();
+
+    // Explicitly requested Ashtakavarga is a separate evidence facet, not a detail
+    // that can be pushed out by the ordinary two-factor narration budget.
+    const ashtakavargaFactor = asksAshtakavarga
+      ? cleanedSupporting.find(item => /\\b(ashtakavarga|bindus?|sarvashtakavarga)\\b/i.test(item))
+      : undefined;
+    if (ashtakavargaFactor) {
+      supporting.push(
+        `For the Ashtakavarga part of your question, the verified count provides supporting context: ${ashtakavargaFactor} This count should be interpreted alongside transits and the running dasha, not as a standalone forecast.`,
+      );
+      reservedDomainFactors.add(ashtakavargaFactor);
+    }
+
     for (const domain of requestedDomains) {
       const signals = domainSignals[domain] || [domain];
       const domainFactor = cleanedSupporting.find(item =>
