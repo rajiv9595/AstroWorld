@@ -223,6 +223,49 @@ export class GeminiNarrator {
     this.lastRepairAttempts = 0;
     this.lastTimeoutTriggered = false;
 
+    // Commercial remedy advice is a policy boundary, not a model-generation task.
+    // Resolve it before calling live Gemini so model output cannot bypass the guard.
+    if (isCommercialGemstoneRemedyQuestion(plan.rawQuestion)) {
+      this.lastExecutionMode = 'deterministic_ci';
+      this.lastSelectedModel = 'AstroWorld Deterministic Safety Boundary';
+      this.lastEffectiveModel = 'AstroWorld Deterministic Safety Boundary';
+      this.lastModelUsed = 'AstroWorld Deterministic Safety Boundary';
+      this.lastFallbackTriggered = true;
+      this.lastFallbackReason = 'COMMERCIAL_GEMSTONE_REMEDY_BOUNDARY';
+      this.lastProviderLatencyMs = 0;
+      this.lastPrimaryAttempted = false;
+      this.lastPrimarySucceeded = false;
+      this.lastPrimaryFailureReason = undefined;
+      this.lastPrimaryDurationMs = undefined;
+      this.lastPrimaryTimeoutTriggered = false;
+      this.lastFallbackAttempted = false;
+      this.lastFallbackSucceeded = false;
+      this.lastFallbackFailureReason = undefined;
+      this.lastFallbackDurationMs = undefined;
+      this.lastFallbackTimeoutTriggered = false;
+      this.lastDeterministicFallbackUsed = true;
+      this.lastDeterministicFallbackDurationMs = 0;
+      this.lastFinalExecutionPath = 'deterministic_failsafe';
+
+      const safeResponse: FinalResponse = {
+        responseId: `resp_${Date.now()}_safe`,
+        questionId: plan.questionId,
+        text: COMMERCIAL_GEMSTONE_REMEDY_RESPONSE,
+        responseType: responsePlan.responseType,
+        referencedClaimIds: [],
+        referencedEvidenceIds: [],
+        validatorStatus: 'fallback_safe',
+        responseVersion: 'ai-v2-narrator-1',
+        createdAtIso: new Date().toISOString(),
+        verified: true,
+      };
+      const safeValidation = validateFinalResponse(safeResponse);
+      if (!safeValidation.valid) {
+        throw new Error(`GeminiNarrator generated invalid safety response: ${safeValidation.errors.join('; ')}`);
+      }
+      return safeResponse;
+    }
+
     // Step 1: Generate initial draft (live Gemini or deterministic failsafe)
     let draftText = await this.generateDraft(plan, responsePlan, approvedClaimSet, isMock, forcePrimaryFail, parentDeadlineTimestampMs);
 
