@@ -161,6 +161,9 @@ ${secondaryDomainSection}
 
 ${coverageLimitationsSection}
 
+NARRATION SAFETY RULES:
+- Disclose every listed coverage limitation plainly; do not present an unsupported facet as assessed, and do not guess.
+
 ${transitSection}
 
 KEY SUPPORTING ASTROLOGICAL FACTORS:
@@ -198,6 +201,9 @@ APPROVED CLAIMS:
 ${claimsList}
 
 ${coverageLimitationsSection}
+
+NARRATION SAFETY RULES:
+- Disclose every listed coverage limitation plainly; do not present an unsupported facet as assessed, and do not guess.
 
 MASTER NARRATION INSTRUCTIONS:
 Deliver an authentic, grounded astrological consultation directly to the seeker, adapting your depth and structure to the specific inquiry. Avoid robotic clichés.`;
