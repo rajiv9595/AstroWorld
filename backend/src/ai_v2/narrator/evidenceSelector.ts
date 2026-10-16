@@ -289,7 +289,7 @@ export class ResponseEvidenceSelector {
         claim.allowed &&
         claim.type === 'factual' &&
         (claim.evidenceIds?.length ?? 0) > 0 &&
-        /\\b(ashtakavarga|bindus?|sarvashtakavarga)\\b/i.test(claim.text)
+        /\b(ashtakavarga|bindus?|sarvashtakavarga)\b/i.test(claim.text)
       );
       if (
         verifiedAshtakavargaClaim &&
