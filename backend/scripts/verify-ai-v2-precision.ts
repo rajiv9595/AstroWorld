@@ -195,6 +195,13 @@ async function runPhase4ESuite(): Promise<void> {
     const hasExpectedKeywords = requireAllExpectedKeywords
       ? testCase.expectedKeywords.every(kw => caseTextLower.includes(kw.toLowerCase()))
       : testCase.expectedKeywords.some(kw => caseTextLower.includes(kw.toLowerCase()));
+    // Also verify the Ashtakavarga fact survives evidence selection into the
+    // narrator context pack; final-answer wording alone could hide a selector regression.
+    const hasAshtakavargaContext =
+      testCase.id !== 'prec_house_24_ashtakavarga_bindu_strength' ||
+      (caseResult.responsePlan.contextPack?.supportingFactors || []).some((item: string) =>
+        /\b(ashtakavarga|sarvashtakavarga)\b/i.test(item)
+      );
 
     const hasForbiddenPhrases = testCase.forbiddenPhrases.some(fp =>
       caseTextLower.includes(fp.toLowerCase())
@@ -207,6 +214,7 @@ async function runPhase4ESuite(): Promise<void> {
       validateConsultationResult(caseResult).valid &&
       validateFinalResponse(caseResult.finalResponse).valid &&
       hasExpectedKeywords &&
+      hasAshtakavargaContext &&
       !hasForbiddenPhrases &&
       withinMaxParagraphs;
 
@@ -249,7 +257,7 @@ async function runPhase4ESuite(): Promise<void> {
           })()
         : '';
       console.warn(
-        `⚠️ Precision Case ${testCase.id} failed: hasExpectedKeywords=${hasExpectedKeywords}, hasForbiddenPhrases=${hasForbiddenPhrases}, withinMaxParagraphs=${withinMaxParagraphs} (${paragraphCount}/${testCase.maxParagraphs || 'N/A'})\nText: "${caseText.slice(0, 600)}${caseText.length > 600 ? '...' : ''}"${ashtakavargaDiagnostic}`
+        `⚠️ Precision Case ${testCase.id} failed: hasExpectedKeywords=${hasExpectedKeywords}, hasAshtakavargaContext=${hasAshtakavargaContext}, hasForbiddenPhrases=${hasForbiddenPhrases}, withinMaxParagraphs=${withinMaxParagraphs} (${paragraphCount}/${testCase.maxParagraphs || 'N/A'})\nText: "${caseText.slice(0, 600)}${caseText.length > 600 ? '...' : ''}"${ashtakavargaDiagnostic}`
       );
     }
   }
