@@ -751,12 +751,12 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
         item.trim().toLowerCase() !== transitActivationSummary.toLowerCase()
       );
 
-    const asksAshtakavarga = /\\b(ashtakavarga|bindus?|sav)\\b/i.test(rawLower);
+    const asksAshtakavarga = /\b(ashtakavarga|bindus?|sav)\b/i.test(rawLower);
     const verifiedAshtakavargaClaim = asksAshtakavarga
       ? factualClaims.find(claim =>
           claim.type === 'factual' &&
           (claim.evidenceIds?.length ?? 0) > 0 &&
-          /\\b(ashtakavarga|bindus?|sarvashtakavarga)\\b/i.test(claim.text)
+          /\b(ashtakavarga|bindus?|sarvashtakavarga)\b/i.test(claim.text)
         )
       : undefined;
     const verifiedAshtakavargaText = verifiedAshtakavargaClaim
@@ -769,7 +769,7 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     if (
       asksAshtakavarga &&
       verifiedAshtakavargaText &&
-      !cleanedSupporting.some(item => /\\b(ashtakavarga|bindus?|sarvashtakavarga)\\b/i.test(item))
+      !cleanedSupporting.some(item => /\b(ashtakavarga|bindus?|sarvashtakavarga)\b/i.test(item))
     ) {
       cleanedSupporting.unshift(verifiedAshtakavargaText);
     }
@@ -796,7 +796,7 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     // Explicitly requested Ashtakavarga is a separate evidence facet, not a detail
     // that can be pushed out by the ordinary two-factor narration budget.
     const ashtakavargaFactor = asksAshtakavarga
-      ? cleanedSupporting.find(item => /\\b(ashtakavarga|bindus?|sarvashtakavarga)\\b/i.test(item))
+      ? cleanedSupporting.find(item => /\b(ashtakavarga|bindus?|sarvashtakavarga)\b/i.test(item))
       : undefined;
     if (ashtakavargaFactor) {
       supporting.push(
