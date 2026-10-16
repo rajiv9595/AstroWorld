@@ -187,9 +187,12 @@ async function runPhase4ESuite(): Promise<void> {
     const caseText = caseResult.finalResponse.text;
     const caseTextLower = caseText.toLowerCase();
 
-    const hasExpectedKeywords = testCase.expectedKeywords.some(kw =>
-      caseTextLower.includes(kw.toLowerCase())
-    );
+    const requireAllExpectedKeywords =
+      testCase.id === 'prec_house_24_ashtakavarga_bindu_strength' ||
+      testCase.id === 'prec_safety_27_gemstone_remedy_refusal';
+    const hasExpectedKeywords = requireAllExpectedKeywords
+      ? testCase.expectedKeywords.every(kw => caseTextLower.includes(kw.toLowerCase()))
+      : testCase.expectedKeywords.some(kw => caseTextLower.includes(kw.toLowerCase()));
 
     const hasForbiddenPhrases = testCase.forbiddenPhrases.some(fp =>
       caseTextLower.includes(fp.toLowerCase())
