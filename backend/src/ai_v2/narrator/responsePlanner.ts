@@ -178,22 +178,33 @@ export class ResponsePlanner {
       return 'insufficient_evidence';
     }
 
-    if (plan.intent === 'promotion_timing' || plan.intent === 'career_timing' || plan.temporalScope.type === 'specific_date') {
-      return 'timing_analysis';
-    }
-
-    if (
-      plan.chartLayers.length >= 2 ||
-      plan.intent === 'yoga_analysis' ||
-      plan.intent === 'deep_analysis' ||
-      plan.intent === 'career_strengths_limitations' ||
-      (plan.rawQuestion.toLowerCase().includes('strength') && plan.rawQuestion.toLowerCase().includes('limit')) ||
-      (plan.rawQuestion.toLowerCase().includes('calculated') && plan.rawQuestion.toLowerCase().includes('interpretation'))
-    ) {
-      return 'deep_analysis';
-    }
-
     const rawLower = plan.rawQuestion.toLowerCase();
+
+    // Natural follow-up inquiries
+    if (
+      plan.intent === 'challenge_previous_conclusion' ||
+      rawLower === 'why' ||
+      rawLower === 'why?' ||
+      rawLower.startsWith('why ') ||
+      rawLower.startsWith('how so') ||
+      rawLower.includes('how did you conclude') ||
+      rawLower.includes('explain it simply') ||
+      rawLower.includes('what makes you say')
+    ) {
+      return 'follow_up';
+    }
+
+    // Comparison inquiries
+    if (
+      rawLower.includes('compare') ||
+      rawLower.includes('versus') ||
+      rawLower.includes(' vs ') ||
+      rawLower.includes('difference between') ||
+      rawLower.includes('which period is better')
+    ) {
+      return 'comparison';
+    }
+
     if (
       (plan.intent === 'general_chart_question' && plan.planetFocus.length <= 1 && plan.houseFocus.length === 0) ||
       ((rawLower.startsWith('what is my') ||
@@ -210,8 +221,30 @@ export class ResponsePlanner {
       return 'simple_fact';
     }
 
+    if (plan.intent === 'promotion_timing' || plan.intent === 'career_timing' || plan.temporalScope.type === 'specific_date') {
+      return 'timing_analysis';
+    }
+
+    if (
+      plan.chartLayers.length >= 2 ||
+      plan.intent === 'yoga_analysis' ||
+      plan.intent === 'deep_analysis' ||
+      plan.intent === 'career_strengths_limitations' ||
+      (plan.rawQuestion.toLowerCase().includes('strength') && plan.rawQuestion.toLowerCase().includes('limit')) ||
+      (plan.rawQuestion.toLowerCase().includes('calculated') && plan.rawQuestion.toLowerCase().includes('interpretation'))
+    ) {
+      return 'deep_analysis';
+    }
+
     if (plan.intent === 'planet_question' || plan.intent === 'house_question') {
       return 'simple_interpretation';
+    }
+
+    if (
+      plan.intent === 'general_chart_question' &&
+      (rawLower.includes('tell me about') || rawLower.includes('what do you see') || rawLower.includes('overall') || rawLower.includes('guide me'))
+    ) {
+      return 'exploratory';
     }
 
     return 'focused_analysis';
@@ -249,7 +282,66 @@ export class ResponsePlanner {
       return { sections, claimIdsPerSection, timingClaims, restrictions, unansweredParts };
     }
 
-    // B. Direct Answer Section (Answer-First)
+    // B. Quick Factual Answer (Concise, single section)
+    if (responseType === 'simple_fact') {
+      const factClaimIds = selection.supportingClaims.slice(0, 2).map(c => c.claimId);
+      sections.push({
+        id: 'sec_direct_answer',
+        title: 'Direct Fact',
+        intent: 'Provide an immediate, concise answer to the specific factual inquiry.',
+        claimIds: factClaimIds,
+      });
+      claimIdsPerSection['sec_direct_answer'] = factClaimIds;
+      return { sections, claimIdsPerSection, timingClaims, restrictions, unansweredParts };
+    }
+
+    // C. Natural Follow-Up (Conversational continuation)
+    if (responseType === 'follow_up') {
+      const directClaimIds = selection.supportingClaims.slice(0, 1).map(c => c.claimId);
+      sections.push({
+        id: 'sec_direct_answer',
+        title: 'Follow-Up Response',
+        intent: 'Answer the follow-up question directly, explaining the astrological connection to prior turns.',
+        claimIds: directClaimIds,
+      });
+      claimIdsPerSection['sec_direct_answer'] = directClaimIds;
+
+      const supportClaimIds = selection.supportingClaims.slice(1).map(c => c.claimId);
+      if (supportClaimIds.length > 0) {
+        sections.push({
+          id: 'sec_astrological_support',
+          title: 'Astrological Rationale',
+          intent: 'Explain the planetary mechanics and classical reasons.',
+          claimIds: supportClaimIds,
+        });
+        claimIdsPerSection['sec_astrological_support'] = supportClaimIds;
+      }
+      return { sections, claimIdsPerSection, timingClaims, restrictions, unansweredParts };
+    }
+
+    // D. Comparative Analysis
+    if (responseType === 'comparison') {
+      const directClaimIds = selection.supportingClaims.slice(0, 1).map(c => c.claimId);
+      sections.push({
+        id: 'sec_direct_answer',
+        title: 'Comparison Verdict',
+        intent: 'Direct qualitative comparison between the queried factors or time windows.',
+        claimIds: directClaimIds,
+      });
+      claimIdsPerSection['sec_direct_answer'] = directClaimIds;
+
+      const supportClaimIds = selection.supportingClaims.map(c => c.claimId);
+      sections.push({
+        id: 'sec_comparison_details',
+        title: 'Comparative Analysis',
+        intent: 'Contrasting the relative merits, activations, and timing of each option.',
+        claimIds: supportClaimIds,
+      });
+      claimIdsPerSection['sec_comparison_details'] = supportClaimIds;
+      return { sections, claimIdsPerSection, timingClaims, restrictions, unansweredParts };
+    }
+
+    // E. Structured Consultation (Default / Deep Analysis)
     const directClaimIds = selection.supportingClaims.slice(0, 1).map(c => c.claimId);
     sections.push({
       id: 'sec_direct_answer',

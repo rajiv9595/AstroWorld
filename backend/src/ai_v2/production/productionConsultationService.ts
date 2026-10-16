@@ -23,7 +23,7 @@ import { ChaosManager } from './chaosManager.ts';
 import { ConsultationOrchestrator } from '../consultation/consultationOrchestrator.ts';
 import { IPersistentMemoryRepository } from '../memory/persistentMemoryRepository.ts';
 import { createDefaultMemoryRepository } from '../memory/supabasePersistentMemoryRepository.ts';
-import { ConversationStateManager } from '../conversation_state/index.ts';
+import { ConversationStateManager, ConversationSummary } from '../conversation_state/index.ts';
 
 export interface ProductionServiceDependencies {
   orchestrator?: ConsultationOrchestrator;
@@ -214,9 +214,10 @@ export class ProductionConsultationService {
         },
         conversationMetadata: {
           conversationId,
-          turnIndex: consultResult.conversationState?.activeConversation?.turns?.length || 1,
+          turnIndex: consultResult.conversationState?.turnIndex || 1,
           domain: consultResult.questionPlan?.domain || 'general',
-          topic: consultResult.questionPlan?.intent || 'astrology_consultation',
+          topic: consultResult.conversationState?.currentTopic || consultResult.questionPlan?.intent || 'astrology_consultation',
+          title: consultResult.conversationState?.currentTopic || 'Astrological Consultation',
           requiresClarification:
             consultResult.finalResponse.responseType === 'clarification' ||
             consultResult.questionPlan?.clarificationRequired === true ||
@@ -231,7 +232,13 @@ export class ProductionConsultationService {
           effectiveModel: consultResult.trace?.effectiveModel || (consultResult.trace?.geminiModelUsed || 'AstroWorld Classical Deterministic Narrator'),
           fallbackTriggered: consultResult.trace?.fallbackTriggered ?? false,
           fallbackReason: consultResult.trace?.fallbackReason,
-          executionMode: consultResult.trace?.executionMode || (validatedReq.executionMode === 'production' ? 'production' : 'deterministic_ci'),
+          executionMode:
+            consultResult.trace?.deterministicFallbackUsed ||
+            (consultResult.trace?.fallbackTriggered && consultResult.trace?.finalExecutionPath === 'deterministic_failsafe')
+              ? 'deterministic_fallback'
+              : (consultResult.trace?.repairAttempts && consultResult.trace.repairAttempts > 0 && consultResult.finalResponse.validatorStatus === 'repaired'
+                  ? 'repaired_gemini'
+                  : (consultResult.trace?.executionMode === 'live_gemini' ? 'live_gemini' : (consultResult.trace?.executionMode || 'deterministic_fallback'))),
           providerLatencyMs: consultResult.trace?.providerLatencyMs || consultResult.trace?.latencyMs?.narration || 0,
           backendDurationMs: totalDuration,
           totalDurationMs: totalDuration,
@@ -365,6 +372,45 @@ export class ProductionConsultationService {
     return Array.from(this.conversationOwners.entries())
       .filter(([, ownerId]) => ownerId === userId)
       .map(([conversationId]) => conversationId);
+  }
+
+  public async listConversationSummariesAsync(userId: string): Promise<ConversationSummary[]> {
+    const summaryMap = new Map<string, ConversationSummary>();
+
+    // 1. Fetch persistent summaries if configured
+    if (this.orchestrator.getConversationPersistenceRepository().isEnabled()) {
+      try {
+        const persisted = await this.orchestrator.listOwnedPersistentSummaries(userId);
+        for (const s of persisted) {
+          summaryMap.set(s.conversationId, s);
+        }
+      } catch (err) {
+        ProductionLogger.warn('[ProductionService] Failed to load persistent summaries, falling back to memory', { error: String(err) });
+      }
+    }
+
+    // 2. Overlay / supplement with any active in-memory sessions owned by this user
+    for (const [convId, ownerId] of this.conversationOwners.entries()) {
+      if (ownerId === userId) {
+        const memState = this.stateManager.getState(convId);
+        const turns = this.stateManager.getTurns(convId);
+        if (memState) {
+          const lastTurn = turns[turns.length - 1];
+          summaryMap.set(convId, {
+            conversationId: convId,
+            title: memState.currentTopic || 'Astrological Consultation',
+            domain: memState.currentDomain || 'general',
+            lastActivityIso: memState.updatedAtIso || new Date().toISOString(),
+            turnCount: turns.length,
+            preview: lastTurn?.answerSummary?.mainConclusion?.slice(0, 120) || 'Active consultation',
+          });
+        }
+      }
+    }
+
+    return Array.from(summaryMap.values()).sort(
+      (a, b) => new Date(b.lastActivityIso).getTime() - new Date(a.lastActivityIso).getTime()
+    );
   }
 
   public async deleteOwnedConversationAsync(conversationId: string, userId: string): Promise<boolean> {

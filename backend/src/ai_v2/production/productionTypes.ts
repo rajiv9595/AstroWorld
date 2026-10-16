@@ -65,6 +65,7 @@ export interface ProductionConversationMetadata {
   turnIndex: number;
   domain: string;
   topic: string;
+  title?: string;
   requiresClarification: boolean;
   activeDomainConfidence: number;
 }

@@ -34,7 +34,7 @@ import {
   ConversationSummary,
 } from '../services/aiV2ApiClient.ts';
 
-import { BirthProfile, AIInterpretationContext } from '../engine/types.ts';
+import { BirthProfile, AIInterpretationContext, computeProfileFingerprint } from '../engine/types.ts';
 import { DEFAULT_BIRTH_PROFILE } from '../engine/canonicalChart.ts';
 
 import { ChatMessage, ChatMessageItem } from '../components/chat/ChatMessageItem.tsx';
@@ -43,6 +43,73 @@ import { ChatEmptyState } from '../components/chat/ChatEmptyState.tsx';
 import { ChatSidebar } from '../components/chat/ChatSidebar.tsx';
 import { MemoryModal } from '../components/chat/MemoryModal.tsx';
 import { BirthProfileEditorModal } from '../components/chat/BirthProfileEditorModal.tsx';
+
+const STORAGE_CONVERSATIONS_KEY = 'astroworld_conversations';
+
+function getLocalConversations(): ConversationSummary[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_CONVERSATIONS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalConversations(convs: ConversationSummary[]): void {
+  try {
+    localStorage.setItem(STORAGE_CONVERSATIONS_KEY, JSON.stringify(convs));
+  } catch {
+    // quota safety
+  }
+}
+
+function generateQuickNickname(text: string): string {
+  if (!text) return 'New Consultation';
+  const trimmed = text.trim();
+  const lower = trimmed.toLowerCase();
+
+  const yearMatch = trimmed.match(/\b(202[4-9]|203\d)\b/);
+  const yearSuffix = yearMatch ? ` (${yearMatch[1]})` : '';
+
+  if (/\b(job\s+offer|first\s+job|campus|placement)\b/i.test(lower)) {
+    if (/\bb\.?tech\b/i.test(lower)) return `B.Tech Job Offer${yearSuffix}`;
+    return `First Job Offer${yearSuffix}`;
+  }
+  if (/\b(career|job|promotion|salary|work|profession)\b/i.test(lower)) {
+    return `Career Prospects${yearSuffix}`;
+  }
+  if (/\b(marriage|wedding|married|marry|spouse|partner)\b/i.test(lower)) {
+    if (/\b(timing|when|date|year|will)\b/i.test(lower)) return `Marriage Timing${yearSuffix}`;
+    return `Marriage & Relationship${yearSuffix}`;
+  }
+  if (/\b(health|stress|anxiety|illness|vitality)\b/i.test(lower)) {
+    return `Health & Vitality${yearSuffix}`;
+  }
+  if (/\b(wealth|finance|money|property|business|startup)\b/i.test(lower)) {
+    return `Wealth & Business${yearSuffix}`;
+  }
+  if (/\b(sade\s+sati)\b/i.test(lower)) {
+    return `Saturn Sade Sati`;
+  }
+  if (/\b(dasha)\b/i.test(lower)) {
+    return `Dasha Period Analysis${yearSuffix}`;
+  }
+
+  // Strip prefixes & build 3-4 word clean title
+  const words = trimmed
+    .replace(/^(can you\s+)?(please\s+)?(tell me\s+)?(about\s+)?/i, '')
+    .replace(/^(when\s+(will|am|do)\s+i\s+(will\s+)?(get|receive|find)\s+)/i, '')
+    .replace(/^(what\s+is\s+my\s+)/i, '')
+    .replace(/[?.!]+$/, '')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 4);
+
+  if (words.length > 0 && words[0]) {
+    return words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') + yearSuffix;
+  }
+  return `Vedic Consultation${yearSuffix}`;
+}
 
 interface AIAstrologerViewProps {
   context?: AIInterpretationContext;
@@ -54,16 +121,15 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
     return context?.birthProfile || DEFAULT_BIRTH_PROFILE;
   });
 
-  useEffect(() => {
-    if (context?.birthProfile) {
-      setProfile(context.birthProfile);
-    }
-  }, [context?.birthProfile]);
+  const fingerprint = computeProfileFingerprint(profile);
+  const prevFingerprintRef = useRef<string>(fingerprint);
 
-  // 2. Active Session & Conversation State
+  // 2. Active Session & Conversation State (Profile-scoped isolation)
   const [conversationId, setConversationId] = useState<string>(() => {
-    const saved = localStorage.getItem('astroworld_active_conv_id');
-    return saved || `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const savedForProfile = localStorage.getItem(`astroworld_active_conv_${fingerprint}`);
+    if (savedForProfile) return savedForProfile;
+    const legacySaved = localStorage.getItem('astroworld_active_conv_id');
+    return legacySaved || `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   });
 
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
@@ -75,7 +141,7 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
     }
   });
 
-  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [conversations, setConversations] = useState<ConversationSummary[]>(() => getLocalConversations());
   const [composerText, setComposerText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isRetryingTurnId, setIsRetryingTurnId] = useState<string | null>(null);
@@ -91,10 +157,46 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Persist current conversation ID and turns to localStorage
   useEffect(() => {
+    if (context?.birthProfile) {
+      setProfile(context.birthProfile);
+    }
+  }, [context?.birthProfile]);
+
+  // Profile switch detector: automatically switches conversation & isolates message caches
+  useEffect(() => {
+    const newFp = computeProfileFingerprint(profile);
+    if (newFp !== prevFingerprintRef.current) {
+      // 1. Persist current conversation ID for previous profile
+      localStorage.setItem(`astroworld_active_conv_${prevFingerprintRef.current}`, conversationId);
+
+      // 2. Look up or create conversation for the new profile
+      const targetConvId =
+        localStorage.getItem(`astroworld_active_conv_${newFp}`) ||
+        `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+      // 3. Load messages for that profile's conversation
+      let loadedMessages: ChatMessage[] = [];
+      try {
+        const saved = localStorage.getItem(`astroworld_messages_${targetConvId}`);
+        if (saved) loadedMessages = JSON.parse(saved);
+      } catch {}
+
+      prevFingerprintRef.current = newFp;
+      setConversationId(targetConvId);
+      setMessages(loadedMessages);
+      setComposerText('');
+      setIsLoading(false);
+      setIsRetryingTurnId(null);
+      abortControllerRef.current?.abort();
+    }
+  }, [profile, conversationId]);
+
+  // Persist current conversation ID and turns to localStorage scoped by profile
+  useEffect(() => {
+    localStorage.setItem(`astroworld_active_conv_${fingerprint}`, conversationId);
     localStorage.setItem('astroworld_active_conv_id', conversationId);
-  }, [conversationId]);
+  }, [conversationId, fingerprint]);
 
   useEffect(() => {
     try {
@@ -115,15 +217,40 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
 
   // Refresh user conversations & memories on mount and after actions
   const refreshUserData = useCallback(async () => {
+    // 1. Immediately sync with local storage so history is never blank
+    const localConvs = getLocalConversations();
+    if (localConvs.length > 0) {
+      setConversations(prev => (prev.length === 0 ? localConvs : prev));
+    }
+
     try {
-      const [mems, sum, convs] = await Promise.all([
+      const [mems, sum, remoteConvs] = await Promise.all([
         aiApiClient.listMemories().catch(() => []),
         aiApiClient.getMemorySummary().catch(() => ''),
         aiApiClient.listConversations().catch(() => []),
       ]);
       setMemories(mems);
       setMemorySummary(sum);
-      setConversations(convs);
+
+      // Merge local and remote
+      const map = new Map<string, ConversationSummary>();
+      for (const c of localConvs) {
+        map.set(c.conversationId, c);
+      }
+      for (const r of remoteConvs) {
+        const existing = map.get(r.conversationId);
+        map.set(r.conversationId, {
+          ...r,
+          title: r.title && !r.title.includes('in astrological') ? r.title : (existing?.title || r.title),
+        });
+      }
+
+      const merged = Array.from(map.values()).sort(
+        (a, b) => new Date(b.lastActivityIso).getTime() - new Date(a.lastActivityIso).getTime()
+      );
+
+      saveLocalConversations(merged);
+      setConversations(merged);
     } catch {
       // Graceful background sync
     }
@@ -143,17 +270,57 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
   }, []);
 
   // Switch to an existing conversation
-  const handleSelectConversation = useCallback((targetConvId: string) => {
+  const handleSelectConversation = useCallback(async (targetConvId: string) => {
     setConversationId(targetConvId);
+    let loadedMessages: ChatMessage[] = [];
     try {
       const saved = localStorage.getItem(`astroworld_messages_${targetConvId}`);
       if (saved) {
-        setMessages(JSON.parse(saved));
-      } else {
-        setMessages([]);
+        loadedMessages = JSON.parse(saved);
       }
     } catch {
+      // storage error
+    }
+
+    if (loadedMessages.length > 0) {
+      setMessages(loadedMessages);
+    } else {
+      // Hydrate from backend if local storage is fresh/cleared
       setMessages([]);
+      try {
+        const remote = await aiApiClient.getConversation(targetConvId);
+        if (remote?.turns && Array.isArray(remote.turns)) {
+          const reconstructed: ChatMessage[] = [];
+          for (const t of remote.turns) {
+            if (t.userMessage) {
+              reconstructed.push({
+                id: `u_${t.turnId || Date.now()}`,
+                role: 'user',
+                text: t.userMessage,
+                timestamp: t.createdAt || new Date().toISOString(),
+              });
+            }
+            if (t.answerSummary?.mainConclusion) {
+              reconstructed.push({
+                id: `a_${t.turnId || Date.now()}`,
+                role: 'assistant',
+                text: t.answerSummary.mainConclusion,
+                timestamp: t.createdAt || new Date().toISOString(),
+                domain: t.domain,
+                topic: t.intent,
+              });
+            }
+          }
+          if (reconstructed.length > 0) {
+            setMessages(reconstructed);
+            try {
+              localStorage.setItem(`astroworld_messages_${targetConvId}`, JSON.stringify(reconstructed));
+            } catch {}
+          }
+        }
+      } catch {
+        // graceful fallback
+      }
     }
   }, []);
 
@@ -161,7 +328,11 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
   const handleDeleteConversation = useCallback(async (targetConvId: string) => {
     await aiApiClient.deleteConversation(targetConvId).catch(() => {});
     localStorage.removeItem(`astroworld_messages_${targetConvId}`);
-    setConversations(prev => prev.filter(c => c.conversationId !== targetConvId));
+    setConversations(prev => {
+      const next = prev.filter(c => c.conversationId !== targetConvId);
+      saveLocalConversations(next);
+      return next;
+    });
 
     if (conversationId === targetConvId) {
       handleNewConversation();
@@ -189,6 +360,26 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
       setMessages(prev => [...prev, userMsg]);
       setComposerText('');
     }
+
+    // Immediately register active conversation with smart nickname
+    const existingConv = conversations.find(c => c.conversationId === conversationId);
+    const initialTitle = existingConv?.title || generateQuickNickname(textToSend);
+
+    const activeConvSummary: ConversationSummary = {
+      conversationId,
+      title: initialTitle,
+      domain: existingConv?.domain || 'general',
+      lastActivityIso: new Date().toISOString(),
+      turnCount: (existingConv?.turnCount || 0) + 1,
+      preview: textToSend.slice(0, 100),
+    };
+
+    setConversations(prev => {
+      const filtered = prev.filter(c => c.conversationId !== conversationId);
+      const next = [activeConvSummary, ...filtered];
+      saveLocalConversations(next);
+      return next;
+    });
 
     setIsLoading(true);
     abortControllerRef.current = new AbortController();
@@ -219,15 +410,41 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
         topic: response.conversationMetadata?.topic,
         requiresClarification: response.conversationMetadata?.requiresClarification,
         idempotencyKey,
+        executionMode: (response.executionMetadata as any)?.executionMode,
+        fallbackReason: (response.executionMetadata as any)?.fallbackReason,
       };
 
       setMessages(prev => [...prev, assistantMsg]);
+
+      // Update conversation with final smart title from server
+      const serverTitle = response.conversationMetadata?.title || response.conversationMetadata?.topic;
+      const finalTitle =
+        serverTitle && !serverTitle.includes('in astrological') && !serverTitle.endsWith('consultation')
+          ? serverTitle
+          : initialTitle;
+
+      setConversations(prev => {
+        const next = prev.map(c => {
+          if (c.conversationId === conversationId) {
+            return {
+              ...c,
+              title: finalTitle,
+              domain: response.conversationMetadata?.domain || c.domain,
+              lastActivityIso: new Date().toISOString(),
+              turnCount: messages.length + 2,
+              preview: response.userResponse.text.slice(0, 100),
+            };
+          }
+          return c;
+        });
+        saveLocalConversations(next);
+        return next;
+      });
 
       // Refresh memory & thread summaries after successful turn
       refreshUserData();
     } catch (err: any) {
       if (err.name === 'AbortError') {
-        // User aborted request cleanly
         return;
       }
 
@@ -310,6 +527,33 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleNewConversation]);
 
+  // Identify active conversation for dynamic chat header (like ChatGPT / Gemini)
+  const activeConversation = conversations.find(c => c.conversationId === conversationId);
+  const activeTitle =
+    activeConversation?.title ||
+    (messages.length > 0 ? generateQuickNickname(messages[0]?.text || '') : 'New Consultation');
+  const activeDomain =
+    activeConversation?.domain || messages.find(m => m.domain)?.domain || 'general';
+
+  const getDomainBadge = (dom: string) => {
+    switch (dom?.toLowerCase()) {
+      case 'career':
+        return { label: 'Career & Work', icon: '💼', color: 'bg-blue-50 text-blue-700 border-blue-200' };
+      case 'relationship':
+      case 'marriage':
+        return { label: 'Marriage & Love', icon: '❤️', color: 'bg-rose-50 text-rose-700 border-rose-200' };
+      case 'wealth':
+      case 'finance':
+        return { label: 'Wealth & Assets', icon: '💰', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+      case 'health':
+        return { label: 'Health & Vitality', icon: '🌿', color: 'bg-amber-50 text-amber-700 border-amber-200' };
+      default:
+        return { label: 'Vedic Astrology', icon: '🔮', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
+    }
+  };
+  const domainBadge = getDomainBadge(activeDomain);
+  const userQueryCount = messages.filter(m => m.role === 'user').length;
+
   return (
     <div className="flex h-[calc(100vh-64px)] min-h-[600px] bg-white text-slate-800 antialiased overflow-hidden font-sans">
       {/* 1. Left Sidebar Navigation */}
@@ -343,16 +587,27 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
             </button>
 
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm sm:text-base font-serif font-bold text-[#162058] truncate">
-                  Astrological Consultation
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-sm sm:text-base font-serif font-bold text-[#162058] truncate tracking-tight">
+                  {activeTitle}
                 </h1>
+                {messages.length > 0 && (
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${domainBadge.color}`}>
+                    <span>{domainBadge.icon}</span>
+                    <span>{domainBadge.label}</span>
+                  </span>
+                )}
                 <span className="hidden sm:inline-block text-[11px] text-slate-500 font-mono">
-                  {profile.name}
+                  ({profile.name})
                 </span>
               </div>
-              <p className="text-[11px] text-slate-600 truncate">
-                Grounded in classical Jyotish, verified ephemeris, and dasha cycles
+              <p className="text-[11px] text-slate-500 truncate flex items-center gap-1.5 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                <span>Grounded Vedic Jyotish</span>
+                <span aria-hidden="true">·</span>
+                <span>{userQueryCount} {userQueryCount === 1 ? 'inquiry' : 'inquiries'}</span>
+                <span aria-hidden="true">·</span>
+                <span className="hidden md:inline">Verified Ephemeris & Dasha</span>
               </p>
             </div>
           </div>
@@ -408,6 +663,7 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
                   message={msg}
                   onRetry={handleRetryTurn}
                   isRetrying={isRetryingTurnId === msg.id}
+                  onSelectFollowUp={q => handleSendMessage(q)}
                 />
               ))}
 

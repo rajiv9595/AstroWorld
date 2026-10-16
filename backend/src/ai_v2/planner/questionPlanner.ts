@@ -379,6 +379,66 @@ export class QuestionPlanner {
       intent = 'transit_analysis';
     }
 
+    // I. Property & Vehicle Inquiries
+    else if (
+      /\b(property|real estate|house purchase|buy a house|buy a home|home purchase|flat|apartment|land|plot|bhoomi|vehicle|vehicles|car|cars|buy a car|conveyance|automobile|bike)\b/i.test(lower)
+    ) {
+      domain = 'property_vehicle';
+      const isVehicle = /\b(vehicle|vehicles|car|cars|buy a car|conveyance|automobile|bike)\b/i.test(lower);
+      intent = isVehicle ? 'vehicle_timing' : 'property_timing';
+      event = isVehicle ? 'vehicle_purchase' : 'property_purchase';
+      if (!houses.includes(4)) houses.push(4);
+      if (!houses.includes(11)) houses.push(11);
+      if (isVehicle) {
+        if (!chartLayers.includes('D16')) chartLayers.push('D16');
+        if (planets.length === 0) planets.push('Venus');
+      } else {
+        if (!chartLayers.includes('D4')) chartLayers.push('D4');
+        if (planets.length === 0) planets.push('Mars');
+      }
+      if (!chartLayers.includes('D1')) chartLayers.push('D1');
+    }
+
+    // J. Education & Intellect Inquiries
+    else if (
+      /\b(education|school|schooling|college|university|exam|exams|academic|degree|intellect|studies|studying|graduation|higher education|learning)\b/i.test(lower)
+    ) {
+      domain = 'education';
+      intent = /\b(exam|exams|test)\b/i.test(lower) ? 'exam_timing' : 'education';
+      event = 'education';
+      if (!houses.includes(4)) houses.push(4);
+      if (!houses.includes(5)) houses.push(5);
+      if (!chartLayers.includes('D24')) chartLayers.push('D24');
+      if (!chartLayers.includes('D1')) chartLayers.push('D1');
+      if (planets.length === 0) planets.push('Mercury');
+    }
+
+    // K. Children & Progeny Inquiries
+    else if (
+      /\b(child|children|childbirth|pregnancy|conceiv(?:e|ing|tion)|progeny|son|daughter|kids|baby)\b/i.test(lower)
+    ) {
+      domain = 'children';
+      intent = /\b(timing|when|year|month|date)\b/i.test(lower) || temporalScope.type === 'upcoming' ? 'childbirth_timing' : 'children';
+      event = 'childbirth';
+      if (!houses.includes(5)) houses.push(5);
+      if (!chartLayers.includes('D7')) chartLayers.push('D7');
+      if (!chartLayers.includes('D1')) chartLayers.push('D1');
+      if (planets.length === 0) planets.push('Jupiter');
+    }
+
+    // L. Debts, Disputes & Legal Conflict Inquiries
+    else if (
+      /\b(debt|debts|loan|loans|litigation|dispute|disputes|court|lawsuit|legal battle|legal case|enemies|rival|conflict)\b/i.test(lower)
+    ) {
+      domain = 'disputes_debts';
+      intent = /\b(loan|loans|debt|debts)\b/i.test(lower) ? 'debt_analysis' : 'litigation_dispute';
+      event = 'conflict_resolution';
+      if (!houses.includes(6)) houses.push(6);
+      if (!chartLayers.includes('D30')) chartLayers.push('D30');
+      if (!chartLayers.includes('D1')) chartLayers.push('D1');
+      if (planets.length === 0) planets.push('Mars');
+    }
+
     // Preserve relocation/foreign-settlement as an additional evidence dimension even when
     // the primary domain is career (for example, "Will my career take me abroad?").
     const asksForeignRelocation =
@@ -417,6 +477,12 @@ export class QuestionPlanner {
       if (secondaryDomain === 'relationship' && !chartLayers.includes('D9')) chartLayers.push('D9');
       if (secondaryDomain === 'travel' && !chartLayers.includes('D4')) chartLayers.push('D4');
       if (secondaryDomain === 'education' && !chartLayers.includes('D24')) chartLayers.push('D24');
+      if (secondaryDomain === 'property_vehicle') {
+        if (!chartLayers.includes('D4')) chartLayers.push('D4');
+        if (!chartLayers.includes('D16')) chartLayers.push('D16');
+      }
+      if (secondaryDomain === 'children' && !chartLayers.includes('D7')) chartLayers.push('D7');
+      if (secondaryDomain === 'disputes_debts' && !chartLayers.includes('D30')) chartLayers.push('D30');
     }
 
     // Deduplicate chart layers and ensure D1 is included if empty
@@ -463,7 +529,10 @@ export class QuestionPlanner {
       ['travel', /\b(travel|foreign|abroad|overseas|relocation|relocate|relocating|emigrate|emigration|emigrating|international move|move abroad|settle abroad)\b/i],
       ['health', /\b(health|disease|vitality|illness)\b/i],
       ['spirituality', /\b(spirituality|spiritual|moksha|dharma)\b/i],
-      ['education', /\b(education|study|studies|exam|academic|university|degree)\b/i],
+      ['education', /\b(education|study|studies|exam|academic|university|degree|school|college|learning|intellect)\b/i],
+      ['property_vehicle', /\b(property|real estate|house|home|land|plot|apartment|flat|vehicle|car|cars|conveyance|automobile)\b/i],
+      ['children', /\b(children|child|childbirth|pregnancy|progeny|conceive|son|daughter|baby|kids)\b/i],
+      ['disputes_debts', /\b(debt|debts|loan|loans|litigation|dispute|disputes|court|lawsuit|enemies|conflict)\b/i],
     ];
     return candidates.filter(([, pattern]) => pattern.test(lower)).map(([domain]) => domain);
   }

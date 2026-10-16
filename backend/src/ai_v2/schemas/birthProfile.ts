@@ -1,7 +1,8 @@
-import { BirthProfile, VargaCode, birthProfileToUtcDate } from '../../../../shared/index.ts';
+import { BirthProfile, VargaCode, birthProfileToUtcDate, computeProfileFingerprint } from '../../../../shared/index.ts';
 
 export type { BirthProfile };
 export type BirthProfileInput = BirthProfile;
+export { computeProfileFingerprint };
 
 export interface ValidatedBirthProfile extends BirthProfile {
   name: string;

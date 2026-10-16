@@ -17,12 +17,13 @@ export class ConversationStateManager {
   /**
    * Initializes a fresh, valid initial conversation state.
    */
-  public createInitialState(conversationId?: string): ConversationState {
+  public createInitialState(conversationId?: string, profileFingerprint?: string): ConversationState {
     const id = conversationId || `conv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const now = new Date().toISOString();
 
     const initialState: ConversationState = {
       conversationId: id,
+      profileFingerprint,
       turnIndex: 0,
       currentTopic: 'Initial Consultation Overview',
       currentIntent: 'general_consultation',
@@ -92,8 +93,8 @@ export class ConversationStateManager {
   /**
    * Reconstructs conversation state deterministically from an ordered array of historical turns.
    */
-  public reconstructStateFromTurns(conversationId: string, turns: ConversationTurn[]): ConversationState {
-    const state = this.createInitialState(conversationId);
+  public reconstructStateFromTurns(conversationId: string, turns: ConversationTurn[], profileFingerprint?: string): ConversationState {
+    const state = this.createInitialState(conversationId, profileFingerprint);
 
     if (!turns || turns.length === 0) {
       return state;

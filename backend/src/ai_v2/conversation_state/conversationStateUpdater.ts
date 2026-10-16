@@ -14,6 +14,7 @@ import {
   UnresolvedThread,
 } from './conversationStateTypes.ts';
 import { ConsultationResult } from '../schemas/consultationPacket.ts';
+import { generateHeuristicNickname } from './titleGenerator.ts';
 
 export class ConversationStateUpdater {
   /**
@@ -22,7 +23,8 @@ export class ConversationStateUpdater {
   public updateState(
     userMessage: string,
     result: ConsultationResult,
-    currentState: ConversationState
+    currentState: ConversationState,
+    overrideTopic?: string
   ): {
     updatedState: ConversationState;
     newTurn: ConversationTurn;
@@ -119,12 +121,18 @@ export class ConversationStateUpdater {
     }
 
     // 8. Assemble Next Immutable State
+    const resolvedTopic =
+      overrideTopic ||
+      (currentState.currentTopic &&
+       !currentState.currentTopic.includes('in astrological') &&
+       !currentState.currentTopic.endsWith('consultation')
+        ? currentState.currentTopic
+        : generateHeuristicNickname(userMessage, result.questionPlan.domain));
+
     const updatedState: ConversationState = {
       ...currentState,
       turnIndex: nextTurnIndex,
-      currentTopic: dominantFactors[0]
-        ? `${dominantFactors[0]} in ${result.questionPlan.domain}`
-        : `${result.questionPlan.domain} consultation`,
+      currentTopic: resolvedTopic,
       currentIntent: result.questionPlan.intent,
       currentDomain: result.questionPlan.domain,
       activePlanetFocus: activePlanets,

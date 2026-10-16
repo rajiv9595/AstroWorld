@@ -15,7 +15,8 @@ export type ResponseType =
   | 'clarification'
   | 'insufficient_evidence'
   | 'follow_up'
-  | 'correction';
+  | 'correction'
+  | 'exploratory';
 
 export type RequestedDepth = 'concise' | 'standard' | 'deep';
 

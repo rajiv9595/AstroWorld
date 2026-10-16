@@ -6,6 +6,7 @@
 
 import React, { useState } from 'react';
 import { Copy, Check, RefreshCw, AlertCircle, Sparkles, User } from 'lucide-react';
+import { ConsultationMarkdownRenderer } from './ConsultationMarkdownRenderer.tsx';
 
 export interface ChatMessage {
   id: string;
@@ -19,18 +20,22 @@ export interface ChatMessage {
   errorCode?: string;
   isRetryable?: boolean;
   idempotencyKey?: string;
+  executionMode?: 'live_gemini' | 'repaired_gemini' | 'deterministic_fallback' | 'failed' | string;
+  fallbackReason?: string;
 }
 
 interface ChatMessageItemProps {
   message: ChatMessage;
   onRetry?: (message: ChatMessage) => void;
   isRetrying?: boolean;
+  onSelectFollowUp?: (question: string) => void;
 }
 
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   message,
   onRetry,
   isRetrying = false,
+  onSelectFollowUp,
 }) => {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === 'user';
@@ -107,9 +112,6 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     );
   }
 
-  // Split text by double newlines into readable paragraphs
-  const paragraphs = message.text.split(/\n\n+/).filter(p => p.trim().length > 0);
-
   return (
     <div className="flex justify-start mb-6">
       <div className="max-w-3xl w-full flex gap-3 sm:gap-4 items-start">
@@ -120,14 +122,11 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 
         {/* Message Bubble Container */}
         <div className="flex-1 bg-[#FAF7F2] border border-amber-900/15 rounded-2xl rounded-tl-sm p-4 sm:p-6 shadow-sm">
-          {/* Content Stream */}
-          <div className="space-y-4 text-slate-800 text-sm sm:text-base leading-relaxed font-serif">
-            {paragraphs.map((p, idx) => (
-              <p key={idx} className="whitespace-pre-wrap">
-                {p}
-              </p>
-            ))}
-          </div>
+          {/* Content Stream with Rich Markdown (Tables, Sections, Bold, Follow-up Chips) */}
+          <ConsultationMarkdownRenderer
+            content={message.text}
+            onSelectFollowUp={onSelectFollowUp}
+          />
 
           {/* Footer Metadata & Actions (Zero-Pill Discipline) */}
           <div className="mt-4 pt-3 border-t border-amber-900/10 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-700 font-sans">
@@ -143,6 +142,28 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 <>
                   <span aria-hidden="true">·</span>
                   <span className="text-amber-800 font-medium">Clarification needed</span>
+                </>
+              )}
+              {message.executionMode === 'deterministic_fallback' && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span
+                    className="inline-flex items-center text-[10px] font-medium text-amber-800 bg-amber-100/90 border border-amber-300 px-1.5 py-0.5 rounded"
+                    title={message.fallbackReason || 'Verified astrological fallback engine used'}
+                  >
+                    Deterministic Calculation
+                  </span>
+                </>
+              )}
+              {message.executionMode === 'repaired_gemini' && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span
+                    className="inline-flex items-center text-[10px] font-medium text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-1.5 py-0.5 rounded"
+                    title="Grounded & repaired live response"
+                  >
+                    Verified & Grounded
+                  </span>
                 </>
               )}
             </div>

@@ -215,6 +215,49 @@ export class ToolPlanner {
       return;
     }
 
+    if (domain === 'property_vehicle' || intent === 'property_timing' || intent === 'vehicle_timing') {
+      addTool('get_birth_chart', { birthProfile }, [], 10);
+      if (chartLayers.includes('D4')) {
+        addTool('get_divisional_chart', { birthProfile, vargaCode: 'D4' as VargaCode }, [], 9);
+      }
+      if (chartLayers.includes('D16')) {
+        addTool('get_divisional_chart', { birthProfile, vargaCode: 'D16' as VargaCode }, [], 9);
+      }
+      if (!chartLayers.includes('D4') && !chartLayers.includes('D16')) {
+        addTool('get_divisional_chart', { birthProfile, vargaCode: 'D4' as VargaCode }, [], 9);
+      }
+      addTool('get_current_dasha', { birthProfile }, [], 8);
+      this.addTemporalEvidence(plan, birthProfile, addTool, 7, 7);
+      return;
+    }
+
+    if (domain === 'education' || intent === 'education' || intent === 'exam_timing') {
+      addTool('get_birth_chart', { birthProfile }, [], 10);
+      addTool('get_divisional_chart', { birthProfile, vargaCode: 'D24' as VargaCode }, [], 9);
+      addTool('get_current_dasha', { birthProfile }, [], 8);
+      addTool('get_active_yogas', { birthProfile }, [], 7);
+      this.addTemporalEvidence(plan, birthProfile, addTool, 6, 6);
+      return;
+    }
+
+    if (domain === 'children' || intent === 'children' || intent === 'childbirth_timing') {
+      addTool('get_birth_chart', { birthProfile }, [], 10);
+      addTool('get_divisional_chart', { birthProfile, vargaCode: 'D7' as VargaCode }, [], 9);
+      addTool('get_current_dasha', { birthProfile }, [], 8);
+      addTool('get_jaimini_details', { birthProfile }, [], 7);
+      this.addTemporalEvidence(plan, birthProfile, addTool, 6, 6);
+      return;
+    }
+
+    if (domain === 'disputes_debts' || intent === 'debt_analysis' || intent === 'litigation_dispute') {
+      addTool('get_birth_chart', { birthProfile }, [], 10);
+      addTool('get_divisional_chart', { birthProfile, vargaCode: 'D30' as VargaCode }, [], 9);
+      addTool('get_current_dasha', { birthProfile }, [], 8);
+      addTool('get_planetary_strength', { birthProfile }, [], 7);
+      this.addTemporalEvidence(plan, birthProfile, addTool, 6, 6);
+      return;
+    }
+
     // Default fallback: load D1 chart and active dasha
     addTool('get_birth_chart', { birthProfile }, [], 10);
     addTool('get_current_dasha', { birthProfile }, [], 8);
@@ -257,6 +300,18 @@ export class ToolPlanner {
         addTool('get_divisional_chart', { birthProfile, vargaCode: 'D24' as VargaCode }, [], 8);
         addTool('get_active_yogas', { birthProfile }, [], 7);
         addTool('get_current_dasha', { birthProfile }, [], 7);
+      } else if (domain === 'property_vehicle') {
+        addTool('get_divisional_chart', { birthProfile, vargaCode: 'D4' as VargaCode }, [], 8);
+        addTool('get_divisional_chart', { birthProfile, vargaCode: 'D16' as VargaCode }, [], 8);
+        addTool('get_current_dasha', { birthProfile }, [], 7);
+      } else if (domain === 'children') {
+        addTool('get_divisional_chart', { birthProfile, vargaCode: 'D7' as VargaCode }, [], 8);
+        addTool('get_current_dasha', { birthProfile }, [], 7);
+        addTool('get_jaimini_details', { birthProfile }, [], 7);
+      } else if (domain === 'disputes_debts') {
+        addTool('get_divisional_chart', { birthProfile, vargaCode: 'D30' as VargaCode }, [], 8);
+        addTool('get_current_dasha', { birthProfile }, [], 7);
+        addTool('get_planetary_strength', { birthProfile }, [], 7);
       }
     }
 

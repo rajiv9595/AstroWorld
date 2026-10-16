@@ -9,7 +9,7 @@
  */
 
 import { GoogleGenAI } from '@google/genai';
-import { BirthProfile, validateBirthProfile } from '../schemas/birthProfile.ts';
+import { BirthProfile, validateBirthProfile, computeProfileFingerprint } from '../schemas/birthProfile.ts';
 import { QuestionPlan } from '../schemas/questionPlan.ts';
 import { QuestionPlanner } from '../planner/questionPlanner.ts';
 import { ToolExecutionOrchestrator } from '../orchestrator/toolOrchestrator.ts';
@@ -26,8 +26,9 @@ import {
   ConversationStateUpdater,
   ConversationState,
   ConversationTurn,
+  generateConversationNickname,
 } from '../conversation_state/index.ts';
-import { ConversationPersistenceRepository } from '../conversation_state/conversationPersistenceRepository.ts';
+import { ConversationPersistenceRepository, ConversationSummary } from '../conversation_state/conversationPersistenceRepository.ts';
 import {
   IPersistentMemoryRepository,
   InMemoryPersistentMemoryRepository,
@@ -116,14 +117,17 @@ export class ConsultationOrchestrator {
     this.firewall = new GroundingFirewall();
     this.responsePlanner = new ResponsePlanner();
 
-    const isLiveRequested = !!options?.apiKey || !!options?.aiClient || process.env.FORCE_LIVE_GEMINI === 'true' || process.argv.includes('--live');
+    const activeApiKey = options?.apiKey;
+    const forceLive = process.env.FORCE_LIVE_GEMINI === 'true' || process.argv.includes('--live');
+    const isLiveRequested = !!activeApiKey || !!options?.aiClient || (forceLive && !!process.env.GEMINI_API_KEY);
     this.isLiveMode = !options?.forceMockMode && isLiveRequested;
 
     this.narrator = new GeminiNarrator({
       ...options,
+      apiKey: activeApiKey,
       forceMockMode: options?.forceMockMode ?? !this.isLiveMode,
-      primaryModel: options?.primaryModel || 'gemini-3.8-flash',
-      fallbackModel: options?.fallbackModel || 'gemini-3.1-flash-lite',
+      primaryModel: options?.primaryModel || process.env.GEMINI_PRIMARY_MODEL || 'gemini-3.5-flash-lite',
+      fallbackModel: options?.fallbackModel || process.env.GEMINI_FALLBACK_MODEL || 'gemini-flash-lite-latest',
       forcePrimaryFailure: options?.forcePrimaryFailure,
       primaryTimeoutMs: options?.primaryTimeoutMs ?? 8000,
       fallbackTimeoutMs: options?.fallbackTimeoutMs ?? 6000,
@@ -174,6 +178,10 @@ export class ConsultationOrchestrator {
     return this.conversationPersistence.listOwned(userId);
   }
 
+  public async listOwnedPersistentSummaries(userId: string): Promise<ConversationSummary[]> {
+    return this.conversationPersistence.listSummaries(userId);
+  }
+
   public async deleteOwnedPersistentConversation(conversationId: string, userId: string): Promise<boolean> {
     return this.conversationPersistence.delete(userId, conversationId);
   }
@@ -215,18 +223,38 @@ export class ConsultationOrchestrator {
       options?.conversationId ||
       options?.conversationState?.conversationId ||
       `session_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-    let currentState = options?.conversationState || this.stateManager.getState(conversationId) || this.stateManager.createInitialState(conversationId);
+    const incomingFingerprint = computeProfileFingerprint(profile);
+
+    let currentState = options?.conversationState || this.stateManager.getState(conversationId) || this.stateManager.createInitialState(conversationId, incomingFingerprint);
     let turns = this.stateManager.getTurns(conversationId);
 
     // Durable state is authoritative when configured. The in-memory manager is
     // only the request-local working cache.
     if (!options?.conversationState && this.conversationPersistence.isEnabled()) {
       const stored = await this.conversationPersistence.load(userId, conversationId);
-      if (stored) {
-        currentState = this.stateManager.cloneState(stored.state);
-        turns = stored.turns.map(t => JSON.parse(JSON.stringify(t)));
-        this.stateManager.commitState(conversationId, currentState);
+      if (stored && stored.state) {
+        // CHART-BOUND SESSION ISOLATION:
+        // If the stored conversation belongs to a DIFFERENT birth profile, reset state to prevent cross-profile contamination
+        if (stored.state.profileFingerprint && stored.state.profileFingerprint !== incomingFingerprint) {
+          console.warn(`[ConsultationOrchestrator] Chart profile switch detected on conversation ${conversationId}. Prior: ${stored.state.profileFingerprint}, Incoming: ${incomingFingerprint}. Resetting state for chart isolation.`);
+          currentState = this.stateManager.createInitialState(conversationId, incomingFingerprint);
+          turns = [];
+          this.stateManager.commitState(conversationId, currentState);
+        } else {
+          currentState = this.stateManager.cloneState(stored.state);
+          currentState.profileFingerprint = incomingFingerprint;
+          turns = stored.turns.map(t => JSON.parse(JSON.stringify(t)));
+          this.stateManager.commitState(conversationId, currentState);
+        }
       }
+    } else if (currentState.profileFingerprint && currentState.profileFingerprint !== incomingFingerprint) {
+      // In-memory cross-profile contamination guard:
+      console.warn(`[ConsultationOrchestrator] In-memory chart switch detected on conversation ${conversationId}. Resetting state for chart isolation.`);
+      currentState = this.stateManager.createInitialState(conversationId, incomingFingerprint);
+      turns = [];
+      this.stateManager.commitState(conversationId, currentState);
+    } else {
+      currentState.profileFingerprint = incomingFingerprint;
     }
 
     // If options.conversationContext was passed and turns is empty, reconstruct state for backwards compatibility
@@ -474,7 +502,21 @@ export class ConsultationOrchestrator {
     }
 
     // 12. Update Conversation State post-narration
-    const { updatedState, newTurn } = this.stateUpdater.updateState(rawQuestion, consultationResult, currentState);
+    let chatTitle: string | undefined = currentState.currentTopic;
+    if (!chatTitle || currentState.turnIndex === 0 || chatTitle.includes('in astrological') || chatTitle.endsWith('consultation')) {
+      try {
+        chatTitle = await generateConversationNickname(rawQuestion, questionPlan.domain, {
+          apiKey: process.env.GEMINI_API_KEY,
+          model: options?.primaryModel || process.env.GEMINI_PRIMARY_MODEL || 'gemini-3.5-flash-lite',
+          timeoutMs: 1500,
+        });
+      } catch {
+        chatTitle = undefined;
+      }
+    }
+
+    const { updatedState, newTurn } = this.stateUpdater.updateState(rawQuestion, consultationResult, currentState, chatTitle);
+    updatedState.profileFingerprint = incomingFingerprint;
     this.stateManager.commitState(conversationId, updatedState, newTurn);
     if (this.conversationPersistence.isEnabled()) {
       await this.conversationPersistence.save(userId, updatedState, newTurn);

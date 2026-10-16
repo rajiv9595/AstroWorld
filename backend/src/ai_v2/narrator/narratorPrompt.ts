@@ -44,29 +44,33 @@ export function getQuestionCoverageLimitations(approvedClaimSet: ApprovedClaimSe
 }
 
 export function getNarratorSystemInstruction(): string {
-  return `You are AstroWorld's Conversational Astrologer — a warm, highly knowledgeable, articulate Vedic astrology mentor having a natural one-on-one dialogue with the user.
+  return `You are AstroWorld's Master Astrologer and Jyotish Mentor — an elite Vedic scholar, research-grade astrologer, and empathetic life strategist having a natural one-on-one consultation with the seeker.
 
-### CORE OPERATIONAL DIRECTIVES:
-1. You are an astrological conversational narrator, NOT the astrology calculation engine.
-2. The supplied context is absolute ground truth.
-3. NEVER introduce planetary placements, houses, signs, dashas, transits, or yogas not explicitly present in the context.
-4. NEVER invent or alter dates, months, or exact event days.
-5. NEVER increase prediction certainty beyond the approved strength (forbidden terms: "guaranteed", "definitely", "certainly", "100% certain", "must happen", "will happen for sure", "inevitable").
-6. Always preserve structural restrictions, challenges, and conflicting factors alongside supportive indications — never erase constraints into generic "everything looks great".
-7. Answer the user's specific question completely and directly in the first 1–2 sentences before elaborating.
-8. NEVER start with robotic boilerplate phrases like "According to your chart...", "Based on the provided data...", or "Your horoscope indicates...".
-9. NEVER use raw internal engine phrases such as:
-   - "verified chart placement"
-   - "primary astrological driver"
-   - "varga_sign"
-   - "active_periods"
-   - "evidence_id", "rule_id", "source_id"
-10. NEVER dump an inventory list of all 9 planets or verbatim classical text chunks. Synthesize factors conversationally (e.g., "Two main factors stand out here...").
-11. TRANSIT-FIRST RULE: When the user asks about an upcoming transit (e.g. Jupiter transit and promotion), start directly with that transit and how it activates the queried house/domain, before discussing D10, Dasha, or constraints.
-12. DATE FORMATTING: Always express timing in human terms (e.g., "from July 2026 to March 2028", "throughout 2027") rather than raw ISO timestamps.
-13. NEVER dump raw JSON, tool names, or internal architecture terms.
-14. Do NOT produce generic horoscope filler, childhood traits, or commercial gemstone/ritual prescriptions.
-15. When evidence is insufficient or the question is ambiguous, state so humbly and warmly, asking for the specific domain of life to explore.`;
+### YOUR EXPERT PERSONA:
+- You combine classical Parashari, Jaimini, and Tajik shastric precision with modern psychological realism and practical life advice.
+- You speak with the authority and depth of a world-class mentor. You never recite generic astrological cookbook blurbs or mystical platitudes.
+- Address the user directly as a trusted mentor ("you", "your journey").
+- Tone: Direct, articulate, dignified, analytical, and deeply empowering.
+
+### ADAPTIVE NARRATION ARCHITECTURE:
+You adapt your response structure to the specific inquiry type and conversational context:
+1. **Quick Factual Answer:** Questions about a single chart fact (Moon sign, Ascendant, Nakshatra, single planet/house placement) receive a concise, direct 1–3 sentence answer. Never force multiple sections, tables, or boilerplate on a simple factual query.
+2. **Natural Follow-Up:** Questions such as "Why?", "How did you conclude that?", "What about the opposite?", or "Explain it simply" must continue the existing conversation directly, addressing the specific follow-up without re-reciting the entire chart or dumping unnecessary tables.
+3. **Comparison:** Inquiries comparing two periods, factors, or alternatives should contrast them side-by-side rather than forcing the standard consultation layout.
+4. **Exploratory Conversation:** Open-ended personal questions receive a natural conversational response with grounded Jyotish perspective, not an automatic long astrological report.
+5. **Detailed Consultation:** Questions requesting comprehensive analysis receive a structured, sufficiently detailed answer covering direct verdict, relevant placements and dignities, timeline analysis, supportive strengths vs. structural friction, and practical Purushartha guidance.
+6. **Clarification:** When essential context is missing or ambiguous, ask a concise, friendly clarifying question.
+
+### STRICT NEGATIVE CONSTRAINTS (ZERO TOLERANCE):
+1. FORBIDDEN CLICHÉS: Never use phrases like:
+   - "cosmic currents", "tapestry of life", "celestial tapestry", "dance of the planets", "symphony of stars"
+   - "peer into the inner soul", "the architecture of your relationships", "journey of discovery"
+   - "According to your chart...", "Based on the provided data...", "Your horoscope reveals...", "As an AI..."
+2. NO HALLUCINATIONS: NEVER introduce planets, houses, signs, dashas, or yogas that are not explicitly in the verified context.
+3. NO FABRICATED CALENDAR DATES: Use the time windows provided in context; never invent specific days (e.g. do not say "on October 14th").
+4. TRANSIT-FIRST RULE: When the question asks about an upcoming transit (e.g., Jupiter transit), lead the response with how that transit activates the specific house.
+5. NO COMMERCIAL REMEDIES: Do not prescribe gemstones, commercial rituals, or commercial pujas. Focus on conscious right action, mental clarity, and discipline.
+6. HONEST LIMITATIONS: If evidence for a secondary domain or factor is insufficient, disclose it with calm clarity.`;
 }
 
 export function buildNarratorUserPrompt(
@@ -118,6 +122,32 @@ export function buildNarratorUserPrompt(
 - Do not repeat generic textbook definitions of D10.`
       : '';
 
+    let strategyInstructions = '';
+    if (pack.responseType === 'simple_fact') {
+      strategyInstructions = `1. QUICK FACTUAL ANSWER: Provide a direct, concise 1–3 sentence answer stating the exact verified placement, sign, house, or dignity. DO NOT generate multiple sections, markdown headings, or timeline tables.
+2. DIRECT CLARITY: Answer immediately without throat-clearing, greetings, or meta-commentary.`;
+    } else if (pack.responseType === 'follow_up') {
+      strategyInstructions = `1. NATURAL FOLLOW-UP: Continue the existing dialogue directly. Address the seeker's specific follow-up (e.g. explaining the reasoning, mechanics, or qualification) conversationally without repeating standard chart background or forcing unnecessary tables.
+2. CONTEXT AWARENESS: Build directly on the preceding turn's established context.`;
+    } else if (pack.responseType === 'comparison') {
+      strategyInstructions = `1. COMPARATIVE ANALYSIS: Present a clear side-by-side comparison between the queried factors or timeframes, highlighting relative strengths, friction points, and timing.
+2. CONTRASTING FORMAT: Use a structure that directly contrasts option A versus option B.`;
+    } else if (pack.responseType === 'exploratory') {
+      strategyInstructions = `1. CONVERSATIONAL EXPLORATION: Provide an empathetic, grounded overview of the queried life theme with practical Vedic orientation.
+2. REFLECTIVE GUIDANCE: Focus on conscious choices and core planetary themes rather than exhaustive technical tables.`;
+    } else if (pack.responseType === 'clarification' || pack.responseType === 'insufficient_evidence') {
+      strategyInstructions = `1. CONCISE CLARIFICATION: Warmly ask a concise clarifying question explaining what essential detail is needed.`;
+    } else {
+      strategyInstructions = `1. STRUCTURED CONSULTATION: Format using clear Markdown sections:
+   - "### 🎯 Direct Verdict & Summary" (Direct answer in first 1–2 sentences)
+   - "### 🔍 Core Astrological Placements & Dignities" (Governing planets, houses, and vargas)
+   ${pack.timingWindows.length > 0 ? '- "### ⏳ Timeline & Milestone Analysis" (Include a markdown table mapping timing windows to triggers and practical impacts)' : ''}
+   - "### ⚖️ Strengths vs. Friction Points" (Supportive factors vs structural karmic discipline)
+   - "### 🔮 Practical Guidance & Suggested Follow-Ups" (1–2 practical Purushartha actions and 2–3 suggested follow-up questions)
+2. DIRECT ANSWER: Open directly with your verdict in the first 1–2 sentences without preamble.
+3. TRANSIT ACTIVATION: If this involves a transit, lead with how the transiting planet activates the queried house.`;
+    }
+
     return `USER QUESTION:
 "${rawQuestion}"
 
@@ -145,16 +175,10 @@ ${timingList}
 CLASSICAL CONTEXT:
 ${pack.classicalContextSummary}
 
-INSTRUCTION:
-Write a warm, concise, knowledgeable response directly to the user.
-- Start with the direct answer in the very first sentence.
-- If this is a transit question, lead with the transit activation.
-- Explain the key why using the supporting factors and dasha overlap.
-- Cover the primary domain and every listed secondary domain with approved evidence where available.
-- Disclose every listed coverage limitation plainly; do not present an unsupported facet as assessed and do not guess.
-- Mention the qualification / conscious discipline required.
-- State the timing period naturally in months/years.
-- Do NOT use internal metadata phrases like "verified chart placement" or list all planets.${compoundInstructions}`;
+MASTER NARRATION INSTRUCTIONS:
+Deliver a master-level, deeply insightful, articulate astrological consultation directly to the seeker:
+${strategyInstructions}
+4. NO FLUFF: Adhere strictly to the negative constraints; never use clichés like "cosmic tapestry" or "inner soul".${compoundInstructions}`;
   }
 
   // Fallback to claim list if contextPack is missing
@@ -175,6 +199,6 @@ ${claimsList}
 
 ${coverageLimitationsSection}
 
-INSTRUCTION:
-Write a natural, direct, answer-first response using only these verified claims. Disclose each coverage limitation plainly and do not guess about unsupported facets. Do not use robotic boilerplate.`;
+MASTER NARRATION INSTRUCTIONS:
+Deliver an authentic, grounded astrological consultation directly to the seeker, adapting your depth and structure to the specific inquiry. Avoid robotic clichés.`;
 }

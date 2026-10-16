@@ -250,6 +250,67 @@ export class AstrologyReasoner {
         }
       }
 
+      // D. Property & Vehicle Domain Classification
+      else if (domain === 'property_vehicle') {
+        const isD4 = fact.category === 'varga' && (fact.vargaCode === 'D4' || fact.entity.includes('D4'));
+        const isD16 = fact.category === 'varga' && (fact.vargaCode === 'D16' || fact.entity.includes('D16'));
+        if (fact.house === 4 || fact.house === 11 || isD4 || isD16 || fact.entity === 'Mars' || fact.entity === 'Venus' || isPlanetFocus) {
+          if (fact.dignity === 'DEBILITATED' || fact.house === 8 || fact.house === 12) {
+            restrictingFactors.push(this.createFactor(fact, 'restricting', 'high', 'Property/vehicle factor under structural friction or dusthana placement'));
+          } else {
+            primaryFactors.push(this.createFactor(fact, 'primary', 'high', 'Direct 4th/11th house, D4/D16, or property/vehicle significator'));
+          }
+        } else if (fact.category === 'dasha' || fact.category === 'transit') {
+          supportingFactors.push(this.createFactor(fact, 'supporting', 'medium', 'Active property acquisition period'));
+        } else {
+          supportingFactors.push(this.createFactor(fact, 'background', 'low', 'General chart background'));
+        }
+      }
+
+      // E. Education Domain Classification
+      else if (domain === 'education') {
+        const isD24 = fact.category === 'varga' && (fact.vargaCode === 'D24' || fact.entity.includes('D24'));
+        if (fact.house === 4 || fact.house === 5 || fact.house === 9 || isD24 || fact.entity === 'Mercury' || fact.entity === 'Jupiter' || isPlanetFocus) {
+          if (fact.dignity === 'DEBILITATED') {
+            restrictingFactors.push(this.createFactor(fact, 'restricting', 'high', 'Academic factor requiring conscious study discipline'));
+          } else {
+            primaryFactors.push(this.createFactor(fact, 'primary', 'high', 'Direct 4th/5th/9th house, D24, or academic significator'));
+          }
+        } else if (fact.category === 'dasha' || fact.category === 'transit') {
+          supportingFactors.push(this.createFactor(fact, 'supporting', 'medium', 'Active academic timing cycle'));
+        } else {
+          supportingFactors.push(this.createFactor(fact, 'background', 'low', 'General chart background'));
+        }
+      }
+
+      // F. Children & Progeny Domain Classification
+      else if (domain === 'children') {
+        const isD7 = fact.category === 'varga' && (fact.vargaCode === 'D7' || fact.entity.includes('D7'));
+        if (fact.house === 5 || fact.house === 9 || isD7 || fact.category === 'jaimini' || fact.entity === 'Jupiter' || isPlanetFocus) {
+          if (fact.dignity === 'DEBILITATED') {
+            restrictingFactors.push(this.createFactor(fact, 'restricting', 'high', 'Progeny factor under structural discipline'));
+          } else {
+            primaryFactors.push(this.createFactor(fact, 'primary', 'high', 'Direct 5th house, D7 Saptamsha, or Putrakaraka indicator'));
+          }
+        } else if (fact.category === 'dasha' || fact.category === 'transit') {
+          supportingFactors.push(this.createFactor(fact, 'supporting', 'medium', 'Active progeny timing cycle'));
+        } else {
+          supportingFactors.push(this.createFactor(fact, 'background', 'low', 'General chart background'));
+        }
+      }
+
+      // G. Disputes & Debts Domain Classification
+      else if (domain === 'disputes_debts') {
+        const isD30 = fact.category === 'varga' && (fact.vargaCode === 'D30' || fact.entity.includes('D30'));
+        if (fact.house === 6 || fact.house === 8 || isD30 || fact.entity === 'Mars' || fact.entity === 'Saturn' || fact.entity === 'Rahu' || isPlanetFocus) {
+          primaryFactors.push(this.createFactor(fact, 'primary', 'high', 'Direct 6th/8th house, D30 Trimshamsha, or conflict/debt significator'));
+        } else if (fact.category === 'dasha' || fact.category === 'transit') {
+          supportingFactors.push(this.createFactor(fact, 'supporting', 'medium', 'Active cycle for dispute/debt resolution'));
+        } else {
+          supportingFactors.push(this.createFactor(fact, 'background', 'low', 'General chart background'));
+        }
+      }
+
       // D. General / Timing Classification
       else {
         const isLagnaFocus =
@@ -443,6 +504,34 @@ export class AstrologyReasoner {
       }
       if (fact.category === 'dasha' || fact.category === 'transit') return supporting('verified study-period timing');
       return background('general education background');
+    }
+
+    if (domain === 'property_vehicle') {
+      const isD4 = fact.category === 'varga' && /\bD4\b/i.test(fact.entity);
+      const isD16 = fact.category === 'varga' && /\bD16\b/i.test(fact.entity);
+      if (fact.house === 4 || fact.house === 11 || isD4 || isD16 || fact.entity === 'Mars' || fact.entity === 'Venus') {
+        return ifDebilitated('property/vehicle house, D4/D16, or conveyance karaka');
+      }
+      if (fact.category === 'dasha' || fact.category === 'transit') return supporting('verified acquisition timing');
+      return background('general property background');
+    }
+
+    if (domain === 'children') {
+      const isD7 = fact.category === 'varga' && /\bD7\b/i.test(fact.entity);
+      if (fact.house === 5 || fact.house === 9 || isD7 || fact.entity === 'Jupiter') {
+        return ifDebilitated('progeny house, D7, or Jupiter Putrakaraka');
+      }
+      if (fact.category === 'dasha' || fact.category === 'transit') return supporting('verified progeny timing');
+      return background('general children background');
+    }
+
+    if (domain === 'disputes_debts') {
+      const isD30 = fact.category === 'varga' && /\bD30\b/i.test(fact.entity);
+      if (fact.house === 6 || fact.house === 8 || isD30 || fact.entity === 'Mars' || fact.entity === 'Saturn') {
+        return primary('6th/8th house, D30, or conflict karaka');
+      }
+      if (fact.category === 'dasha' || fact.category === 'transit') return supporting('verified dispute/debt timing');
+      return background('general conflict background');
     }
 
     return undefined;

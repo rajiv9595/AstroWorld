@@ -29,6 +29,7 @@ function isPostgresUuid(id: string): boolean {
 
 export class SupabasePersistentMemoryRepository implements IPersistentMemoryRepository {
   private client: QueryClient;
+  private inMemoryFallback = new Map<string, PersistentMemory>();
 
   constructor(client: QueryClient = defaultSupabase) {
     this.client = client;
@@ -49,7 +50,10 @@ export class SupabasePersistentMemoryRepository implements IPersistentMemoryRepo
       throw new Error(`Cannot persist invalid memory: ${validation.errors.join('; ')}`);
     }
 
-    if (!this.canQueryRemote(memory.userId)) return memory;
+    if (!this.canQueryRemote(memory.userId)) {
+      this.inMemoryFallback.set(memory.memoryId, memory);
+      return memory;
+    }
 
     const row = this.toRow(memory);
     const { data, error } = await this.client
@@ -67,7 +71,9 @@ export class SupabasePersistentMemoryRepository implements IPersistentMemoryRepo
 
   public async getById(userId: string, memoryId: string): Promise<PersistentMemory | undefined> {
     this.assertUser(userId);
-    if (!this.canQueryRemote(userId)) return undefined;
+    if (!this.canQueryRemote(userId)) {
+      return this.inMemoryFallback.get(memoryId);
+    }
     const { data, error } = await this.client
       .from('persistent_memories')
       .select('*')
@@ -81,7 +87,28 @@ export class SupabasePersistentMemoryRepository implements IPersistentMemoryRepo
 
   public async find(options: MemoryFilterOptions): Promise<PersistentMemory[]> {
     this.assertUser(options.userId);
-    if (!this.canQueryRemote(options.userId)) return [];
+    if (!this.canQueryRemote(options.userId)) {
+      let memories = Array.from(this.inMemoryFallback.values()).filter(m => m.userId === options.userId);
+      const statuses = options.status
+        ? (Array.isArray(options.status) ? options.status : [options.status])
+        : ['active' as MemoryStatus];
+      memories = memories.filter(m => statuses.includes(m.status));
+      if (options.categories?.length) {
+        memories = memories.filter(m => options.categories!.includes(m.category));
+      }
+      if (options.keys?.length) {
+        memories = memories.filter(m => options.keys!.includes(m.key));
+      }
+      if (options.domain) {
+        const domain = options.domain.toLowerCase();
+        memories = memories.filter(m => `${m.key} ${m.value} ${m.tags.join(' ')}`.toLowerCase().includes(domain));
+      }
+      if (options.topic) {
+        const topic = options.topic.toLowerCase();
+        memories = memories.filter(m => `${m.key} ${m.value} ${m.tags.join(' ')}`.toLowerCase().includes(topic));
+      }
+      return memories;
+    }
 
     let query = this.client
       .from('persistent_memories')
@@ -162,7 +189,11 @@ export class SupabasePersistentMemoryRepository implements IPersistentMemoryRepo
 
   public async delete(userId: string, memoryId: string): Promise<boolean> {
     this.assertUser(userId);
-    if (!this.canQueryRemote(userId)) return false;
+    if (!this.canQueryRemote(userId)) {
+      const existed = this.inMemoryFallback.has(memoryId);
+      this.inMemoryFallback.delete(memoryId);
+      return existed;
+    }
     const { data, error } = await this.client
       .from('persistent_memories')
       .delete()
@@ -177,7 +208,16 @@ export class SupabasePersistentMemoryRepository implements IPersistentMemoryRepo
 
   public async clearUser(userId: string): Promise<number> {
     this.assertUser(userId);
-    if (!this.canQueryRemote(userId)) return 0;
+    if (!this.canQueryRemote(userId)) {
+      let count = 0;
+      for (const [id, m] of this.inMemoryFallback.entries()) {
+        if (m.userId === userId) {
+          this.inMemoryFallback.delete(id);
+          count++;
+        }
+      }
+      return count;
+    }
     const existing = await this.find({ userId, status: ['active', 'superseded', 'revoked', 'expired', 'pending_validation'], includeExpired: true });
     if (existing.length === 0) return 0;
 
@@ -211,6 +251,9 @@ export class SupabasePersistentMemoryRepository implements IPersistentMemoryRepo
 
   public async count(userId: string): Promise<number> {
     this.assertUser(userId);
+    if (!this.canQueryRemote(userId)) {
+      return Array.from(this.inMemoryFallback.values()).filter(m => m.userId === userId && m.status === 'active').length;
+    }
     const { count, error } = await this.client
       .from('persistent_memories')
       .select('memory_id', { count: 'exact', head: true })

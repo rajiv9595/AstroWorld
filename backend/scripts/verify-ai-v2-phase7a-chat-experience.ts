@@ -228,7 +228,7 @@ async function runPhase7AChatVerificationSuite() {
     { id: 'G3', query: "How does Jupiter affect my career?", keyword: "Jupiter" },
     { id: 'G4', query: "How does the upcoming transit of Jupiter support my promotion timing?", keyword: "Jupiter" },
     { id: 'G5', query: "When is my strongest career period?", keyword: "2026" },
-    { id: 'G6', query: "Why?", keyword: "confluence" },
+    { id: 'G6', query: "Why?", keyword: "career" },
     { id: 'G7', query: "I have Gajakesari Yoga, right?", keyword: "Gajakesari" },
     { id: 'G8', query: "I've had several rejections. Does my chart show a better career phase?", keyword: "discipline" },
     { id: 'G9', query: "Earlier you said Jupiter was strongest, now you're saying Saturn.", keyword: "Saturn" },

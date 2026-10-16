@@ -72,6 +72,32 @@ export interface BirthProfile {
   gender?: 'male' | 'female' | 'other';
 }
 
+/**
+ * Computes a stable, deterministic, non-sensitive profile fingerprint.
+ * Used for session isolation, caching, and cross-chart state protection.
+ */
+export function computeProfileFingerprint(profile: BirthProfile): string {
+  if (!profile) return 'fp_anonymous';
+  const name = (profile.name || 'native').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  const y = profile.year;
+  const m = profile.month;
+  const d = profile.day;
+  const h = profile.hour;
+  const min = profile.minute;
+  const s = profile.second ?? 0;
+  const lat = Number(profile.latitude).toFixed(4);
+  const lon = Number(profile.longitude).toFixed(4);
+  const tz = (profile.timezone || 'utc').trim().toLowerCase();
+
+  const str = `${name}_${y}_${m}_${d}_${h}_${min}_${s}_${lat}_${lon}_${tz}`;
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  return `fp_${name.slice(0, 8)}_${(hash >>> 0).toString(16)}`;
+}
+
 export interface PlanetPosition {
   name: PlanetName;
   sanskritName: string;

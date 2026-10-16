@@ -259,26 +259,7 @@ aiV2Router.delete('/memory', async (req: Request, res: Response) => {
 aiV2Router.get('/conversations', async (req: Request, res: Response) => {
   try {
     const { userId } = getAuthenticatedUser(req);
-    const stateManager = productionConsultationService.getStateManager();
-    const conversationIds = await productionConsultationService.listOwnedConversationIdsAsync(userId);
-    const summaries = conversationIds
-      .map((conversationId) => {
-        const state = stateManager.getState(conversationId);
-        const turns = stateManager.getTurns(conversationId);
-        if (!state) return null;
-
-        const lastTurn = turns[turns.length - 1];
-        return {
-          conversationId,
-          title: state.currentTopic || 'Astrological Consultation',
-          domain: state.currentDomain || 'general',
-          lastActivityIso: state.updatedAtIso,
-          turnCount: turns.length,
-          preview: lastTurn?.answerSummary?.mainConclusion?.slice(0, 120) || 'Fresh consultation',
-        };
-      })
-      .filter(Boolean);
-
+    const summaries = await productionConsultationService.listConversationSummariesAsync(userId);
     res.json({ success: true, conversations: summaries });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || 'Failed to list conversations' });
@@ -296,8 +277,22 @@ aiV2Router.get('/conversations/:id', async (req: Request, res: Response) => {
     }
 
     const stateManager = productionConsultationService.getStateManager();
-    const state = stateManager.getState(conversationId);
-    const turns = stateManager.getTurns(conversationId);
+    let state = stateManager.getState(conversationId);
+    let turns = stateManager.getTurns(conversationId);
+
+    // If state is not in memory (e.g. server restart), hydrate from persistence
+    if (!state) {
+      const orchestrator = productionConsultationService.getOrchestrator();
+      const repo = orchestrator.getConversationPersistenceRepository();
+      if (repo.isEnabled()) {
+        const stored = await repo.load(userId, conversationId);
+        if (stored) {
+          state = stored.state;
+          turns = stored.turns;
+          stateManager.commitState(conversationId, state);
+        }
+      }
+    }
 
     if (!state) {
       res.status(404).json({ success: false, error: 'Conversation not found' });

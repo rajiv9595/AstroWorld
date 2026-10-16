@@ -104,6 +104,7 @@ export interface ConversationContextPack {
 
 export interface ConversationState {
   conversationId: string;
+  profileFingerprint?: string;
   turnIndex: number;
   currentTopic: string;
   currentIntent: string;

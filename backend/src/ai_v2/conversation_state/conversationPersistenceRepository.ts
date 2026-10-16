@@ -19,6 +19,15 @@ export interface StoredConversation {
   stateVersion: number;
 }
 
+export interface ConversationSummary {
+  conversationId: string;
+  title: string;
+  domain: string;
+  lastActivityIso: string;
+  turnCount: number;
+  preview: string;
+}
+
 type QueryClient = any;
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -219,6 +228,32 @@ export class ConversationPersistenceRepository {
 
     if (result.error) throw new Error(`Conversation list failed: ${result.error.message}`);
     return (result.data || []).map((row: any) => row.id).filter(Boolean);
+  }
+
+  public async listSummaries(userId: string): Promise<ConversationSummary[]> {
+    if (!userId || typeof userId !== 'string') throw new Error('Access denied: userId is required.');
+    if (!this.canQueryRemote(userId)) return [];
+
+    const result = await this.client
+      .from('conversations')
+      .select('id, title, status, state_payload, created_at, updated_at')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('updated_at', { ascending: false });
+
+    if (result.error) throw new Error(`Conversation summaries failed: ${result.error.message}`);
+
+    return (result.data || []).map((row: any) => {
+      const state = row.state_payload as ConversationState | null;
+      return {
+        conversationId: row.id,
+        title: row.title || state?.currentTopic || 'Astrological Consultation',
+        domain: state?.currentDomain || 'general',
+        lastActivityIso: row.updated_at || row.created_at || new Date().toISOString(),
+        turnCount: state?.turnIndex || 1,
+        preview: state?.lastAnswerSummary?.mainConclusion?.slice(0, 120) || 'Active consultation',
+      };
+    });
   }
 
   public async delete(userId: string, conversationId: string): Promise<boolean> {

@@ -35,6 +35,7 @@ export interface ClientConsultResponse {
     turnIndex: number;
     domain: string;
     topic: string;
+    title?: string;
     requiresClarification: boolean;
     activeDomainConfidence: number;
   };
@@ -231,6 +232,19 @@ export class AIApiClient {
     if (!res.ok) return [];
     const data = await this.parseResponse(res);
     return Array.isArray(data?.conversations) ? data.conversations : [];
+  }
+
+  public async getConversation(conversationId: string): Promise<any> {
+    const res = await fetch(
+      this.baseUrl + '/api/ai-v2/conversations/' + encodeURIComponent(conversationId),
+      {
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      },
+    );
+
+    if (!res.ok) return null;
+    return this.parseResponse(res);
   }
 
   public async deleteConversation(conversationId: string): Promise<boolean> {

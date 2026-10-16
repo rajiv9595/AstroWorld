@@ -188,7 +188,8 @@ export class ClaimSetGenerator {
   }
 
   /**
-   * Constructs controlled synthesis phrasing strictly avoiding forbidden certainty words.
+   * Constructs dynamic, question-tailored synthesis phrasing derived directly
+   * from verified astronomical drivers and temporal windows, avoiding fixed boilerplate.
    */
   private buildSynthesisText(reasoning: ReasoningPacket, plan: QuestionPlan): string {
     let domainStr = plan.domain.toLowerCase();
@@ -197,33 +198,56 @@ export class ClaimSetGenerator {
     }
 
     const rawLower = plan.rawQuestion.toLowerCase();
+    const primaryFactor = reasoning.primaryFactors[0];
+    const restrictingFactor = reasoning.restrictingFactors[0];
+    const topWindow = reasoning.temporalWindows[0];
+
+    // Simple fact inquiries: directly describe the verified chart placement
+    if (
+      plan.intent === 'general_chart_question' ||
+      plan.intent === 'planet_question' ||
+      rawLower.startsWith('what is my') ||
+      rawLower.startsWith("what's my")
+    ) {
+      if (primaryFactor) {
+        return `Your verified chart placement indicates ${primaryFactor.entity} with ${primaryFactor.property} at ${primaryFactor.value}.`;
+      }
+    }
+
     const asksStrengthsAndLimits =
       plan.intent === 'career_strengths_limitations' ||
       (rawLower.includes('strength') && (rawLower.includes('limit') || rawLower.includes('challeng') || rawLower.includes('weakness')));
 
     if (asksStrengthsAndLimits) {
+      const driverDesc = primaryFactor ? primaryFactor.entity : 'prominent planetary placements';
       if (reasoning.restrictingFactors.length > 0) {
-        return `The chart displays significant career strengths supported by key placements and classical yogas, balanced by ${reasoning.restrictingFactors.length} structural limiting factor(s) requiring disciplined navigation.`;
+        const restDesc = restrictingFactor ? restrictingFactor.entity : 'structural factors';
+        return `The chart displays foundational career strengths led by ${driverDesc}, operating alongside structural discipline required by ${restDesc}.`;
       }
-      return `The chart demonstrates clear foundational career strengths across key placements, with supportive factors leading the evaluation.`;
+      return `The chart demonstrates clear foundational career strengths across ${driverDesc}, with supportive placements guiding professional progress.`;
     }
+
+    const primaryEntity = primaryFactor ? primaryFactor.entity : 'key planetary placements';
+    const primaryDesc = primaryFactor ? `${primaryFactor.entity} (${primaryFactor.property}: ${primaryFactor.value})` : 'chart confluence';
+    const timingDesc = topWindow ? `during ${topWindow.label} (${topWindow.periodText})` : 'over the active cycle';
 
     if (reasoning.direction === 'supportive') {
       if (reasoning.strength === 'strong') {
-        return `The converging chart layers and classical rules strongly support positive development in ${domainStr}, reinforced by multi-layer confluence.`;
+        return `Chart indications for ${domainStr} are strongly reinforced by ${primaryDesc}, with constructive momentum concentrated ${timingDesc}.`;
       }
-      return `The astrological factors support constructive development in ${domainStr} during the active period.`;
+      return `Astrological factors for ${domainStr} show constructive support led by ${primaryEntity} ${timingDesc}.`;
     }
 
     if (reasoning.direction === 'mixed') {
-      const restCount = reasoning.restrictingFactors.length;
-      return `The astrological indications support growth in ${domainStr}, but operate alongside ${restCount} structural factor(s) requiring patience and discipline.`;
+      const restDesc = restrictingFactor ? `${restrictingFactor.entity}` : 'structural discipline';
+      return `Indications for ${domainStr} combine active potential through ${primaryEntity} alongside structural patience demanded by ${restDesc} ${timingDesc}.`;
     }
 
     if (reasoning.direction === 'challenging') {
-      return `The active astrological factors present structural demands in ${domainStr}, emphasizing steady perseverance rather than hasty expansion.`;
+      const restDesc = restrictingFactor ? `${restrictingFactor.entity}` : 'planetary friction';
+      return `The active cycle in ${domainStr} centers on consolidation and steady discipline under ${restDesc}, prioritizing stability ${timingDesc}.`;
     }
 
-    return `The astrological factors indicate a stable, neutral progression for the queried ${domainStr} timeframe.`;
+    return `Chart factors for ${domainStr} reflect a balanced, steady progression anchored by ${primaryEntity} ${timingDesc}.`;
   }
 }
