@@ -370,22 +370,25 @@ export class AstrologyReasoner {
       }
     }
 
-    // Process Derived Facts (Yogas)
+    // Process only verified derived yoga evidence. A verified absence is an
+    // explicit factual answer to a yoga question, but absence of a positive yoga
+    // is not by itself evidence of a negative outcome. Keep it visible as a
+    // zero-weight primary fact so it cannot create supportive/restricting confluence.
     for (const derived of evidence.derivedFacts) {
-      if (derived.type === 'Yoga') {
+      if (derived.type === 'Yoga' && derived.verified === true) {
         const isNegativeYoga = derived.id.toLowerCase().endsWith('_absence');
         if (isNegativeYoga) {
-          restrictingFactors.push({
+          primaryFactors.push({
             id: derived.id,
             entity: derived.description,
             property: 'presence',
-            value: derived.ruleCitation || 'Brihat Parashara Hora Shastra',
-            role: 'restricting',
+            value: 'absent',
+            role: 'primary',
             relevance: 'medium',
-            rationale: 'Verified deterministic yoga engine explicitly reported this classical formation as absent',
+            rationale: `Verified deterministic yoga engine reported this formation absent; retained as neutral evidence${derived.ruleCitation ? ` (rule: ${derived.ruleCitation})` : ''}`,
             sourceTool: derived.sourceTool,
             evidenceId: derived.id,
-            weight: 0.7,
+            weight: 0,
           });
         } else {
           primaryFactors.push({
