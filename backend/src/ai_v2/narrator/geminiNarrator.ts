@@ -670,7 +670,7 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
       const transitLead =
         `The upcoming transit of ${transitFocus.transitingPlanet} is actively unfolding: ${transitActivationSummary}.`;
       const qualification =
-        'As an essential principle of Vedic timing, a transit works hand-in-hand with your natal chart and running dasha rather than acting in isolation.';
+        'A transit alone cannot confirm a specific event. It must be interpreted alongside your natal chart and running dasha rather than acting in isolation.';
       paragraphs.push([transitLead, directAnswer, qualification].filter(Boolean).join(' '));
     } else if (directAnswer) {
       paragraphs.push(directAnswer);
