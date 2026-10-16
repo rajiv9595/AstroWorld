@@ -213,8 +213,43 @@ async function runPhase4ESuite(): Promise<void> {
     if (caseValid) {
       benchmarkPassed++;
     } else {
+      const ashtakavargaDiagnostic = testCase.id === 'prec_house_24_ashtakavarga_bindu_strength'
+        ? (() => {
+            const facts = caseResult.evidencePacket.facts || [];
+            const ashtakavargaFacts = facts.filter((fact: any) => fact.category === 'ashtakavarga');
+            const ashtakavargaIds = new Set(ashtakavargaFacts.map((fact: any) => fact.id));
+            const reasoning = caseResult.reasoningPacket;
+            const factors = [
+              ...(reasoning.primaryFactors || []),
+              ...(reasoning.supportingFactors || []),
+              ...(reasoning.restrictingFactors || []),
+            ].filter((factor: any) =>
+              factor.sourceTool === 'get_ashtakavarga' ||
+              /ashtakavarga|bindu|sarvashtakavarga/i.test(String(factor.entity || '') + ' ' + String(factor.property || ''))
+            ).map((factor: any) => ({
+              entity: factor.entity,
+              property: factor.property,
+              value: factor.value,
+              role: factor.role,
+              sourceTool: factor.sourceTool,
+              evidenceId: factor.evidenceId,
+            }));
+            const claims = (caseResult.approvedClaimSet.claims || []).filter((claim: any) =>
+              (claim.evidenceIds || []).some((id: string) => ashtakavargaIds.has(id)) ||
+              /ashtakavarga|bindu|sarvashtakavarga/i.test(String(claim.text || ''))
+            ).map((claim: any) => ({ text: claim.text, evidenceIds: claim.evidenceIds }));
+            return `\nDIAGNOSTIC plan=${JSON.stringify({
+              intent: caseResult.questionPlan.intent,
+              domain: caseResult.questionPlan.domain,
+              secondaryDomains: caseResult.questionPlan.secondaryDomains,
+              layers: caseResult.questionPlan.chartLayers,
+            })}\nTools=${JSON.stringify((caseResult.evidencePacket.toolResults || []).map((tool: any) => ({
+              toolName: tool.toolName, success: tool.success, error: tool.error,
+            })))}\nAshtakavargaFacts=${JSON.stringify(ashtakavargaFacts)}\nAshtakavargaReasoningFactors=${JSON.stringify(factors)}\nAshtakavargaApprovedClaims=${JSON.stringify(claims)}\nSelectedSupport=${JSON.stringify(caseResult.responsePlan.contextPack?.supportingFactors || [])}`;
+          })()
+        : '';
       console.warn(
-        `⚠️ Precision Case ${testCase.id} failed: hasExpectedKeywords=${hasExpectedKeywords}, hasForbiddenPhrases=${hasForbiddenPhrases}, withinMaxParagraphs=${withinMaxParagraphs} (${paragraphCount}/${testCase.maxParagraphs || 'N/A'})\nText: "${caseText.slice(0, 600)}${caseText.length > 600 ? '...' : ''}"`
+        `⚠️ Precision Case ${testCase.id} failed: hasExpectedKeywords=${hasExpectedKeywords}, hasForbiddenPhrases=${hasForbiddenPhrases}, withinMaxParagraphs=${withinMaxParagraphs} (${paragraphCount}/${testCase.maxParagraphs || 'N/A'})\nText: "${caseText.slice(0, 600)}${caseText.length > 600 ? '...' : ''}"${ashtakavargaDiagnostic}`
       );
     }
   }
