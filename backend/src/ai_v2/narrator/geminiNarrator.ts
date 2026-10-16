@@ -775,9 +775,10 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     }
 
     const asksTransit = /\b(transits?|gochara|sade sati)\b/i.test(rawLower);
+    const asksCompoundAshtakavargaTransit = asksAshtakavarga && asksTransit;
     const hasPlanetTransitLabel = (item: string) =>
       /\b(sun|moon|mars|mercury|jupiter|venus|saturn|rahu|ketu)\s*\(transit\)/i.test(item);
-    const verifiedTransitClaim = asksTransit
+    const verifiedTransitClaim = asksCompoundAshtakavargaTransit
       ? factualClaims.find(claim =>
           claim.type === 'factual' &&
           claim.factorType === 'transit' &&
@@ -788,7 +789,7 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
       ? this.normalizeSimpleFact(verifiedTransitClaim.text)
       : undefined;
     if (
-      asksTransit &&
+      asksCompoundAshtakavargaTransit &&
       verifiedTransitText &&
       !cleanedSupporting.some(hasPlanetTransitLabel)
     ) {
@@ -828,7 +829,7 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
 
     // Compound Ashtakavarga/transit questions require both evidence types to remain
     // visible in the ordinary narrative support, without inventing a transit event.
-    const transitFactor = asksTransit
+    const transitFactor = asksCompoundAshtakavargaTransit
       ? cleanedSupporting.find(hasPlanetTransitLabel)
       : undefined;
     if (transitFactor && !reservedDomainFactors.has(transitFactor)) {
