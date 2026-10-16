@@ -94,9 +94,19 @@ export class ToolPlanner {
   ): void {
     const { intent, domain, chartLayers, temporalScope, targetDatesIso } = plan;
 
-    // A. Minimal Simple Questions
+    // A. Minimal Simple Questions. Some specific evidence requests (for example,
+    // Ashtakavarga strength within a transit question) retain a general intent but still
+    // require their named tools; do not let the generic chart route swallow them.
     if (intent === 'general_chart_question' || intent === 'planet_question' || intent === 'house_question') {
       addTool('get_birth_chart', { birthProfile }, [], 10);
+      const rawLower = plan.rawQuestion.toLowerCase();
+      if (/\b(ashtakavarga|bindus?|sav)\b/i.test(rawLower)) {
+        addTool('get_ashtakavarga', { birthProfile }, [], 9);
+      }
+      if (/\b(transits?|gochara|sade sati)\b/i.test(rawLower)) {
+        const targetDateIso = targetDatesIso?.[0] || temporalScope.startIso || new Date().toISOString();
+        addTool('get_transits', { birthProfile, targetDateIso }, ['get_birth_chart'], 8);
+      }
       const vargas = chartLayers.filter(l => l !== 'D1');
       for (const v of vargas) {
         addTool('get_divisional_chart', { birthProfile, vargaCode: v }, [], 9);
