@@ -206,17 +206,22 @@ export class ResponsePlanner {
     }
 
     if (
-      (plan.intent === 'general_chart_question' && plan.planetFocus.length <= 1 && plan.houseFocus.length === 0) ||
-      ((rawLower.startsWith('what is my') ||
+      (rawLower.startsWith('what is my') ||
         rawLower.startsWith("what's my") ||
         rawLower.startsWith('which sign is') ||
         rawLower.startsWith('which house') ||
         rawLower.startsWith('where is') ||
         rawLower.startsWith('is jupiter') ||
-        rawLower.startsWith('which planet is')) &&
-        !rawLower.includes('influence') &&
-        !rawLower.includes('timing') &&
-        !rawLower.includes('synthesize'))
+        rawLower.startsWith('which planet is') ||
+        rawLower.startsWith('what is the value of')) &&
+      !rawLower.includes('influence') &&
+      !rawLower.includes('timing') &&
+      !rawLower.includes('synthesize') &&
+      !rawLower.includes('converge') &&
+      !rawLower.includes('strengthen') &&
+      !rawLower.includes('ashtakavarga') &&
+      !rawLower.includes('transit') &&
+      !rawLower.includes('dasha')
     ) {
       return 'simple_fact';
     }
