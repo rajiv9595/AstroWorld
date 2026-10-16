@@ -29,20 +29,24 @@ export class ResponseEvidenceSelector {
     technicalMode: 'normal' | 'technical' = 'normal'
   ): EvidenceSelectionResult {
     const claims = approvedClaimSet.claims;
-    const budget = this.getClaimBudget(plan, technicalMode);
+    const rawLower = plan.rawQuestion.toLowerCase();
+    const isAshtakavargaQuestion = /\b(ashtakavarga|bindus?|sav)\b/i.test(rawLower);
+    const isTransitQuestion =
+      plan.intent.toLowerCase().includes('transit') ||
+      /\b(transits?|gochara)\b/i.test(rawLower);
+    const baseBudget = this.getClaimBudget(plan, technicalMode);
+    // Combined Ashtakavarga/transit questions need room for the direct conclusion,
+    // verified bindu evidence, and transit evidence to coexist in the final answer.
+    const budget = isAshtakavargaQuestion && isTransitQuestion
+      ? Math.max(baseBudget, 5)
+      : baseBudget;
 
     // 1. Separate claims by role
     const candidateSupporting: Array<{ claim: ClaimItem; score: number }> = [];
     const candidateRestricting: Array<{ claim: ClaimItem; score: number }> = [];
 
-    const isTransitQuestion =
-      plan.intent.toLowerCase().includes('transit') ||
-      /\b(transits?|gochara)\b/i.test(plan.rawQuestion);
-
     const queriedPlanets = plan.planetFocus.map(p => p.toLowerCase());
     const queriedDomain = plan.domain.toLowerCase();
-
-    const rawLower = plan.rawQuestion.toLowerCase();
     const isLagnaQuestion = rawLower.includes('lagna') || rawLower.includes('ascendant');
 
     for (const claim of claims) {
@@ -75,6 +79,14 @@ export class ResponseEvidenceSelector {
       // 2. Transit Match for Transit Questions
       if (isTransitQuestion && (textLower.includes('transit') || textLower.includes('gochara') || textLower.includes('jupiter'))) {
         score += 40;
+      }
+
+      // Give the specifically requested Ashtakavarga evidence a strong relevance boost.
+      if (
+        isAshtakavargaQuestion &&
+        (textLower.includes('ashtakavarga') || textLower.includes('bindu') || textLower.includes('sarvashtakavarga'))
+      ) {
+        score += 120;
       }
 
       // 3. Domain & Career / 10th House Match
@@ -189,11 +201,49 @@ export class ResponseEvidenceSelector {
       }
     }
 
-    // For transit questions, reserve one slot for the verified transit of the queried planet.
-    // A generic natal placement or D10 fact must not crowd out the exact event the user asked about.
-    if (isTransitQuestion && queriedPlanets.length > 0 && maxSupporting > 0) {
+    // Reserve a slot for the requested Ashtakavarga evidence so a high-scoring
+    // generic dasha/synthesis claim cannot silently erase the subject of the question.
+    const reservedFacetClaimIds = new Set<string>();
+    if (isAshtakavargaQuestion && maxSupporting > 0) {
+      const ashtakavargaClaim = candidateSupporting.find(({ claim }) => {
+        const text = claim.text.toLowerCase();
+        return claim.type === 'factual' &&
+          (text.includes('ashtakavarga') || text.includes('bindu') || text.includes('sarvashtakavarga'));
+      });
+      if (ashtakavargaClaim) {
+        const existingIndex = rankedSupporting.findIndex(
+          candidate => candidate.claim.claimId === ashtakavargaClaim.claim.claimId,
+        );
+        if (existingIndex < 0) {
+          let replacementIndex = -1;
+          for (let index = rankedSupporting.length - 1; index >= 0; index--) {
+            const selectedClaim = rankedSupporting[index].claim;
+            if (
+              selectedClaim.type !== 'qualified_prediction' &&
+              !reservedDomainClaimIds.has(selectedClaim.claimId)
+            ) {
+              replacementIndex = index;
+              break;
+            }
+          }
+          if (replacementIndex >= 0) {
+            rankedSupporting[replacementIndex] = ashtakavargaClaim;
+          } else if (rankedSupporting.length < maxSupporting) {
+            rankedSupporting.push(ashtakavargaClaim);
+          }
+        }
+        if (rankedSupporting.some(candidate => candidate.claim.claimId === ashtakavargaClaim.claim.claimId)) {
+          reservedFacetClaimIds.add(ashtakavargaClaim.claim.claimId);
+        }
+      }
+    }
+
+    // For transit questions, reserve one verified transit claim. If no planet is
+    // named, reserve the highest-ranked verified transit claim instead.
+    if (isTransitQuestion && maxSupporting > 0) {
       const queriedTransit = candidateSupporting.find(({ claim }) => {
         if (claim.type !== 'factual' || claim.factorType !== 'transit') return false;
+        if (queriedPlanets.length === 0) return true;
         const entityMatch = (claim.astrologicalEntities || []).some(entity =>
           queriedPlanets.some(planet => entity.toLowerCase().startsWith(planet)),
         );
@@ -206,14 +256,13 @@ export class ResponseEvidenceSelector {
         queriedTransit &&
         !rankedSupporting.some(candidate => candidate.claim.claimId === queriedTransit.claim.claimId)
       ) {
-        // The transit is a required facet too, but never evict the direct answer
-        // or the only selected claim reserved for a secondary domain.
         let replacementIndex = -1;
         for (let index = rankedSupporting.length - 1; index >= 0; index--) {
           const selectedClaim = rankedSupporting[index].claim;
           if (
             selectedClaim.type !== 'qualified_prediction' &&
-            !reservedDomainClaimIds.has(selectedClaim.claimId)
+            !reservedDomainClaimIds.has(selectedClaim.claimId) &&
+            !reservedFacetClaimIds.has(selectedClaim.claimId)
           ) {
             replacementIndex = index;
             break;
@@ -225,6 +274,9 @@ export class ResponseEvidenceSelector {
         } else if (rankedSupporting.length < maxSupporting) {
           rankedSupporting.push(queriedTransit);
         }
+      }
+      if (rankedSupporting.some(candidate => candidate.claim.claimId === queriedTransit?.claim.claimId)) {
+        if (queriedTransit) reservedFacetClaimIds.add(queriedTransit.claim.claimId);
       }
     }
 
