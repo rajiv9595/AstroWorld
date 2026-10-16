@@ -202,13 +202,20 @@ export class ClaimSetGenerator {
     const restrictingFactor = reasoning.restrictingFactors[0];
     const topWindow = reasoning.temporalWindows[0];
 
-    // Simple fact inquiries: directly describe the verified chart placement
-    if (
-      plan.intent === 'general_chart_question' ||
-      plan.intent === 'planet_question' ||
+    // Simple fact inquiries: directly describe a verified placement only when
+    // the user's wording is actually asking for a direct chart fact. Intent labels such
+    // as general_chart_question also cover analytical questions and are not sufficient.
+    const asksDirectChartFact =
       rawLower.startsWith('what is my') ||
-      rawLower.startsWith("what's my")
-    ) {
+      rawLower.startsWith("what's my") ||
+      rawLower.startsWith('which sign is') ||
+      rawLower.startsWith('which house') ||
+      rawLower.startsWith('where is') ||
+      rawLower.startsWith('which planet is') ||
+      rawLower.startsWith('what is the value of');
+    const asksForInterpretation =
+      /\b(how|why|influence|impact|affect|strengthen|support|converge|analy[sz]e|interpret|meaning|indicate|career|promotion|income|savings|wealth|finance|ashtakavarga|bindus?|transits?|gochara)\b/i.test(rawLower);
+    if (asksDirectChartFact && !asksForInterpretation) {
       if (primaryFactor) {
         return `Your verified chart placement indicates ${primaryFactor.entity} with ${primaryFactor.property} at ${primaryFactor.value}.`;
       }
