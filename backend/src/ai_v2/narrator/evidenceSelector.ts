@@ -280,6 +280,47 @@ export class ResponseEvidenceSelector {
       }
     }
 
+    // Final invariant: after all secondary-domain and transit swaps, keep at least one
+    // approved Ashtakavarga fact whenever the question explicitly asks about bindus.
+    // Look across the full approved set (not only the ranking bucket) so classification
+    // differences cannot silently remove the requested evidence facet.
+    if (isAshtakavargaQuestion && maxSupporting > 0) {
+      const verifiedAshtakavargaClaim = claims.find(claim =>
+        claim.allowed &&
+        claim.type === 'factual' &&
+        (claim.evidenceIds?.length ?? 0) > 0 &&
+        /\\b(ashtakavarga|bindus?|sarvashtakavarga)\\b/i.test(claim.text)
+      );
+      if (
+        verifiedAshtakavargaClaim &&
+        !rankedSupporting.some(candidate => candidate.claim.claimId === verifiedAshtakavargaClaim.claimId)
+      ) {
+        let replacementIndex = -1;
+        for (let index = rankedSupporting.length - 1; index >= 0; index--) {
+          const selectedClaim = rankedSupporting[index].claim;
+          if (selectedClaim.type !== 'qualified_prediction' && !reservedDomainClaimIds.has(selectedClaim.claimId)) {
+            replacementIndex = index;
+            break;
+          }
+        }
+        // If every ordinary slot was reserved, preserve the synthesis but still honor
+        // the explicit Ashtakavarga request over a secondary generic fact.
+        if (replacementIndex < 0) {
+          for (let index = rankedSupporting.length - 1; index >= 0; index--) {
+            if (rankedSupporting[index].claim.type !== 'qualified_prediction') {
+              replacementIndex = index;
+              break;
+            }
+          }
+        }
+        if (replacementIndex >= 0) {
+          rankedSupporting[replacementIndex] = { claim: verifiedAshtakavargaClaim, score: Number.POSITIVE_INFINITY };
+        } else if (rankedSupporting.length < maxSupporting) {
+          rankedSupporting.push({ claim: verifiedAshtakavargaClaim, score: Number.POSITIVE_INFINITY });
+        }
+      }
+    }
+
     const selectedSupporting = rankedSupporting.map(c => this.toSelectedSummary(c.claim, false, technicalMode));
     const selectedRestricting = candidateRestricting.slice(0, maxRestrictions).map(c => this.toSelectedSummary(c.claim, true, technicalMode));
 
