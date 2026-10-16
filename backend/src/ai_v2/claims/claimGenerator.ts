@@ -229,7 +229,9 @@ export class ClaimSetGenerator {
 
     const primaryEntity = primaryFactor ? primaryFactor.entity : 'key planetary placements';
     const primaryDesc = primaryFactor ? `${primaryFactor.entity} (${primaryFactor.property}: ${primaryFactor.value})` : 'chart confluence';
-    const timingDesc = topWindow ? `during ${topWindow.label} (${topWindow.periodText})` : 'over the active cycle';
+    const timingDesc = topWindow
+      ? `during ${topWindow.label} (${topWindow.startDateIso.slice(0, 10)} to ${topWindow.endDateIso.slice(0, 10)})`
+      : 'over the active cycle';
 
     if (reasoning.direction === 'supportive') {
       if (reasoning.strength === 'strong') {
