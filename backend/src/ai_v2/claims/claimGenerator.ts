@@ -70,7 +70,9 @@ export class ClaimSetGenerator {
       // Present the Ashtakavarga numbers in user-facing terms. Generic property names
       // such as "bindu_score" and "total_bindus" are internal schema metadata, not prose.
       const naturalFactText =
-        factor.sourceTool === 'get_ashtakavarga' && factor.property === 'bindu_score'
+        factor.sourceTool === 'get_active_yogas' && factor.id.toLowerCase().endsWith('_absence')
+          ? `The verified yoga evaluation found no qualifying formation: ${factor.entity}`
+          : factor.sourceTool === 'get_ashtakavarga' && factor.property === 'bindu_score'
           ? `${factor.entity} is ${factor.value} bindus.`
           : factor.sourceTool === 'get_ashtakavarga' && factor.property === 'total_bindus'
           ? `The total Sarvashtakavarga score is ${factor.value} bindus across all twelve signs.`
