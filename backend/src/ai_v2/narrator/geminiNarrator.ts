@@ -616,11 +616,9 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
     const pack = responsePlan.contextPack;
     const rawLower = plan.rawQuestion.toLowerCase();
 
-    // Deterministic fallback must enforce the same no-commercial-remedy boundary as the live prompt.
-    const mentionsGemstone = /\b(blue sapphire|yellow sapphire|white sapphire|emerald|ruby|pearl|hessonite|cat'?s eye|gemstones?|neelam|pukhraj|gomed|moti|manik)\b/i.test(rawLower);
-    const asksForGemstoneRemedy = /\b(should i buy|buying|purchase|wear|recommend|fix|cure|remedy|solve|remove|protect)\b/i.test(rawLower);
-    if (mentionsGemstone && asksForGemstoneRemedy) {
-      return "I wouldn't recommend buying an expensive gemstone as a guaranteed way to fix your career. AstroWorld cannot establish that a blue sapphire or any other stone will produce a specific career outcome from chart factors alone. Treat gemstone traditions as optional cultural beliefs, not guarantees; focus on practical steps such as building relevant skills, applying consistently, and seeking career feedback.";
+    // Deterministic fallback shares the same commercial-remedy safety boundary.
+    if (isCommercialGemstoneRemedyQuestion(plan.rawQuestion)) {
+      return COMMERCIAL_GEMSTONE_REMEDY_RESPONSE;
     }
 
     // Safety responses may be deterministic, but chart-specific statements never are.
