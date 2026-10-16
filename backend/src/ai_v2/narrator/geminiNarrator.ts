@@ -774,6 +774,27 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
       cleanedSupporting.unshift(verifiedAshtakavargaText);
     }
 
+    const asksTransit = /\b(transits?|gochara|sade sati)\b/i.test(rawLower);
+    const hasPlanetTransitLabel = (item: string) =>
+      /\b(sun|moon|mars|mercury|jupiter|venus|saturn|rahu|ketu)\s*\(transit\)/i.test(item);
+    const verifiedTransitClaim = asksTransit
+      ? factualClaims.find(claim =>
+          claim.type === 'factual' &&
+          claim.factorType === 'transit' &&
+          (claim.evidenceIds?.length ?? 0) > 0
+        )
+      : undefined;
+    const verifiedTransitText = verifiedTransitClaim
+      ? this.normalizeSimpleFact(verifiedTransitClaim.text)
+      : undefined;
+    if (
+      asksTransit &&
+      verifiedTransitText &&
+      !cleanedSupporting.some(hasPlanetTransitLabel)
+    ) {
+      cleanedSupporting.push(verifiedTransitText);
+    }
+
     // Keep at least one relevant approved factor for the primary and each requested
     // secondary domain. The ordinary concise-response budget must not silently erase
     // a facet the user explicitly asked about.
@@ -803,6 +824,16 @@ Rewrite the response removing all unapproved dates, certainty words, or unverifi
         `The verified Ashtakavarga evidence is: ${ashtakavargaFactor} This count is one supporting factor to interpret alongside the relevant chart placements, transits, and running dasha, not as a standalone forecast.`,
       );
       reservedDomainFactors.add(ashtakavargaFactor);
+    }
+
+    // Compound Ashtakavarga/transit questions require both evidence types to remain
+    // visible in the ordinary narrative support, without inventing a transit event.
+    const transitFactor = asksTransit
+      ? cleanedSupporting.find(hasPlanetTransitLabel)
+      : undefined;
+    if (transitFactor && !reservedDomainFactors.has(transitFactor)) {
+      supporting.push(`The relevant verified transit evidence is: ${transitFactor}`);
+      reservedDomainFactors.add(transitFactor);
     }
 
     for (const domain of requestedDomains) {
