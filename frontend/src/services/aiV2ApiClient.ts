@@ -20,6 +20,75 @@ export interface ClientConsultRequest {
   timezone?: string;
 }
 
+export interface DashaTimelineViz {
+  type: 'dasha_timeline';
+  mahadasha: string;
+  antardasha: string;
+  pratyantardasha?: string;
+  startDateIso: string;
+  endDateIso: string;
+  percentElapsed: number;
+  remainingYears: number;
+  nextMilestone: string;
+}
+
+export interface PlanetaryStrengthViz {
+  type: 'planetary_strength';
+  planet: string;
+  virupas: number;
+  requiredVirupas: number;
+  ratio: number;
+  isStrong: boolean;
+  statusText: string;
+}
+
+export interface TimingProbabilityViz {
+  type: 'timing_probability';
+  windowLabel: string;
+  periodText: string;
+  scorePercent: number;
+  status: 'highly_favorable' | 'supportive' | 'mixed' | 'friction';
+  summary: string;
+  keyDrivers: string[];
+}
+
+export interface AshtakavargaHouseViz {
+  type: 'ashtakavarga_house';
+  house: number;
+  signName?: string;
+  bindus: number;
+  status: 'exceptional' | 'strong' | 'average' | 'friction';
+}
+
+export interface ConsultationVisualizations {
+  dashaTimeline?: DashaTimelineViz;
+  planetaryStrengths?: PlanetaryStrengthViz[];
+  timingProbability?: TimingProbabilityViz;
+  ashtakavargaSummary?: AshtakavargaHouseViz[];
+}
+
+export interface AgentCouncilDimension {
+  name: string;
+  tradition: string;
+  badge: string;
+  keyFinding: string;
+  evidenceItems: string[];
+}
+
+export interface AgentCouncilSynthesis {
+  dimensionsEvaluated: number;
+  executiveSummary: string;
+  dimensions: {
+    parashari: AgentCouncilDimension;
+    jaimini: AgentCouncilDimension;
+    shodashavarga: AgentCouncilDimension;
+    vimshottari: AgentCouncilDimension;
+    gochara: AgentCouncilDimension;
+    caseStudies: AgentCouncilDimension;
+    prashnaRemedial: AgentCouncilDimension;
+  };
+}
+
 export interface ClientConsultResponse {
   success: boolean;
   requestId: string;
@@ -29,6 +98,8 @@ export interface ClientConsultResponse {
     text: string;
     format: string;
     timestamp: string;
+    visualizations?: ConsultationVisualizations;
+    agentCouncil?: AgentCouncilSynthesis;
   };
   conversationMetadata: {
     conversationId: string;
@@ -146,7 +217,7 @@ export class AIApiClient {
       timezone: req.timezone || req.birthProfile.timezone,
     };
 
-    const res = await fetch(this.baseUrl + '/api/ai-v2/v1/consult', {
+    const res = await fetch(this.baseUrl + '/api/ai-agent/v1/consult', {
       method: 'POST',
       credentials: 'include',
       headers,

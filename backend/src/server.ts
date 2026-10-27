@@ -10,15 +10,19 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config();
+
 
 import express, { Request, Response } from 'express';
 import { authRouter } from './routes/authRoutes.ts';
 import { chartRouter } from './routes/chartRoutes.ts';
 import { geoRouter } from './routes/geoRoutes.ts';
-import { aiV2Router } from './ai_v2/routes/aiV2Routes.ts';
+import { aiV2Router, aiAgentRouter } from './ai/index.ts';
 import { astrologyRouter } from './routes/astrologyRoutes.ts';
+import { feedbackRouter } from './routes/feedbackRoutes.ts';
+import { supabase, isSupabaseConfigured } from './services/supabaseService.ts';
 
 export const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -89,10 +93,11 @@ app.use('/api/auth', authRouter);
 app.use('/api/user/charts', chartRouter);
 app.use('/api/geo', geoRouter);
 app.use('/api/ai-v2', aiV2Router);
+app.use('/api/ai-agent', aiAgentRouter);
 app.use('/api/astrology', astrologyRouter);
+app.use('/api/consultations/feedback', feedbackRouter);
 
-
-import { HealthCheckService } from './ai_v2/production/healthCheck.ts';
+import { HealthCheckService } from './ai/index.ts';
 
 // Health check endpoints
 app.get('/api/health', (_req: Request, res: Response) => {
@@ -107,6 +112,52 @@ app.get('/api/health/ready', async (_req: Request, res: Response) => {
   const readiness = await HealthCheckService.checkReadiness();
   const statusCode = readiness.status === 'ready' ? 200 : 503;
   res.status(statusCode).json(readiness);
+});
+
+// Database & Supabase connection health check
+app.get('/api/health/db', async (_req: Request, res: Response) => {
+  const start = Date.now();
+  if (!isSupabaseConfigured) {
+    res.status(200).json({
+      status: 'not_configured',
+      configured: false,
+      message: 'SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is not set.',
+      latencyMs: 0,
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const { error } = await supabase.from('profiles').select('id').limit(1);
+    const latencyMs = Date.now() - start;
+
+    if (error && !error.message.includes('permission denied')) {
+      res.status(503).json({
+        status: 'error',
+        configured: true,
+        error: error.message,
+        latencyMs,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    res.status(200).json({
+      status: 'connected',
+      configured: true,
+      latencyMs,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: any) {
+    res.status(503).json({
+      status: 'unreachable',
+      configured: true,
+      error: err?.message || 'Failed to connect to Supabase database',
+      latencyMs: Date.now() - start,
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 export async function startBackendServer(port: number = PORT) {

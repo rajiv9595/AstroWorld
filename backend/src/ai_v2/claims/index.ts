@@ -1,7 +1,4 @@
 /**
- * ASTROWORLD AI V2 — Claims & Grounding Firewall Barrel Export
+ * Backwards compatibility re-export from unified src/ai/claims/index.ts
  */
-
-export * from './claimGenerator.ts';
-export * from './groundingFirewall.ts';
-export * from './goldenClaimSet.ts';
+export * from '../../ai/claims/index.ts';

@@ -275,6 +275,67 @@ export async function authenticateRequest(
   }
 }
 
+export async function optionalAuthenticateRequest(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const credential = getRequestCredential(req);
+    const accessToken = credential.token;
+    const cookies = parseCookies(req.headers.cookie);
+
+    if (accessToken) {
+      let resolved = await resolveUserFromToken(accessToken);
+
+      if (!resolved && cookies[AUTH_REFRESH_COOKIE]) {
+        const authClient = createAuthClient();
+        const { data, error } = await authClient.auth.refreshSession({
+          refresh_token: cookies[AUTH_REFRESH_COOKIE],
+        });
+
+        if (!error && data.session?.access_token && data.session.refresh_token && data.user) {
+          setAuthSessionCookies(
+            req,
+            res,
+            data.session.access_token,
+            data.session.refresh_token,
+            cookies[AUTH_REMEMBER_COOKIE] !== '0',
+            cookies[AUTH_CSRF_COOKIE],
+          );
+          resolved = { user: data.user };
+        }
+      }
+
+      if (resolved?.user) {
+        const role = resolved.user.app_metadata?.role === 'admin' ? 'admin' : 'user';
+        req.authenticatedUser = {
+          userId: resolved.user.id,
+          email: resolved.user.email || undefined,
+          role,
+        };
+        next();
+        return;
+      }
+    }
+
+    // Fallback to guest context for development or unauthenticated consultation
+    req.authenticatedUser = {
+      userId: 'guest_user',
+      email: 'guest@astroworld.local',
+      role: 'user',
+    };
+    next();
+  } catch (_error) {
+    req.authenticatedUser = {
+      userId: 'guest_user',
+      email: 'guest@astroworld.local',
+      role: 'user',
+    };
+    next();
+  }
+}
+
 export function getAuthenticatedUser(req: Request): AuthenticatedUserContext {
   const user = req.authenticatedUser;
   if (!user) {

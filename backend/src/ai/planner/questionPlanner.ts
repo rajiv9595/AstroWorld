@@ -1,0 +1,746 @@
+/**
+ * ASTROWORLD AI V2 — Question Understanding & Question Planner
+ * Translates natural-language astrological questions into validated QuestionPlan objects.
+ * Detects domain, intent, planetary focus, time scope, required chart layers, and ambiguities.
+ */
+
+import { VargaCode } from '../../../../shared/index.ts';
+import { QuestionPlan, validateQuestionPlan } from '../schemas/questionPlan.ts';
+
+export interface QuestionPlannerOptions {
+  geminiApiKey?: string;
+}
+
+export class QuestionPlanner {
+  private geminiApiKey?: string;
+
+  constructor(options?: QuestionPlannerOptions) {
+    this.geminiApiKey = options?.geminiApiKey || process.env.GEMINI_API_KEY;
+  }
+
+  /**
+   * Translates a natural language user query into a validated, structured QuestionPlan.
+   */
+  public async plan(rawQuestion: string, followUpContext?: any, contextPack?: any): Promise<QuestionPlan> {
+    if (!rawQuestion || typeof rawQuestion !== 'string' || rawQuestion.trim().length === 0) {
+      throw new Error('QuestionPlanner: rawQuestion must be a non-empty string.');
+    }
+
+    const normalized = rawQuestion.trim();
+    const lower = normalized.toLowerCase();
+
+    // 1. Ambiguity Detection (via context pack or built-in patterns)
+    if (contextPack?.clarificationNeeded) {
+      return {
+        questionId: `q_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        rawQuestion,
+        normalizedQuestion: normalized,
+        intent: 'clarification_needed',
+        domain: contextPack.currentDomain || 'general',
+        planetFocus: [],
+        houseFocus: [],
+        chartLayers: ['D1'],
+        temporalScope: { type: 'current' },
+        targetDatesIso: [],
+        requiredTools: [],
+        priority: 1,
+        ambiguities: [contextPack.clarificationReason || 'Clarification required.'],
+        clarificationRequired: true,
+        clarification: {
+          question: contextPack.clarificationReason || 'Please clarify your inquiry.',
+          reason: contextPack.clarificationReason,
+          suggestedOptions: contextPack.suggestedOptions || ['Career Timing', 'Relationships', 'Wealth & Finance'],
+        },
+        version: 'ai-v2-plan-1',
+        createdAtIso: new Date().toISOString(),
+      };
+    }
+
+    const hasFollowUp = Array.isArray(followUpContext) ? followUpContext.length > 0 : Boolean(followUpContext);
+    if (!hasFollowUp && this.isAmbiguousQuery(lower)) {
+      return this.createAmbiguityPlan(normalized, lower);
+    }
+
+    // 2. Structured Extraction (Deterministic Rule & NLP Mapping)
+    const plan = this.extractPlanDeterministic(normalized, lower, followUpContext, contextPack);
+
+    // 3. Schema Validation
+    const validation = validateQuestionPlan(plan);
+    if (!validation.valid) {
+      throw new Error(`QuestionPlanner: generated invalid QuestionPlan - ${validation.errors.join('; ')}`);
+    }
+
+    return plan;
+  }
+
+  /**
+   * Detects whether a question is too ambiguous to determine astrological scope without user clarification.
+   */
+  private isAmbiguousQuery(lower: string): boolean {
+    const ambiguousPatterns = [
+      /^will jupiter help me[\.\?!]?$/i,
+      /^will saturn help me[\.\?!]?$/i,
+      /^what happens next[\.\?!]?$/i,
+      /^tell me something[\.\?!]?$/i,
+      /^is my future good[\.\?!]?$/i,
+      /^what about my life[\.\?!]?$/i,
+      /^tell me about myself[\.\?!]?$/i,
+      /^is this good[\.\?!]?$/i,
+      /^is it good[\.\?!]?$/i,
+      /^what next[\.\?!]?$/i,
+      /^what should i do[\.\?!]?$/i,
+    ];
+
+    return ambiguousPatterns.some(pattern => pattern.test(lower.trim()));
+  }
+
+  /**
+   * Generates a clarification QuestionPlan when the query lacks domain or temporal specificity.
+   */
+  private createAmbiguityPlan(rawQuestion: string, lower: string): QuestionPlan {
+    let clarificationQuestion = 'What specific area of life would you like to explore (e.g. career, marriage, finances, health, or spiritual growth)?';
+    let suggestedOptions = ['Career & Profession', 'Marriage & Relationships', 'Wealth & Finance', 'Health & Vitality', 'Spiritual Path'];
+
+    if (lower.includes('jupiter') || lower.includes('saturn') || lower.includes('rahu') || lower.includes('ketu')) {
+      const planet = lower.match(/jupiter|saturn|mars|venus|mercury|sun|moon|rahu|ketu/i)?.[0] || 'the planet';
+      clarificationQuestion = `What domain of life would you like me to examine ${planet}'s effect on — career, marriage, finances, health, or something else?`;
+      suggestedOptions = ['Career Timing', 'Marriage & Relationship', 'Financial Prosperity', 'General Transit Impact'];
+    }
+
+    return {
+      questionId: `q_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      rawQuestion,
+      normalizedQuestion: rawQuestion.trim(),
+      intent: 'clarification_needed',
+      domain: 'general',
+      planetFocus: this.extractPlanets(lower),
+      houseFocus: [],
+      chartLayers: ['D1'],
+      temporalScope: { type: 'current' },
+      targetDatesIso: [],
+      requiredTools: [],
+      priority: 1,
+      ambiguities: ['Unspecified domain and outcome criteria.'],
+      clarificationRequired: true,
+      clarification: {
+        question: clarificationQuestion,
+        reason: 'The question is too broad to provide a specific astrological reading.',
+        suggestedOptions,
+      },
+      version: 'ai-v2-plan-1',
+      createdAtIso: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Extracts structured astrological factors deterministically from query tokens.
+   */
+  private extractPlanDeterministic(
+    rawQuestion: string,
+    lower: string,
+    followUpContext?: any,
+    contextPack?: any
+  ): QuestionPlan {
+    let planets = this.extractPlanets(lower);
+    let houses = this.extractHouses(lower);
+    let chartLayers = this.extractChartLayers(lower);
+    let { temporalScope, targetDatesIso } = this.extractTemporalScope(lower);
+
+    // Context inheritance from contextPack
+    if (contextPack) {
+      if (planets.length === 0 && contextPack.resolvedReferents?.resolvedEntity) {
+        planets.push(contextPack.resolvedReferents.resolvedEntity);
+      }
+      if (contextPack.resolvedReferents?.resolvedTemporalScope) {
+        temporalScope = contextPack.resolvedReferents.resolvedTemporalScope;
+      }
+    }
+
+    // Parse previous conversation context if available
+    let prevText = '';
+    if (Array.isArray(followUpContext)) {
+      prevText = followUpContext.map(m => m.text || '').join(' ').toLowerCase();
+    } else if (followUpContext && typeof followUpContext === 'object') {
+      prevText = (followUpContext.prevUserText || followUpContext.resolvedEntity || '').toLowerCase();
+    }
+
+    // Context inheritance for follow-up turns
+    if (prevText) {
+      if (planets.length === 0) {
+        planets = this.extractPlanets(prevText);
+      }
+      if (houses.length === 0 && (lower.startsWith('why') || lower.includes('what makes'))) {
+        houses = this.extractHouses(prevText);
+      }
+      // An elliptical follow-up without its own date inherits the parent question's
+      // scope (including date-range boundaries and representative evaluation dates).
+      if (temporalScope.type === 'natal') {
+        const prevScope = this.extractTemporalScope(prevText);
+        if (prevScope.temporalScope.type !== 'natal') {
+          temporalScope = prevScope.temporalScope;
+          targetDatesIso = prevScope.targetDatesIso;
+        }
+      }
+    }
+
+    let domain = 'general';
+    let intent = 'general_chart_question';
+    let event: string | undefined = undefined;
+
+    if (prevText && (lower.startsWith('why') || lower === 'why' || lower === 'why?' || lower.includes('what makes'))) {
+      intent = 'challenge_previous_conclusion';
+      if (prevText.includes('career') || prevText.includes('job') || prevText.includes('promotion') || prevText.includes('work')) {
+        domain = 'career';
+      } else if (prevText.includes('marriage') || prevText.includes('relationship') || prevText.includes('spouse') || prevText.includes('partner')) {
+        domain = 'relationship';
+      }
+    }
+
+    // A. Simple Direct Astrological Factor Questions
+    if (lower.includes('nakshatra') || lower.includes('tithi') || lower.includes('panchanga')) {
+      intent = 'panchanga';
+      domain = 'astrological';
+      if (!chartLayers.includes('D1')) chartLayers.push('D1');
+    } else if (lower.includes('moon sign') || lower.includes('rashi') || lower.includes('rasi') || lower.includes('janma rashi')) {
+      intent = 'general_chart_question';
+      domain = 'astrological';
+      if (!chartLayers.includes('D1')) chartLayers.push('D1');
+    } else if (
+      (lower.includes('lagna') || lower.includes('ascendant')) &&
+      (lower.includes('d10') || lower.includes('dashamsha') || lower.includes('dasamsa'))
+    ) {
+      intent = 'general_chart_question';
+      domain = 'career';
+      if (!chartLayers.includes('D10')) chartLayers.push('D10');
+    } else if (
+      (lower.includes('lagna') || lower.includes('ascendant')) &&
+      (lower.includes('d9') || lower.includes('navamsha') || lower.includes('navamsa'))
+    ) {
+      intent = 'general_chart_question';
+      domain = 'relationship';
+      if (!chartLayers.includes('D9')) chartLayers.push('D9');
+    } else if (lower.includes('ascendant') || (lower.includes('lagna') && !lower.includes('upapada') && !lower.includes('spouse') && !lower.includes('marriage'))) {
+      intent = 'general_chart_question';
+      domain = 'astrological';
+      if (!chartLayers.includes('D1')) chartLayers.push('D1');
+    } else if (
+      (lower.includes('current mahadasha') ||
+        lower.includes('current dasha') ||
+        lower.includes('running dasha') ||
+        lower.includes('dasha')) &&
+      !lower.includes('career') &&
+      !lower.includes('marriage') &&
+      !lower.includes('relationship') &&
+      !lower.includes('wealth') &&
+      !lower.includes('finance') &&
+      !lower.includes('spiritual') &&
+      !lower.includes('dharma') &&
+      !lower.includes('analyze') &&
+      !lower.includes('evaluate')
+    ) {
+      intent = 'dasha_analysis';
+      domain = 'timing';
+    } else if (
+      lower.includes('all varga') ||
+      lower.includes('all vargas') ||
+      lower.includes('all divisional charts') ||
+      lower.includes('shodashavarga') ||
+      lower.includes('shodasha varga') ||
+      (lower.includes('all') && lower.includes('varga'))
+    ) {
+      intent = 'varga_analysis';
+      domain = 'astrological';
+      chartLayers = [
+        'D1', 'D2', 'D3', 'D4', 'D7', 'D9', 'D10', 'D12',
+        'D16', 'D20', 'D24', 'D27', 'D30', 'D40', 'D45', 'D60'
+      ];
+    } else if (
+      (lower.includes('d10') || lower.includes('dashamsha') || lower.includes('dasamsa')) &&
+      !lower.includes('career') &&
+      !lower.includes('business')
+    ) {
+      intent = 'varga_analysis';
+      domain = 'career';
+      if (!chartLayers.includes('D10')) chartLayers.push('D10');
+    } else if (
+      (lower.includes('d9') || lower.includes('navamsha') || lower.includes('navamsa')) &&
+      !lower.includes('marriage') &&
+      !lower.includes('relationship') &&
+      !lower.includes('spiritual') &&
+      !lower.includes('dharma')
+    ) {
+      intent = 'varga_analysis';
+      domain = 'relationship';
+      if (!chartLayers.includes('D9')) chartLayers.push('D9');
+    } else if (lower.includes('panchanga') || lower.includes('tithi') || lower.includes('nakshatra')) {
+      intent = 'panchanga';
+      domain = 'astrological';
+    } else if (lower.includes('yoga') || lower.includes('dosha') || lower.includes('gajakesari') || lower.includes('raja yoga')) {
+      intent = 'yoga_analysis';
+      domain = 'astrological';
+    } else if (
+      lower.includes('shadbala') ||
+      /\b(?:shadbala|planetary strength|planet strength|strength of (?:the )?(?:sun|moon|mars|mercury|jupiter|venus|saturn|rahu|ketu|planets?))\b/i.test(lower)
+    ) {
+      intent = 'planet_question';
+      domain = 'astrological';
+    } else if (
+      /\bashtakavarga\b/i.test(lower) ||
+      /\bbindus?\b/i.test(lower) ||
+      /\bsav\b/i.test(lower)
+    ) {
+      // Match the Ashtakavarga acronym as a standalone token: "savings" contains
+      // the letters "sav" but is a financial concept, not a request for a SAV chart.
+      intent = 'general_chart_question';
+      domain = 'astrological';
+    }
+
+    // B. Career & Professional Inquiries
+    else if (
+      lower.includes('career') ||
+      lower.includes('job') ||
+      lower.includes('promotion') ||
+      lower.includes('work') ||
+      lower.includes('profession') ||
+      lower.includes('business')
+    ) {
+      domain = 'career';
+      if (lower.includes('promotion')) {
+        intent = 'promotion_timing';
+        event = 'promotion';
+      } else if (lower.includes('change') || lower.includes('switch')) {
+        intent = 'job_change';
+        event = 'job_change';
+      } else if (
+        (lower.includes('strength') || lower.includes('strengths')) &&
+        (lower.includes('limit') || lower.includes('challeng') || lower.includes('weakness') || lower.includes('obstacle'))
+      ) {
+        intent = 'career_strengths_limitations';
+      } else if (temporalScope.type === 'upcoming' || temporalScope.type === 'specific_date') {
+        intent = 'career_timing';
+      } else {
+        intent = 'career';
+      }
+      if (!chartLayers.includes('D10')) chartLayers.push('D10');
+      if (!chartLayers.includes('D1')) chartLayers.push('D1');
+    }
+
+    // C. Marriage & Relationship Inquiries
+    else if (
+      lower.includes('marriage') ||
+      lower.includes('spouse') ||
+      lower.includes('relationship') ||
+      lower.includes('partner') ||
+      lower.includes('love') ||
+      lower.includes('wedding')
+    ) {
+      domain = 'relationship';
+      intent = lower.includes('timing') || temporalScope.type === 'upcoming' ? 'relationship' : 'marriage';
+      event = lower.includes('marriage') || lower.includes('wedding') ? 'marriage' : 'relationship';
+      if (!chartLayers.includes('D9')) chartLayers.push('D9');
+      if (!chartLayers.includes('D1')) chartLayers.push('D1');
+    }
+
+    // D. Wealth & Financial Inquiries
+    else if (
+      lower.includes('money') ||
+      lower.includes('wealth') ||
+      lower.includes('finance') ||
+      lower.includes('financial') ||
+      lower.includes('investment') ||
+      lower.includes('income')
+    ) {
+      domain = 'finance';
+      intent = 'wealth';
+    }
+
+    // E. Travel & Relocation Inquiries
+    else if (lower.includes('travel') || lower.includes('foreign') || lower.includes('relocation') || lower.includes('abroad')) {
+      domain = 'travel';
+      intent = 'travel';
+      event = 'foreign_travel';
+    }
+
+    // F. Health & Vitality
+    else if (lower.includes('health') || lower.includes('disease') || lower.includes('vitality') || lower.includes('illness')) {
+      domain = 'health';
+      intent = 'health';
+    }
+
+    // G. Spiritual Path
+    else if (lower.includes('spirituality') || lower.includes('spiritual') || lower.includes('moksha') || lower.includes('dharma')) {
+      domain = 'spirituality';
+      intent = 'spirituality';
+    }
+
+    // H. Transit Specific Inquiries
+    else if (lower.includes('transit') || lower.includes('gochara') || lower.includes('sade sati')) {
+      domain = 'timing';
+      intent = 'transit_analysis';
+    }
+
+    // I. Property & Vehicle Inquiries
+    else if (
+      /\b(property|real estate|house purchase|buy a house|buy a home|home purchase|flat|apartment|land|plot|bhoomi|vehicle|vehicles|car|cars|buy a car|conveyance|automobile|bike)\b/i.test(lower)
+    ) {
+      domain = 'property_vehicle';
+      const isVehicle = /\b(vehicle|vehicles|car|cars|buy a car|conveyance|automobile|bike)\b/i.test(lower);
+      intent = isVehicle ? 'vehicle_timing' : 'property_timing';
+      event = isVehicle ? 'vehicle_purchase' : 'property_purchase';
+      if (!houses.includes(4)) houses.push(4);
+      if (!houses.includes(11)) houses.push(11);
+      if (isVehicle) {
+        if (!chartLayers.includes('D16')) chartLayers.push('D16');
+        if (planets.length === 0) planets.push('Venus');
+      } else {
+        if (!chartLayers.includes('D4')) chartLayers.push('D4');
+        if (planets.length === 0) planets.push('Mars');
+      }
+      if (!chartLayers.includes('D1')) chartLayers.push('D1');
+    }
+
+    // J. Education & Intellect Inquiries
+    else if (
+      /\b(education|school|schooling|college|university|exam|exams|academic|degree|intellect|studies|studying|graduation|higher education|learning)\b/i.test(lower)
+    ) {
+      domain = 'education';
+      intent = /\b(exam|exams|test)\b/i.test(lower) ? 'exam_timing' : 'education';
+      event = 'education';
+      if (!houses.includes(4)) houses.push(4);
+      if (!houses.includes(5)) houses.push(5);
+      if (!chartLayers.includes('D24')) chartLayers.push('D24');
+      if (!chartLayers.includes('D1')) chartLayers.push('D1');
+      if (planets.length === 0) planets.push('Mercury');
+    }
+
+    // K. Children & Progeny Inquiries
+    else if (
+      /\b(child|children|childbirth|pregnancy|conceiv(?:e|ing|tion)|progeny|son|daughter|kids|baby)\b/i.test(lower)
+    ) {
+      domain = 'children';
+      intent = /\b(timing|when|year|month|date)\b/i.test(lower) || temporalScope.type === 'upcoming' ? 'childbirth_timing' : 'children';
+      event = 'childbirth';
+      if (!houses.includes(5)) houses.push(5);
+      if (!chartLayers.includes('D7')) chartLayers.push('D7');
+      if (!chartLayers.includes('D1')) chartLayers.push('D1');
+      if (planets.length === 0) planets.push('Jupiter');
+    }
+
+    // L. Debts, Disputes & Legal Conflict Inquiries
+    else if (
+      /\b(debt|debts|loan|loans|litigation|dispute|disputes|court|lawsuit|legal battle|legal case|enemies|rival|conflict)\b/i.test(lower)
+    ) {
+      domain = 'disputes_debts';
+      intent = /\b(loan|loans|debt|debts)\b/i.test(lower) ? 'debt_analysis' : 'litigation_dispute';
+      event = 'conflict_resolution';
+      if (!houses.includes(6)) houses.push(6);
+      if (!chartLayers.includes('D30')) chartLayers.push('D30');
+      if (!chartLayers.includes('D1')) chartLayers.push('D1');
+      if (planets.length === 0) planets.push('Mars');
+    }
+
+    // Preserve relocation/foreign-settlement as an additional evidence dimension even when
+    // the primary domain is career (for example, "Will my career take me abroad?").
+    const asksForeignRelocation =
+      /\b(abroad|overseas|foreign|relocat(?:e|ion|ing)|emigrat(?:e|ion|ing)|settle abroad|move abroad|move overseas|settle overseas|international move)\b/i.test(lower);
+    if (asksForeignRelocation && !chartLayers.includes('D4')) {
+      chartLayers.push('D4');
+    }
+
+    // Apply contextPack overrides for follow-up turns
+    if (contextPack) {
+      if (contextPack.resolvedReferents?.requestedExplanation) {
+        intent = 'challenge_previous_conclusion';
+      }
+      if (
+        contextPack.currentDomain &&
+        contextPack.currentDomain !== 'general' &&
+        (domain === 'general' || lower.startsWith('why') || lower.includes('what makes') || lower.includes('how so'))
+      ) {
+        domain = contextPack.currentDomain;
+      }
+    }
+
+    // Preserve all requested evidence domains. Only combine the parent topic when the
+    // current turn is elliptical (for example, "What about abroad?") so a true topic
+    // change does not accidentally inherit unrelated evidence.
+    const isEllipticalFollowUp =
+      Boolean(prevText) &&
+      /^(?:what about|how about|and\b|also\b|then\b|what if\b|in that case\b|why(?:\b|\?)|how so\b)/i.test(lower);
+    const evidenceText = isEllipticalFollowUp ? `${lower} ${prevText}` : lower;
+    const detectedDomains = this.extractEvidenceDomains(evidenceText);
+    const secondaryDomains = detectedDomains.filter(candidate => candidate !== domain);
+
+    // Secondary domain requirements are also reflected in the plan's chart layers.
+    for (const secondaryDomain of secondaryDomains) {
+      if (secondaryDomain === 'career' && !chartLayers.includes('D10')) chartLayers.push('D10');
+      if (secondaryDomain === 'relationship' && !chartLayers.includes('D9')) chartLayers.push('D9');
+      if (secondaryDomain === 'travel' && !chartLayers.includes('D4')) chartLayers.push('D4');
+      if (secondaryDomain === 'education' && !chartLayers.includes('D24')) chartLayers.push('D24');
+      if (secondaryDomain === 'property_vehicle') {
+        if (!chartLayers.includes('D4')) chartLayers.push('D4');
+        if (!chartLayers.includes('D16')) chartLayers.push('D16');
+      }
+      if (secondaryDomain === 'children' && !chartLayers.includes('D7')) chartLayers.push('D7');
+      if (secondaryDomain === 'disputes_debts' && !chartLayers.includes('D30')) chartLayers.push('D30');
+    }
+
+    // Deduplicate chart layers and ensure D1 is included if empty
+    const uniqueLayers = Array.from(new Set(chartLayers)) as VargaCode[];
+    if (uniqueLayers.length === 0) {
+      uniqueLayers.push('D1');
+    }
+
+    return {
+      questionId: `q_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      rawQuestion,
+      normalizedQuestion: rawQuestion.trim(),
+      intent,
+      domain,
+      secondaryDomains,
+      event,
+      planetFocus: planets,
+      houseFocus: houses,
+      chartLayers: uniqueLayers,
+      temporalScope,
+      targetDatesIso,
+      requiredTools: [],
+      priority: 1,
+      ambiguities: [],
+      clarificationRequired: false,
+      followUpContext:
+        followUpContext || contextPack?.resolvedReferents?.hasReferents
+          ? {
+              isFollowUp: true,
+              parentQuestionId: followUpContext?.parentQuestionId || contextPack?.resolvedReferents?.referentTurnId,
+              resolvedEntity: followUpContext?.resolvedEntity || contextPack?.resolvedReferents?.resolvedEntity,
+            }
+          : undefined,
+      version: 'ai-v2-plan-1',
+      createdAtIso: new Date().toISOString(),
+    };
+  }
+
+  private extractEvidenceDomains(lower: string): string[] {
+    const candidates: Array<[string, RegExp]> = [
+      ['career', /\b(career|job|promotion|work|profession|employment|business)\b/i],
+      ['relationship', /\b(marriage|spouse|relationship|partner|love|wedding|romance)\b/i],
+      ['finance', /\b(money|wealth|finance|financial|investment|income|salary|earnings|savings|debt|assets?)\b/i],
+      ['travel', /\b(travel|foreign|abroad|overseas|relocation|relocate|relocating|emigrate|emigration|emigrating|international move|move abroad|settle abroad)\b/i],
+      ['health', /\b(health|disease|vitality|illness)\b/i],
+      ['spirituality', /\b(spirituality|spiritual|moksha|dharma)\b/i],
+      ['education', /\b(education|study|studies|exam|academic|university|degree|school|college|learning|intellect)\b/i],
+      ['property_vehicle', /\b(property|real estate|house|home|land|plot|apartment|flat|vehicle|car|cars|conveyance|automobile)\b/i],
+      ['children', /\b(children|child|childbirth|pregnancy|progeny|conceive|son|daughter|baby|kids)\b/i],
+      ['disputes_debts', /\b(debt|debts|loan|loans|litigation|dispute|disputes|court|lawsuit|enemies|conflict)\b/i],
+    ];
+    return candidates.filter(([, pattern]) => pattern.test(lower)).map(([domain]) => domain);
+  }
+
+  private extractPlanets(lower: string): string[] {
+    const planets: string[] = [];
+    const list = [
+      { name: 'Sun', aliases: ['sun', 'surya', 'ravi'] },
+      { name: 'Moon', aliases: ['moon', 'chandra', 'soma'] },
+      { name: 'Mars', aliases: ['mars', 'mangal', 'kuja', 'angarka'] },
+      { name: 'Mercury', aliases: ['mercury', 'budh', 'budha'] },
+      { name: 'Jupiter', aliases: ['jupiter', 'guru', 'brihaspati'] },
+      { name: 'Venus', aliases: ['venus', 'shukra'] },
+      { name: 'Saturn', aliases: ['saturn', 'shani'] },
+      { name: 'Rahu', aliases: ['rahu', 'north node'] },
+      { name: 'Ketu', aliases: ['ketu', 'south node'] },
+    ];
+
+    for (const p of list) {
+      if (p.aliases.some(alias => new RegExp(`\\b${alias}\\b`, 'i').test(lower))) {
+        planets.push(p.name);
+      }
+    }
+    return planets;
+  }
+
+  private extractHouses(lower: string): number[] {
+    const houses: number[] = [];
+    const houseMatches = lower.match(/\b(1st|2nd|3rd|4th|5th|6th|7th|8th|9th|10th|11th|12th|\d+th)\s+house\b/gi);
+    if (houseMatches) {
+      for (const m of houseMatches) {
+        const num = parseInt(m.match(/\d+/)?.[0] || '0', 10);
+        if (num >= 1 && num <= 12 && !houses.includes(num)) {
+          houses.push(num);
+        }
+      }
+    }
+    return houses;
+  }
+
+  private extractChartLayers(lower: string): VargaCode[] {
+    const layers: VargaCode[] = [];
+    const vargas: VargaCode[] = [
+      'D1', 'D2', 'D3', 'D4', 'D7', 'D9', 'D10', 'D12',
+      'D16', 'D20', 'D24', 'D27', 'D30', 'D40', 'D45', 'D60'
+    ];
+
+    for (const v of vargas) {
+      if (new RegExp(`\\b${v}\\b`, 'i').test(lower)) {
+        layers.push(v);
+      }
+    }
+    if (lower.includes('navamsha') || lower.includes('navamsa')) layers.push('D9');
+    if (lower.includes('dashamsha') || lower.includes('dasamsa')) layers.push('D10');
+    if (lower.includes('saptamsha') || lower.includes('saptamsa')) layers.push('D7');
+    if (lower.includes('shashtiamsha') || lower.includes('shashtiamsa')) layers.push('D60');
+
+    return Array.from(new Set(layers));
+  }
+
+  private extractTemporalScope(lower: string): {
+    temporalScope: { type: any; startIso?: string; endIso?: string; dashaLord?: string };
+    targetDatesIso: string[];
+  } {
+    const targetDatesIso: string[] = [];
+    const now = new Date();
+    const curYear = now.getUTCFullYear();
+
+    // 1. Explicit multi-year ranges (e.g. "between 2027 and 2030", "2027 to 2030", "2027-2030")
+    const rangeMatch = lower.match(/\b(202[0-9]|203[0-9])\s*(?:to|and|-)\s*(202[0-9]|203[0-9])\b/i);
+    if (rangeMatch) {
+      const startYear = parseInt(rangeMatch[1], 10);
+      const endYear = parseInt(rangeMatch[2], 10);
+      const startIso = new Date(Date.UTC(Math.min(startYear, endYear), 0, 1)).toISOString();
+      const endIso = new Date(Date.UTC(Math.max(startYear, endYear), 11, 31, 23, 59, 59, 999)).toISOString();
+
+      for (let y = Math.min(startYear, endYear); y <= Math.max(startYear, endYear); y++) {
+        targetDatesIso.push(new Date(Date.UTC(y, 5, 15)).toISOString());
+      }
+
+      return {
+        temporalScope: { type: 'date_range', startIso, endIso },
+        targetDatesIso,
+      };
+    }
+
+    // 2. Relative Expressions Anchored to "From Now" / "Until Month Year"
+    // e.g. "by Dec 2026 from now", "from now until December 2026", "by December 2026"
+    if (
+      (lower.includes('from now') || lower.includes('until') || lower.includes('by')) &&
+      /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(202[0-9]|203[0-9])/i.test(lower)
+    ) {
+      const match = lower.match(/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(202[0-9]|203[0-9])/i);
+      if (match) {
+        const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        const mIdx = monthNames.findIndex(m => match[1].toLowerCase().startsWith(m));
+        const y = parseInt(match[2], 10);
+        // End of that target month
+        const endMonthDate = new Date(Date.UTC(y, mIdx + 1, 0, 23, 59, 59, 999));
+        const startIso = lower.includes('from now') ? now.toISOString() : new Date(Date.UTC(y, mIdx, 1)).toISOString();
+        const endIso = endMonthDate.toISOString();
+        targetDatesIso.push(new Date(Date.UTC(y, mIdx, 15)).toISOString());
+
+        return {
+          temporalScope: { type: 'upcoming', startIso, endIso },
+          targetDatesIso,
+        };
+      }
+    }
+
+    // 3. Next N months (e.g. "next 3 months", "for the next 6 months")
+    const nextMonthsMatch = lower.match(/next\s*(\d+)\s*months?/i);
+    if (nextMonthsMatch) {
+      const count = parseInt(nextMonthsMatch[1], 10);
+      const startIso = now.toISOString();
+      const endIso = new Date(now.getTime() + count * 30 * 24 * 60 * 60 * 1000).toISOString();
+      targetDatesIso.push(new Date(now.getTime() + Math.floor(count / 2) * 30 * 24 * 60 * 60 * 1000).toISOString());
+      return {
+        temporalScope: { type: 'upcoming', startIso, endIso },
+        targetDatesIso,
+      };
+    }
+
+    // 4. "next year"
+    if (lower.includes('next year')) {
+      const nextYear = curYear + 1;
+      const startIso = new Date(Date.UTC(nextYear, 0, 1)).toISOString();
+      const endIso = new Date(Date.UTC(nextYear, 11, 31, 23, 59, 59, 999)).toISOString();
+      targetDatesIso.push(new Date(Date.UTC(nextYear, 5, 15)).toISOString());
+      return {
+        temporalScope: { type: 'upcoming', startIso, endIso },
+        targetDatesIso,
+      };
+    }
+
+    // 5. "last year" / Historical
+    if (lower.includes('last year') || lower.includes('previous year') || lower.includes('past year')) {
+      const pastYear = curYear - 1;
+      const startIso = new Date(Date.UTC(pastYear, 0, 1)).toISOString();
+      const endIso = new Date(Date.UTC(pastYear, 11, 31, 23, 59, 59, 999)).toISOString();
+      targetDatesIso.push(new Date(Date.UTC(pastYear, 5, 15)).toISOString());
+      return {
+        temporalScope: { type: 'historical', startIso, endIso },
+        targetDatesIso,
+      };
+    }
+
+    // 6. Dasha-Relative Expressions
+    // e.g. "during my current ad", "during current antardasha", "before my next ad", "during saturn ad"
+    if (lower.includes('current ad') || lower.includes('current antardasha') || lower.includes('active ad')) {
+      return {
+        temporalScope: { type: 'current_dasha', startIso: now.toISOString() },
+        targetDatesIso: [now.toISOString()],
+      };
+    }
+
+    if (lower.includes('next ad') || lower.includes('next antardasha') || lower.includes('upcoming ad')) {
+      return {
+        temporalScope: { type: 'upcoming_dasha', startIso: now.toISOString() },
+        targetDatesIso: [now.toISOString()],
+      };
+    }
+
+    const specificAdMatch = lower.match(/during\s*(saturn|jupiter|mars|venus|mercury|sun|moon|rahu|ketu)\s*(?:ad|antardasha)/i);
+    if (specificAdMatch) {
+      const planetName = specificAdMatch[1].charAt(0).toUpperCase() + specificAdMatch[1].slice(1).toLowerCase();
+      return {
+        temporalScope: { type: 'specific_dasha', dashaLord: planetName, startIso: now.toISOString() },
+        targetDatesIso: [now.toISOString()],
+      };
+    }
+
+    // 7. Explicit single 4-digit year (e.g. 2026, 2027, 2028)
+    const yearMatches = lower.match(/\b(202[0-9]|203[0-9])\b/g);
+    if (yearMatches && yearMatches.length > 0) {
+      const year = parseInt(yearMatches[0], 10);
+      const targetDate = new Date(Date.UTC(year, 5, 15)).toISOString();
+      targetDatesIso.push(targetDate);
+      return {
+        temporalScope: {
+          type: 'specific_date',
+          startIso: new Date(Date.UTC(year, 0, 1)).toISOString(),
+          endIso: new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999)).toISOString(),
+        },
+        targetDatesIso,
+      };
+    }
+
+    // 8. "right now" / "current" / "today" / "present"
+    if (lower.includes('right now') || lower.includes('today') || lower.includes('current') || lower.includes('now') || lower.includes('present')) {
+      return {
+        temporalScope: { type: 'current', startIso: now.toISOString() },
+        targetDatesIso: [],
+      };
+    }
+
+    if (lower.includes('upcoming') || lower.includes('near future') || lower.includes('soon')) {
+      const targetDate = new Date(Date.UTC(curYear + 1, 0, 1)).toISOString();
+      targetDatesIso.push(targetDate);
+      return {
+        temporalScope: { type: 'upcoming', startIso: targetDate },
+        targetDatesIso,
+      };
+    }
+
+    return {
+      temporalScope: { type: 'natal' },
+      targetDatesIso: [],
+    };
+  }
+}

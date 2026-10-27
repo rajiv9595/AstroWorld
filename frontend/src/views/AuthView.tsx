@@ -24,7 +24,7 @@ import {
   Star,
 } from 'lucide-react';
 
-import { signInWithSupabase, signUpWithSupabase, resetPasswordWithSupabase } from '../lib/supabase.ts';
+import { signInWithSupabase, signUpWithSupabase, resetPasswordWithSupabase, initiateGoogleOAuth } from '../lib/supabase.ts';
 
 interface AuthViewProps {
   onSuccess: (user: { id: string; name: string; email: string }) => void;
@@ -37,6 +37,16 @@ export const AuthView: React.FC<AuthViewProps> = ({
   onBackToHome,
   redirectReason = 'Sign in or create a free account to access and save your detailed Kundli.',
 }) => {
+  // Purge any stale pending drafts on auth screen mount
+  React.useEffect(() => {
+    try {
+      localStorage.removeItem('astroworld_pending_birth_profile');
+      localStorage.removeItem('astroworld_kundli_form_draft');
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -46,9 +56,26 @@ export const AuthView: React.FC<AuthViewProps> = ({
   const [rememberMe, setRememberMe] = useState(true);
 
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
+
+  const handleGoogleSignIn = async () => {
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setGoogleLoading(true);
+
+    const result = await initiateGoogleOAuth();
+    if (result.success && result.url) {
+      window.location.href = result.url;
+    } else {
+      setGoogleLoading(false);
+      setErrorMessage(
+        result.message || 'Unable to connect to Google OAuth. Please verify your Supabase configuration or sign in with email.'
+      );
+    }
+  };
 
   const SLIDES = [
     {
@@ -116,22 +143,32 @@ export const AuthView: React.FC<AuthViewProps> = ({
       const result = await signUpWithSupabase(cleanEmail, password, cleanName, rememberMe);
       setLoading(false);
 
-      if (!result.success || !result.user) {
-        setErrorMessage(result.message || 'Failed to create account. Please try again.');
+      if (!result.success) {
+        setErrorMessage(result.message || 'Unable to create account. Please try again.');
         return;
       }
+
+      let authedUser = result.user;
 
       if (result.authenticated === false) {
-        setMode('login');
-        setPassword('');
-        setConfirmPassword('');
-        setSuccessMessage(result.message || 'Account created. Please sign in to continue.');
+        // Automatically attempt immediate sign in with the new credentials so user is not stuck
+        setLoading(true);
+        const loginRes = await signInWithSupabase(cleanEmail, password, rememberMe);
+        setLoading(false);
+        if (loginRes.success && loginRes.user) {
+          authedUser = loginRes.user;
+        }
+      }
+
+      if (authedUser) {
+        setSuccessMessage('Account created successfully! Opening your dashboard...');
+        localStorage.setItem('astroworld_user', JSON.stringify(authedUser));
+        onSuccess(authedUser);
         return;
       }
 
-      setSuccessMessage('Account created successfully! Opening AstroWorld...');
-      localStorage.setItem('astroworld_user', JSON.stringify(result.user));
-      setTimeout(() => onSuccess(result.user!), 300);
+      setErrorMessage('Account created, but automatic sign-in was not completed. Please sign in with your email and password.');
+      setMode('login');
       return;
     }
 
@@ -146,9 +183,9 @@ export const AuthView: React.FC<AuthViewProps> = ({
         return;
       }
 
-      setSuccessMessage('Welcome back! Loading your profile...');
+      setSuccessMessage('Welcome back! Loading your dashboard...');
       localStorage.setItem('astroworld_user', JSON.stringify(result.user));
-      setTimeout(() => onSuccess(result.user!), 300);
+      onSuccess(result.user);
     }
   };
 
@@ -223,17 +260,55 @@ export const AuthView: React.FC<AuthViewProps> = ({
         </div>
 
         {/* Main Authentication Card Container */}
-        <div className="max-w-md w-full mx-auto space-y-6">
+        <div className="max-w-md w-full mx-auto space-y-5">
+          {/* Top Segmented Mode Switcher */}
+          {mode !== 'forgot' && (
+            <div className="grid grid-cols-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/80">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login');
+                  setErrorMessage(null);
+                  setSuccessMessage(null);
+                }}
+                className={`py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  mode === 'login'
+                    ? 'bg-white text-[#162058] shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Lock size={15} />
+                <span>Sign In</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('signup');
+                  setErrorMessage(null);
+                  setSuccessMessage(null);
+                }}
+                className={`py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  mode === 'signup'
+                    ? 'bg-white text-[#162058] shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <User size={15} />
+                <span>Create Account</span>
+              </button>
+            </div>
+          )}
+
           {/* Header Title */}
           <div>
             <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#162058]">
               {mode === 'login' && 'Welcome Back'}
-              {mode === 'signup' && 'Create Your Free Account'}
+              {mode === 'signup' && 'Create Your AstroWorld Account'}
               {mode === 'forgot' && 'Reset Your Password'}
             </h1>
             <p className="text-slate-500 text-xs sm:text-sm mt-1.5">
-              {mode === 'login' && 'Sign in to access your saved charts and Vedic calculations.'}
-              {mode === 'signup' && 'Register in seconds to generate and save your personalized Kundli.'}
+              {mode === 'login' && 'Sign in to access your saved birth charts and Vedic calculations.'}
+              {mode === 'signup' && 'Register to set up your personal Kundli and unlock full astrological features.'}
               {mode === 'forgot' && 'Enter your registered email to receive recovery instructions.'}
             </p>
           </div>
@@ -246,11 +321,39 @@ export const AuthView: React.FC<AuthViewProps> = ({
             </div>
           )}
 
-          {/* Error Message */}
+          {/* Error Message with Smart Recovery Switch */}
           {errorMessage && (
-            <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2 animate-fadeIn">
-              <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
-              <span>{errorMessage}</span>
+            <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex flex-col gap-2 animate-fadeIn">
+              <div className="flex items-start gap-2">
+                <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
+                <span className="leading-relaxed">{errorMessage}</span>
+              </div>
+              {mode === 'login' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('signup');
+                    setErrorMessage(null);
+                    setSuccessMessage(null);
+                  }}
+                  className="self-start text-xs font-bold text-orange-600 hover:text-orange-700 underline cursor-pointer pl-6"
+                >
+                  New to AstroWorld? Click here to Create an Account with this email →
+                </button>
+              )}
+              {mode === 'signup' && errorMessage.toLowerCase().includes('already exists') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setErrorMessage(null);
+                    setSuccessMessage(null);
+                  }}
+                  className="self-start text-xs font-bold text-orange-600 hover:text-orange-700 underline cursor-pointer pl-6"
+                >
+                  Already registered? Click here to Sign In →
+                </button>
+              )}
             </div>
           )}
 
@@ -407,6 +510,51 @@ export const AuthView: React.FC<AuthViewProps> = ({
               )}
             </button>
           </form>
+
+          {/* Social OAuth Divider & Google Button (Login & Sign Up) */}
+          {mode !== 'forgot' && (
+            <div className="space-y-4 pt-1">
+              <div className="relative my-3">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-200" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-white px-3 text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
+                    or continue with
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={loading || googleLoading}
+                className="w-full py-3 px-4 bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-300 hover:border-slate-400 rounded-xl font-bold text-xs sm:text-sm text-slate-700 shadow-xs hover:shadow-sm transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-60 transform hover:-translate-y-0.5"
+              >
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                  />
+                </svg>
+                <span>
+                  {googleLoading ? 'Connecting to Google...' : 'Continue with Google'}
+                </span>
+              </button>
+            </div>
+          )}
 
           {/* Mode Switcher */}
           <div className="text-center text-xs text-slate-600 pt-3">

@@ -6,3 +6,14 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Datasets and heavy documents (PDFs, docx, extracted OCR)
+backend/datasets/
+datasets/
+*.pdf
+*.docx
+backend/scripts/extracted_*.txt
+
+# IDE & local agent workspace caches
+.gemini/
+

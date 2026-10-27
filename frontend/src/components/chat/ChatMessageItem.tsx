@@ -7,6 +7,9 @@
 import React, { useState } from 'react';
 import { Copy, Check, RefreshCw, AlertCircle, Sparkles, User } from 'lucide-react';
 import { ConsultationMarkdownRenderer } from './ConsultationMarkdownRenderer.tsx';
+import { ConsultationVisualizations, AgentCouncilSynthesis } from '../../services/aiV2ApiClient.ts';
+import { ConsultationVisualizationsWidget } from './ConsultationVisualizationsWidget.tsx';
+import { JyotishCouncilReasoningWidget } from './JyotishCouncilReasoningWidget.tsx';
 
 export interface ChatMessage {
   id: string;
@@ -22,6 +25,8 @@ export interface ChatMessage {
   idempotencyKey?: string;
   executionMode?: 'live_gemini' | 'repaired_gemini' | 'deterministic_fallback' | 'failed' | string;
   fallbackReason?: string;
+  visualizations?: ConsultationVisualizations;
+  agentCouncil?: AgentCouncilSynthesis;
 }
 
 interface ChatMessageItemProps {
@@ -127,6 +132,16 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             content={message.text}
             onSelectFollowUp={onSelectFollowUp}
           />
+
+          {/* Jyotish 360° Multi-Perspective Reasoning Council Breakdown */}
+          {message.agentCouncil && (
+            <JyotishCouncilReasoningWidget council={message.agentCouncil} />
+          )}
+
+          {/* Contextual Visualizations (Dasha Bar, Shadbala Meters, Timing Probability) */}
+          {message.visualizations && (
+            <ConsultationVisualizationsWidget visualizations={message.visualizations} />
+          )}
 
           {/* Footer Metadata & Actions (Zero-Pill Discipline) */}
           <div className="mt-4 pt-3 border-t border-amber-900/10 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-700 font-sans">

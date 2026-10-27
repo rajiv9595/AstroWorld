@@ -14,6 +14,7 @@ import {
   Clock,
   Compass,
   Edit2,
+  Lock,
 } from 'lucide-react';
 import { BirthProfile } from '../../engine/types.ts';
 
@@ -21,6 +22,8 @@ interface ChatEmptyStateProps {
   birthProfile: BirthProfile;
   onSelectPrompt: (promptText: string) => void;
   onOpenProfileModal?: () => void;
+  isLoggedIn?: boolean;
+  onRequireAuth?: () => void;
 }
 
 interface PromptCategory {
@@ -74,9 +77,19 @@ export const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({
   birthProfile,
   onSelectPrompt,
   onOpenProfileModal,
+  isLoggedIn = false,
+  onRequireAuth,
 }) => {
   const formattedDob = `${birthProfile.day} ${new Date(birthProfile.year, birthProfile.month - 1).toLocaleString('default', { month: 'short' })} ${birthProfile.year}`;
   const formattedTime = `${String(birthProfile.hour).padStart(2, '0')}:${String(birthProfile.minute).padStart(2, '0')}`;
+
+  const handlePromptClick = (prompt: string) => {
+    if (!isLoggedIn && onRequireAuth) {
+      onRequireAuth();
+      return;
+    }
+    onSelectPrompt(prompt);
+  };
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6">
@@ -92,29 +105,45 @@ export const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({
           Ask questions grounded in classical Jyotish, verified planetary ephemeris calculations, and active dasha cycles.
         </p>
 
-        {/* Birth Profile Context Strip */}
-        <div className="mt-4 inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#FAF7F2] border border-amber-900/15 rounded-xl text-xs text-slate-700 shadow-sm">
-          <Compass size={13} className="text-amber-800 shrink-0" />
-          <span className="font-medium text-slate-900">{birthProfile.name}</span>
-          <span aria-hidden="true" className="text-slate-400">·</span>
-          <span>{formattedDob} at {formattedTime}</span>
-          {birthProfile.timezone && (
-            <>
-              <span aria-hidden="true" className="text-slate-400">·</span>
-              <span className="text-slate-600">{birthProfile.timezone}</span>
-            </>
-          )}
-          {onOpenProfileModal && (
-            <button
-              type="button"
-              onClick={onOpenProfileModal}
-              title="Edit birth chart details"
-              className="ml-1 p-1 hover:bg-amber-900/10 text-amber-800 hover:text-amber-950 rounded transition-colors cursor-pointer"
-            >
-              <Edit2 size={12} />
-            </button>
-          )}
-        </div>
+        {/* Birth Profile Context Strip (Only shown when logged in to protect user privacy) */}
+        {isLoggedIn ? (
+          <div className="mt-4 inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#FAF7F2] border border-amber-900/15 rounded-xl text-xs text-slate-700 shadow-sm">
+            <Compass size={13} className="text-amber-800 shrink-0" />
+            <span className="font-medium text-slate-900">{birthProfile.name}</span>
+            <span aria-hidden="true" className="text-slate-400">·</span>
+            <span>{formattedDob} at {formattedTime}</span>
+            {birthProfile.timezone && (
+              <>
+                <span aria-hidden="true" className="text-slate-400">·</span>
+                <span className="text-slate-600">{birthProfile.timezone}</span>
+              </>
+            )}
+            {onOpenProfileModal && (
+              <button
+                type="button"
+                onClick={onOpenProfileModal}
+                title="Edit birth chart details"
+                className="ml-1 p-1 hover:bg-amber-900/10 text-amber-800 hover:text-amber-950 rounded transition-colors cursor-pointer"
+              >
+                <Edit2 size={12} />
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 shadow-sm">
+            <Lock size={13} className="text-amber-700 shrink-0" />
+            <span className="font-semibold">Sign in required to consult AI Astrologer and access personalized readings</span>
+            {onRequireAuth && (
+              <button
+                type="button"
+                onClick={onRequireAuth}
+                className="ml-1 text-orange-600 hover:text-orange-700 font-bold underline cursor-pointer"
+              >
+                Sign In →
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Suggestion Categories Grid */}
@@ -138,7 +167,7 @@ export const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({
                   <button
                     key={prompt}
                     type="button"
-                    onClick={() => onSelectPrompt(prompt)}
+                    onClick={() => handlePromptClick(prompt)}
                     className="w-full text-left p-2.5 rounded-xl bg-slate-50 hover:bg-amber-50/70 border border-slate-100 hover:border-amber-200/60 text-xs sm:text-sm text-slate-700 hover:text-[#162058] transition-all cursor-pointer leading-snug group flex items-start justify-between gap-2"
                   >
                     <span>{prompt}</span>

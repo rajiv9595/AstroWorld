@@ -153,5 +153,5 @@ export async function computeCanonicalChartWithConfiguredEphemeris(
       `Ephemeris provider "${provider.source}" returned a snapshot for ${snapshot.calculationDateUtc} instead of ${birthUtcDate.toISOString()}.`,
     );
   }
-  return computeCanonicalChart(profile, evaluationDateUtc, snapshot);
+  return computeCanonicalChart(profile, evaluationDateUtc, snapshot, provider, birthUtcDate);
 }

@@ -194,7 +194,7 @@ export function calculateVimshottariDasha(
   return {
     balanceAtBirth: {
       rulingLord: startLord,
-      balanceYears: Math.round(balanceYears * 100) / 100,
+      balanceYears,
       balanceMonths,
       balanceDays,
       fullDurationYears: fullDurYears,

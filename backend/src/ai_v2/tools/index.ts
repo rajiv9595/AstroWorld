@@ -1,2 +1,4 @@
-export * from './astrologyTools.ts';
-export * from './toolRegistry.ts';
+/**
+ * Backwards compatibility re-export from unified src/ai/tools
+ */
+export * from '../../ai/tools/index.ts';

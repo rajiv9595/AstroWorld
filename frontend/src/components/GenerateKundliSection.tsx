@@ -7,9 +7,9 @@
  * - Vedic computational pillars and high-precision canonical calculation
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, Sparkles, ArrowRight, User, ShieldCheck, CheckCircle2 } from 'lucide-react';
-import { BirthProfile } from '../engine/types.ts';
+import { BirthProfile, isDemoOrDummyName } from '../engine/types.ts';
 import { CityAutocompleteInput } from './CityAutocompleteInput.tsx';
 import { VedicDatePicker } from './VedicDatePicker.tsx';
 import { VedicTimePicker } from './VedicTimePicker.tsx';
@@ -22,11 +22,12 @@ interface GenerateKundliSectionProps {
 }
 
 export const GenerateKundliSection: React.FC<GenerateKundliSectionProps> = ({
+  currentProfile,
   isLoggedIn,
   onGenerate,
   onRequireAuth,
 }) => {
-  // String state for unconstrained typing & backspacing
+  // Plain initial states (no dummy or demo data)
   const [name, setName] = useState('');
   const [day, setDay] = useState('');
   const [month, setMonth] = useState('');
@@ -35,11 +36,38 @@ export const GenerateKundliSection: React.FC<GenerateKundliSectionProps> = ({
   const [minute, setMinute] = useState('');
   const [second, setSecond] = useState('0');
   const [cityName, setCityName] = useState('');
-  const [latitude, setLatitude] = useState('28.6139');
-  const [longitude, setLongitude] = useState('77.2090');
-  const [timezone, setTimezone] = useState('Asia/Kolkata');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [timezone, setTimezone] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Form state defaults to clean, empty dummy fields
+  useEffect(() => {
+    // 1. Purge any stale pending or draft profiles from localStorage
+    try {
+      localStorage.removeItem('astroworld_pending_birth_profile');
+      localStorage.removeItem('astroworld_kundli_form_draft');
+    } catch {
+      // ignore
+    }
+
+    // 2. If user is actively logged in and has a saved profile, display their profile
+    if (isLoggedIn && currentProfile && !isDemoOrDummyName(currentProfile.name)) {
+      setName(currentProfile.name);
+      setDay(currentProfile.day ? String(currentProfile.day) : '');
+      setMonth(currentProfile.month ? String(currentProfile.month) : '');
+      setYear(currentProfile.year ? String(currentProfile.year) : '');
+      setHour(currentProfile.hour !== undefined ? String(currentProfile.hour) : '');
+      setMinute(currentProfile.minute !== undefined ? String(currentProfile.minute) : '');
+      setSecond(currentProfile.second !== undefined ? String(currentProfile.second) : '0');
+      setCityName(currentProfile.cityName || '');
+      setLatitude(currentProfile.latitude !== undefined ? String(currentProfile.latitude) : '');
+      setLongitude(currentProfile.longitude !== undefined ? String(currentProfile.longitude) : '');
+      setTimezone(currentProfile.timezone || '');
+      if (currentProfile.gender) setGender(currentProfile.gender);
+    }
+  }, [currentProfile, isLoggedIn]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -277,7 +305,6 @@ export const GenerateKundliSection: React.FC<GenerateKundliSectionProps> = ({
                     onChange={(e) => setTimezone(e.target.value)}
                     placeholder="Asia/Kolkata"
                     className="w-full bg-[#FAF7F2] border border-slate-300 focus:border-orange-500 rounded-xl py-2.5 px-3 text-xs text-[#162058] font-mono focus:outline-none focus:bg-white transition"
-                    required
                   />
                 </div>
               </div>
@@ -294,7 +321,6 @@ export const GenerateKundliSection: React.FC<GenerateKundliSectionProps> = ({
                     onChange={(e) => setLatitude(e.target.value)}
                     placeholder="28.6139"
                     className="w-full bg-[#FAF7F2] border border-slate-300 focus:border-orange-500 rounded-xl py-2 px-3 text-xs text-[#162058] font-mono focus:outline-none focus:bg-white transition"
-                    required
                   />
                 </div>
                 <div>
@@ -307,7 +333,6 @@ export const GenerateKundliSection: React.FC<GenerateKundliSectionProps> = ({
                     onChange={(e) => setLongitude(e.target.value)}
                     placeholder="77.2090"
                     className="w-full bg-[#FAF7F2] border border-slate-300 focus:border-orange-500 rounded-xl py-2 px-3 text-xs text-[#162058] font-mono focus:outline-none focus:bg-white transition"
-                    required
                   />
                 </div>
               </div>

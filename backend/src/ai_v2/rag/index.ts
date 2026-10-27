@@ -1,3 +1,4 @@
-export * from './knowledgeBase.ts';
-export * from './retriever.ts';
-export * from './goldenRetrievalSet.ts';
+/**
+ * Backwards compatibility re-export from unified src/ai/rag
+ */
+export * from '../../ai/rag/index.ts';

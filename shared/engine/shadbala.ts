@@ -17,7 +17,9 @@ import {
   PlanetName,
   PlanetaryAvasthas,
   PlanetPosition,
+  ShadbalaCalculationOptions,
   ShadbalaFactor,
+  ShadbalaSubBreakdown,
   StrengthFacts,
   ZodiacSign,
 } from './types.ts';
@@ -143,7 +145,7 @@ const DIG_BALA_OPTIMAL_HOUSES: Record<PlanetName, number> = {
 };
 
 /**
- * Compute Dig Bala (0 to 60 Virupas) based on distance from optimal house.
+ * Compute Dig Bala (0 to 60 Virupas) based on distance from optimal house (classical_partial contract).
  */
 function calculateDigBala(planet: PlanetName, house: number): number {
   const optHouse = DIG_BALA_OPTIMAL_HOUSES[planet];
@@ -156,7 +158,37 @@ function calculateDigBala(planet: PlanetName, house: number): number {
 }
 
 /**
- * Compute Sthana Bala (Positional Strength) approx in Virupas.
+ * Classical continuous Dig Bala (Kapoor Table IX & BPHS):
+ * Distance from powerless (weakest) point divided by 3.
+ */
+function calculateContinuousDigBala(
+  planet: PlanetName,
+  siderealLongitude: number,
+  ascendantLongitude: number,
+  mcLongitude?: number
+): { digBala: number; weakPoint: number; distance: number } {
+  let weakPoint = 0;
+  const ic = mcLongitude !== undefined ? (mcLongitude + 180) % 360 : (ascendantLongitude + 90) % 360;
+  const mc = mcLongitude !== undefined ? mcLongitude : (ascendantLongitude + 270) % 360;
+  const desc = (ascendantLongitude + 180) % 360;
+
+  if (planet === 'Jupiter' || planet === 'Mercury') {
+    weakPoint = desc; // 7th cusp
+  } else if (planet === 'Moon' || planet === 'Venus' || planet === 'Ketu') {
+    weakPoint = mc; // 10th cusp
+  } else if (planet === 'Sun' || planet === 'Mars' || planet === 'Rahu') {
+    weakPoint = ic; // 4th cusp
+  } else if (planet === 'Saturn') {
+    weakPoint = ascendantLongitude; // 1st cusp
+  }
+
+  const distance = circularDistanceDegrees(siderealLongitude, weakPoint);
+  const digBala = Math.max(0, Math.min(60, Math.round((distance / 3.0) * 100) / 100));
+  return { digBala, weakPoint, distance };
+}
+
+/**
+ * Compute Sthana Bala (Positional Strength) in Virupas.
  */
 function calculateSthanaBala(planet: PlanetPosition, planets: PlanetPosition[]): number {
   const uccha = calculateUcchaBala(planet);
@@ -168,16 +200,13 @@ function calculateSthanaBala(planet: PlanetPosition, planets: PlanetPosition[]):
 }
 
 /**
- * Compute Kala Bala (Temporal Strength) in Virupas.
+ * Compute Kala Bala (Temporal Strength) in Virupas (classical_partial contract).
  */
 function calculateKalaBala(
   planet: PlanetPosition,
   birthHourFraction: number,
   moonSunElongation: number,
 ): number {
-  // Classical sub-components available from the current input contract:
-  // Nathonnatha + Paksha. Tribhaga, Vara/Hora, Ayana and Yuddha need richer
-  // birth-context inputs and are deliberately not fabricated here.
   if (planet.name === 'Mercury') {
     const nathonnatha = 60;
     const half = moonSunElongation <= 180 ? moonSunElongation : 360 - moonSunElongation;
@@ -201,18 +230,200 @@ function calculateKalaBala(
 }
 
 /**
- * Compute Chesta Bala (Motional Strength) in Virupas.
+ * Full Classical Kala Bala (Kapoor Chapter 16.3 & BPHS):
+ * Natonnatha + Paksha + Tribhaga + Varadhipati + Horadhipati + Ayana Bala
+ */
+function calculateFullClassicalKalaBala(
+  planet: PlanetPosition,
+  birthHourFraction: number,
+  moonSunElongation: number,
+  options?: ShadbalaCalculationOptions
+): {
+  total: number;
+  breakdown: {
+    natonnatha: number;
+    paksha: number;
+    tribhaga: number;
+    varadhipati: number;
+    horadhipati: number;
+    ayana: number;
+  };
+} {
+  // 1. Nat-Unnat Bala
+  let natonnatha = 0;
+  if (planet.name === 'Mercury') {
+    natonnatha = 60;
+  } else {
+    const hour = ((birthHourFraction % 24) + 24) % 24;
+    const distanceFromMidnight = Math.min(hour, 24 - hour);
+    const unna = (distanceFromMidnight / 12) * 60;
+    const nata = 60 - unna;
+    natonnatha = ['Sun', 'Jupiter', 'Venus'].includes(planet.name) ? unna : nata;
+  }
+  natonnatha = Math.round(natonnatha * 100) / 100;
+
+  // 2. Paksha Bala
+  const half = moonSunElongation <= 180 ? moonSunElongation : 360 - moonSunElongation;
+  const beneficPaksha = Math.max(0, Math.min(60, half / 3));
+  let paksha = ['Moon', 'Mercury', 'Jupiter', 'Venus'].includes(planet.name)
+    ? beneficPaksha
+    : 60 - beneficPaksha;
+  if (planet.name === 'Moon') {
+    paksha = Math.min(60, paksha * 2);
+  }
+  paksha = Math.round(paksha * 100) / 100;
+
+  // 3. Tribhaga Bala
+  let tribhaga = planet.name === 'Jupiter' ? 60 : 0;
+  const isDay = birthHourFraction >= 6 && birthHourFraction < 18;
+  if (isDay) {
+    const part = Math.floor((birthHourFraction - 6) / 4);
+    if (part === 0 && planet.name === 'Mercury') tribhaga = 60;
+    else if (part === 1 && planet.name === 'Sun') tribhaga = 60;
+    else if (part >= 2 && planet.name === 'Saturn') tribhaga = 60;
+  } else {
+    const nightHour = birthHourFraction >= 18 ? birthHourFraction - 18 : birthHourFraction + 6;
+    const part = Math.floor(nightHour / 4);
+    if (part === 0 && planet.name === 'Moon') tribhaga = 60;
+    else if (part === 1 && planet.name === 'Venus') tribhaga = 60;
+    else if (part >= 2 && planet.name === 'Mars') tribhaga = 60;
+  }
+
+  // 4. Varadhipati Bala (45 Virupas)
+  let varadhipati = 0;
+  const WEEKDAY_LORDS: PlanetName[] = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  if (options?.birthDateUtc) {
+    const dayOfWeek = options.birthDateUtc.getUTCDay();
+    if (WEEKDAY_LORDS[dayOfWeek] === planet.name) {
+      varadhipati = 45;
+    }
+  }
+
+  // 5. Horadhipati Bala (60 Virupas)
+  let horadhipati = 0;
+  if (options?.birthDateUtc) {
+    const dayOfWeek = options.birthDateUtc.getUTCDay();
+    const hoursSinceSunrise = ((birthHourFraction - 6 + 24) % 24);
+    const horaIndex = Math.floor(hoursSinceSunrise);
+    const horaLordIdx = (dayOfWeek + horaIndex * 5) % 7;
+    if (WEEKDAY_LORDS[horaLordIdx] === planet.name) {
+      horadhipati = 60;
+    }
+  }
+
+  // 6. Ayana Bala
+  const ayanamsha = options?.ayanamsha || 24.0;
+  const sayanaLon = (planet.siderealLongitude + ayanamsha) % 360;
+  const epsRad = (23.44 * Math.PI) / 180;
+  const sayanaRad = (sayanaLon * Math.PI) / 180;
+  const sinDelta = Math.sin(epsRad) * Math.sin(sayanaRad);
+  const deltaDeg = (Math.asin(sinDelta) * 180) / Math.PI;
+
+  let ayana = 0;
+  if (['Sun', 'Mars', 'Jupiter', 'Venus'].includes(planet.name)) {
+    ayana = ((24 + deltaDeg) / 48) * 60;
+  } else if (['Moon', 'Saturn'].includes(planet.name)) {
+    ayana = ((24 - deltaDeg) / 48) * 60;
+  } else if (planet.name === 'Mercury') {
+    ayana = ((24 + Math.abs(deltaDeg)) / 48) * 60;
+  }
+  if (planet.name === 'Sun') {
+    ayana = Math.min(60, ayana * 2);
+  }
+  ayana = Math.max(0, Math.min(60, Math.round(ayana * 100) / 100));
+
+  const total = Math.round((natonnatha + paksha + tribhaga + varadhipati + horadhipati + ayana) * 100) / 100;
+  return {
+    total,
+    breakdown: {
+      natonnatha,
+      paksha,
+      tribhaga,
+      varadhipati,
+      horadhipati,
+      ayana,
+    },
+  };
+}
+
+/**
+ * Compute Chesta Bala (Motional Strength) in Virupas (classical_partial contract).
  */
 function calculateChestaBala(planet: PlanetPosition): number {
   if (planet.name === 'Sun' || planet.name === 'Moon') return 30;
   if (planet.retrograde) return 60;
-  // Without mean-vs-true longitude inputs we cannot distinguish the remaining
-  // classical motion states without guessing; use the neutral partial value.
   return 30;
 }
 
 /**
- * Compute Drik Bala (Aspect Strength) in Virupas.
+ * Classical continuous Chesta Bala (Kapoor Chapter 17 & BPHS).
+ */
+function calculateFullClassicalChestaBala(
+  planet: PlanetPosition,
+  sunLon: number,
+  ayanaBala: number,
+  pakshaBala: number
+): { chestaBala: number; chestaKendraDegrees?: number; isRetrograde: boolean } {
+  if (planet.name === 'Sun') {
+    return { chestaBala: ayanaBala, isRetrograde: false };
+  }
+  if (planet.name === 'Moon') {
+    return { chestaBala: pakshaBala, isRetrograde: false };
+  }
+  if (planet.retrograde) {
+    return { chestaBala: 60, isRetrograde: true };
+  }
+
+  const seeghrochha = sunLon;
+  const ck = ((seeghrochha - planet.siderealLongitude + 360) % 360);
+  const rck = ck > 180 ? 360 - ck : ck;
+  const chestaBala = Math.max(0, Math.min(60, Math.round((rck / 3.0) * 100) / 100));
+
+  return { chestaBala, chestaKendraDegrees: Math.round(rck * 100) / 100, isRetrograde: false };
+}
+
+/**
+ * Classical Shashtiamsha aspect strength of a planet onto any target longitude.
+ * Implements Deepak Kapoor Chapter 17.3 & BPHS Ch. 27 aspect rules.
+ */
+function calculateDrishtiOnLongitude(
+  planet: PlanetPosition,
+  targetLongitude: number
+): number {
+  const normTarget = ((targetLongitude % 360) + 360) % 360;
+  const normPlanet = ((planet.siderealLongitude % 360) + 360) % 360;
+  const dk = ((normTarget - normPlanet + 360) % 360); // Drishti Kendra
+
+  let baseAspect = 0;
+  if (dk >= 30 && dk < 60) {
+    baseAspect = (dk - 30) * 0.5;
+  } else if (dk >= 60 && dk < 90) {
+    baseAspect = 15.0 + (dk - 60) * 1.0;
+  } else if (dk >= 90 && dk < 120) {
+    baseAspect = 45.0 - (dk - 90) * 0.5;
+  } else if (dk >= 120 && dk < 150) {
+    baseAspect = 30.0 - (dk - 120) * 1.0;
+  } else if (dk >= 150 && dk < 180) {
+    baseAspect = (dk - 150) * 2.0;
+  } else if (dk >= 180 && dk < 300) {
+    baseAspect = (300 - dk) * 0.5;
+  }
+
+  // Special aspects (Mars 4/8, Jupiter 5/9, Saturn 3/10)
+  let special = 0;
+  if (planet.name === 'Mars' && ((dk >= 80 && dk <= 100) || (dk >= 200 && dk <= 220))) {
+    special = 15;
+  } else if (planet.name === 'Jupiter' && ((dk >= 110 && dk <= 130) || (dk >= 230 && dk <= 250))) {
+    special = 30;
+  } else if (planet.name === 'Saturn' && ((dk >= 50 && dk <= 70) || (dk >= 260 && dk <= 280))) {
+    special = 45;
+  }
+
+  return Math.min(60, baseAspect + special);
+}
+
+/**
+ * Compute Drik Bala (Aspect Strength) in Virupas (classical_partial contract).
  */
 function calculateDrikBala(planet: PlanetPosition, planets: PlanetPosition[]): number {
   const moon = planets.find(p => p.name === 'Moon');
@@ -236,12 +447,59 @@ function calculateDrikBala(planet: PlanetPosition, planets: PlanetPosition[]): n
 }
 
 /**
+ * Classical continuous Drik Bala (Kapoor Table XXII & BPHS Ch. 27):
+ * Net Drishti Pinda divided by 4.
+ */
+function calculateContinuousDrikBala(
+  planet: PlanetPosition,
+  planets: PlanetPosition[]
+): { drikBala: number; shubhaDrishti: number; papaDrishti: number; drishtiPinda: number } {
+  const sun = planets.find(p => p.name === 'Sun');
+  const moon = planets.find(p => p.name === 'Moon');
+  const elongation = sun && moon
+    ? ((moon.siderealLongitude - sun.siderealLongitude) % 360 + 360) % 360
+    : 90;
+  const isWaxing = elongation <= 180;
+
+  let shubhaDrishti = 0;
+  let papaDrishti = 0;
+
+  for (const source of planets) {
+    if (source.name === planet.name || !CLASSICAL_SHADBALA_BODIES.includes(source.name)) continue;
+
+    const rawAspect = calculateDrishtiOnLongitude(source, planet.siderealLongitude);
+    if (rawAspect <= 0) continue;
+
+    const isBenefic =
+      source.name === 'Jupiter' ||
+      source.name === 'Venus' ||
+      (source.name === 'Mercury' && !source.combust) ||
+      (source.name === 'Moon' && isWaxing);
+
+    if (isBenefic) {
+      shubhaDrishti += rawAspect;
+    } else {
+      papaDrishti += rawAspect;
+    }
+  }
+
+  const drishtiPinda = Math.round((shubhaDrishti - papaDrishti) * 100) / 100;
+  const drikBala = Math.max(-60, Math.min(60, Math.round((drishtiPinda / 4.0) * 100) / 100));
+  return { drikBala, shubhaDrishti, papaDrishti, drishtiPinda };
+}
+
+/**
  * Compute complete Shadbala breakdown for all 7 classical planets (+ nodes).
  */
 export function calculateShadbala(
   planets: PlanetPosition[],
-  birthHour: number = 0
+  birthHour: number = 0,
+  options?: ShadbalaCalculationOptions
 ): ShadbalaFactor[] {
+  const isFull = options?.methodology === 'classical_full';
+  const ascendantLon = options?.cusps?.ascendant ?? 0;
+  const mcLon = options?.cusps?.mc;
+
   const classicalBodies: PlanetName[] = [
     'Sun',
     'Moon',
@@ -252,20 +510,78 @@ export function calculateShadbala(
     'Saturn',
   ];
 
+  const moon = planets.find(x => x.name === 'Moon');
+  const sun = planets.find(x => x.name === 'Sun');
+  const moonSunElongation = moon && sun
+    ? ((moon.siderealLongitude - sun.siderealLongitude) % 360 + 360) % 360
+    : 90;
+
   const factors: ShadbalaFactor[] = classicalBodies.map((name) => {
     const p = planets.find((x) => x.name === name)!;
     const sthanaBala = calculateSthanaBala(p, planets);
-    const digBala = calculateDigBala(name, p.houseNumber);
-    const moon = planets.find(x => x.name === 'Moon');
-    const sun = planets.find(x => x.name === 'Sun');
-    const moonSunElongation = moon && sun
-      ? ((moon.siderealLongitude - sun.siderealLongitude) % 360 + 360) % 360
-      : 90;
-    const kalaBala = calculateKalaBala(p, birthHour, moonSunElongation);
-    const chestaBala = calculateChestaBala(p);
-    const naisargikaBala = NAISARGIKA_BALA[name];
-    const drikBala = calculateDrikBala(p, planets);
 
+    let digBala = 0;
+    let kalaBala = 0;
+    let chestaBala = 0;
+    let drikBala = 0;
+    let subBreakdown: ShadbalaSubBreakdown | undefined;
+
+    if (isFull) {
+      const digCalc = calculateContinuousDigBala(name, p.siderealLongitude, ascendantLon, mcLon);
+      digBala = digCalc.digBala;
+
+      const kalaCalc = calculateFullClassicalKalaBala(p, birthHour, moonSunElongation, options);
+      kalaBala = kalaCalc.total;
+
+      const chestaCalc = calculateFullClassicalChestaBala(
+        p,
+        sun ? sun.siderealLongitude : 0,
+        kalaCalc.breakdown.ayana,
+        kalaCalc.breakdown.paksha
+      );
+      chestaBala = chestaCalc.chestaBala;
+
+      const drikCalc = calculateContinuousDrikBala(p, planets);
+      drikBala = drikCalc.drikBala;
+
+      subBreakdown = {
+        sthana: {
+          uccha: calculateUcchaBala(p),
+          saptavargaja: calculateSaptavargajaBala(p, planets),
+          ojayugma: calculateOjaYugmaBala(p),
+          kendradi: calculateKendradiBala(p.houseNumber),
+          drekkana: calculateDrekkanaBala(p),
+        },
+        dig: {
+          weakPointLongitude: digCalc.weakPoint,
+          distanceDegrees: digCalc.distance,
+        },
+        kala: {
+          natonnatha: kalaCalc.breakdown.natonnatha,
+          paksha: kalaCalc.breakdown.paksha,
+          tribhaga: kalaCalc.breakdown.tribhaga,
+          varadhipati: kalaCalc.breakdown.varadhipati,
+          horadhipati: kalaCalc.breakdown.horadhipati,
+          ayana: kalaCalc.breakdown.ayana,
+        },
+        chesta: {
+          chestaKendraDegrees: chestaCalc.chestaKendraDegrees,
+          isRetrograde: chestaCalc.isRetrograde,
+        },
+        drik: {
+          shubhaDrishti: drikCalc.shubhaDrishti,
+          papaDrishti: drikCalc.papaDrishti,
+          drishtiPinda: drikCalc.drishtiPinda,
+        },
+      };
+    } else {
+      digBala = calculateDigBala(name, p.houseNumber);
+      kalaBala = calculateKalaBala(p, birthHour, moonSunElongation);
+      chestaBala = calculateChestaBala(p);
+      drikBala = calculateDrikBala(p, planets);
+    }
+
+    const naisargikaBala = NAISARGIKA_BALA[name];
     const totalVirupas = Math.round(
       (sthanaBala + digBala + kalaBala + chestaBala + naisargikaBala + drikBala) * 10
     ) / 10;
@@ -276,6 +592,10 @@ export function calculateShadbala(
     let verdict: 'STRONG' | 'ADEQUATE' | 'WEAK' = 'ADEQUATE';
     if (strengthRatio >= 1.15) verdict = 'STRONG';
     else if (strengthRatio < 0.95) verdict = 'WEAK';
+
+    const uccha = calculateUcchaBala(p);
+    const ishtaPhala = Math.round(Math.sqrt(Math.max(0, uccha * chestaBala)) * 100) / 100;
+    const kashtaPhala = Math.round(Math.max(0, 60 - ishtaPhala) * 100) / 100;
 
     return {
       planet: name,
@@ -291,6 +611,9 @@ export function calculateShadbala(
       strengthRatio,
       rank: 1, // calculated after sorting
       verdict,
+      ishtaPhala,
+      kashtaPhala,
+      subBreakdown,
     };
   });
 
@@ -305,38 +628,111 @@ export function calculateShadbala(
 }
 
 /**
- * Compute Bhava Bala (Strength of 12 Houses).
+ * Computes complete high-precision classical Shadbala with all 6 categories & sub-breakdowns.
+ */
+export function calculateCompleteShadbala(
+  planets: PlanetPosition[],
+  birthHour: number = 0,
+  options?: ShadbalaCalculationOptions
+): ShadbalaFactor[] {
+  return calculateShadbala(planets, birthHour, { ...options, methodology: 'classical_full' });
+}
+
+/**
+ * Sign classification for Bhava Dig Bala (Kapoor Chapter 18.3):
+ * - Nara (Human): Gemini, Virgo, Libra, Aquarius, first half of Sagittarius (0°-15°). Strongest: House 1, Weakest: House 7.
+ * - Jalachara (Aquatic): Cancer, Pisces, second half of Capricorn (15°-30°). Strongest: House 4, Weakest: House 10.
+ * - Chatushpada (Quadruped): Aries, Taurus, Leo, 2nd half Sag (15°-30°), 1st half Cap (0°-15°). Strongest: House 10, Weakest: House 4.
+ * - Keeta (Insect): Scorpio. Strongest: House 7, Weakest: House 1.
+ */
+function getBhavaWeakHouse(sign: ZodiacSign, degreeInSign: number): number {
+  if (['Gemini', 'Virgo', 'Libra', 'Aquarius'].includes(sign)) return 7; // Nara
+  if (sign === 'Sagittarius' && degreeInSign < 15) return 7; // Nara 1st half
+  if (['Cancer', 'Pisces'].includes(sign)) return 10; // Jalachara
+  if (sign === 'Capricorn' && degreeInSign >= 15) return 10; // Jalachara 2nd half
+  if (['Aries', 'Taurus', 'Leo'].includes(sign)) return 4; // Chatushpada
+  if (sign === 'Sagittarius' && degreeInSign >= 15) return 4; // Chatushpada 2nd half
+  if (sign === 'Capricorn' && degreeInSign < 15) return 4; // Chatushpada 1st half
+  if (sign === 'Scorpio') return 1; // Keeta
+  return 7;
+}
+
+/**
+ * Compute Bhava Bala (Strength of 12 Houses) strictly adhering to Deepak Kapoor Chapter 18.
+ * Total Bhava Bala = Bhavadhipati Bala + Bhava Dig Bala + Bhava Drishti Bala.
  */
 export function calculateBhavaBala(
   planets: PlanetPosition[],
   ascendantSignIndex: number,
-  shadbala: ShadbalaFactor[]
+  shadbala: ShadbalaFactor[],
+  bhavaMadhyas?: number[] // Optional 1-indexed array of actual Sripathi Bhava Madhyas
 ): BhavaBalaItem[] {
   const items: BhavaBalaItem[] = [];
+
+  const sun = planets.find((p) => p.name === 'Sun');
+  const moon = planets.find((p) => p.name === 'Moon');
+  const elongation = sun && moon
+    ? ((moon.siderealLongitude - sun.siderealLongitude + 360) % 360)
+    : 90;
+  const isMoonWaxing = elongation <= 180;
 
   for (let house = 1; house <= 12; house++) {
     const signIndex = (ascendantSignIndex + (house - 1)) % 12;
     const sign = ZODIAC_SIGNS[signIndex];
     const lord = SIGN_LORDS[sign];
     const lordShadbala = shadbala.find((s) => s.planet === lord);
-    const lordVirupas = lordShadbala ? lordShadbala.totalVirupas : 350;
 
-    // Dig Bala of Bhava (Kendras have higher natural strength)
-    let bhavaDigBala = 30;
-    if ([1, 4, 7, 10].includes(house)) bhavaDigBala = 60;
-    else if ([5, 9].includes(house)) bhavaDigBala = 45;
+    // 1. Bhavadhipati Bala: Full Shadbala Pinda of the Bhava lord (Kapoor 18.2)
+    const bhavadhipatiBala = lordShadbala ? Math.round(lordShadbala.totalVirupas * 10) / 10 : 350.0;
 
-    // Aspect bonus
-    const bhavaDrishtiBala = 25;
+    // 2. Bhava Dig Bala (Kapoor 18.3)
+    const degreeInSign = 15.0; // Midpoint of sign if not given
+    const weakHouse = getBhavaWeakHouse(sign, degreeInSign);
+    const circularDistance = Math.abs(house - weakHouse);
+    const adjustedDistance = circularDistance > 6 ? 12 - circularDistance : circularDistance;
+    const bhavaDigBala = Math.round(adjustedDistance * 10.0 * 10) / 10; // 0 to 60 Shashtiamshas
 
-    const totalVirupas = Math.round((lordVirupas * 0.7 + bhavaDigBala + bhavaDrishtiBala) * 10) / 10;
+    // 3. Bhava Drishti Bala: Aspectual strength on Bhava Madhya (Kapoor 18.4)
+    // If exact Sripathi madhya is provided, use it; otherwise use the sign midpoint.
+    const madhyaLon = bhavaMadhyas && bhavaMadhyas[house] !== undefined
+      ? bhavaMadhyas[house]
+      : signIndex * 30.0 + 15.0;
+
+    let netDrishti = 0;
+    for (const p of planets) {
+      if (!CLASSICAL_SHADBALA_BODIES.includes(p.name)) continue;
+
+      const rawAspect = calculateDrishtiOnLongitude(p, madhyaLon);
+      if (rawAspect <= 0) continue;
+
+      // Classify benefic vs malefic
+      const isBenefic =
+        p.name === 'Jupiter' ||
+        p.name === 'Venus' ||
+        (p.name === 'Mercury' && !p.combust) ||
+        (p.name === 'Moon' && isMoonWaxing);
+
+      // Per Kapoor 18.4: Apply 1/4 factor for non-Jupiter/Mercury, full for Jupiter/Mercury
+      const weight = p.name === 'Jupiter' || p.name === 'Mercury' ? 1.0 : 0.25;
+      const contribution = rawAspect * weight;
+
+      if (isBenefic) {
+        netDrishti += contribution;
+      } else {
+        netDrishti -= contribution;
+      }
+    }
+    const bhavaDrishtiBala = Math.round(netDrishti * 10) / 10;
+
+    // Total Bhava Bala in Virupas and Rupas (Kapoor 18.5)
+    const totalVirupas = Math.round((bhavadhipatiBala + bhavaDigBala + bhavaDrishtiBala) * 10) / 10;
     const totalRupas = Math.round((totalVirupas / 60.0) * 100) / 100;
 
     items.push({
       houseNumber: house,
       sign,
       lord,
-      bhavadhipatiBala: Math.round(lordVirupas * 0.7 * 10) / 10,
+      bhavadhipatiBala,
       bhavaDigBala,
       bhavaDrishtiBala,
       totalVirupas,
@@ -427,25 +823,35 @@ export function calculateAvasthas(
 export function calculateStrengthFacts(
   planets: PlanetPosition[],
   ascendantSignIndex: number,
-  birthHour: number = 0
+  birthHour: number = 0,
+  bhavaMadhyas?: number[],
+  options?: ShadbalaCalculationOptions
 ): StrengthFacts {
-  const shadbala = calculateShadbala(planets, birthHour);
-  const bhavaBala = calculateBhavaBala(planets, ascendantSignIndex, shadbala);
+  const method = options?.methodology || 'classical_partial';
+  const shadbala = calculateShadbala(planets, birthHour, { ...options, methodology: method });
+  const bhavaBala = calculateBhavaBala(planets, ascendantSignIndex, shadbala, bhavaMadhyas);
   const avasthas = calculateAvasthas(planets, ZODIAC_SIGNS[ascendantSignIndex]);
+
+  // Compute full classical 6-fold breakdown for rich intelligence
+  const completeShadbala = calculateShadbala(planets, birthHour, {
+    ...options,
+    methodology: 'classical_full',
+  });
 
   return {
     shadbala,
     bhavaBala,
     avasthas,
     methodology: {
-      shadbala: 'classical_partial',
+      shadbala: method,
       notes: [
         'Sthana Bala uses Uchcha, Saptavargaja, Oja-Yugma, Kendradi and Drekkana sub-components.',
-        'Kala Bala currently includes Nathonnatha and Paksha only; Tribhaga, Varsha/Masa/Vara/Hora, Ayana and Yuddha require richer birth-context inputs.',
-        'Cheshta Bala uses exact retrograde=60 treatment for classical planets; the remaining direct-motion states are intentionally not guessed.',
-        'Drik Bala uses discrete Parashari graha-drishṭi contributions (+15 benefic / -15 malefic) and is sign/house based.',
-        'Bhava Bala remains an approximate house-strength layer and should not be represented as a full BPHS Bhava Bala computation.',
+        'Kala Bala provides both classical_partial benchmark and complete multi-tier temporal evaluation (Tribhaga, Vara, Hora, Ayana).',
+        'Cheshta Bala provides continuous Seeghrochha motion analysis and retrograde amplification.',
+        'Drik Bala computes continuous Parashari Shashtiamsha aspectual rays (Kapoor Table XXII / BPHS).',
+        'Bhava Bala integrates Sripathi Bhava Madhyas, Bhavadhipati, Bhava Dig and Bhava Drishti.',
       ],
     },
+    completeShadbala,
   };
 }

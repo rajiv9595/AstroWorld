@@ -1,13 +1,4 @@
 /**
- * ASTROWORLD AI V2 — Memory Module Index
+ * Backwards compatibility re-export from unified src/ai/memory/index.ts
  */
-
-export * from './persistentMemoryTypes.ts';
-export * from './persistentMemoryRepository.ts';
-export * from './memoryWriteGate.ts';
-export * from './memoryConsolidator.ts';
-export * from './astrologyMemoryValidator.ts';
-export * from './memoryRetriever.ts';
-export * from './memoryCandidateGenerator.ts';
-export * from './memoryCommandResolver.ts';
-export * from './userMemoryService.ts';
+export * from '../../ai/memory/index.ts';

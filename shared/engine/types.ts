@@ -98,6 +98,24 @@ export function computeProfileFingerprint(profile: BirthProfile): string {
   return `fp_${name.slice(0, 8)}_${(hash >>> 0).toString(16)}`;
 }
 
+/**
+ * Checks if a profile name is a dummy/demo/fallback placeholder that should never
+ * be prefilled into user forms or displayed as a real user's profile.
+ */
+export function isDemoOrDummyName(name?: string): boolean {
+  if (!name) return true;
+  const s = name.trim().toLowerCase();
+  return (
+    s === 'swami vivekananda' ||
+    s === 'astroworld native' ||
+    s === 'default native' ||
+    s === 'canonical test native' ||
+    s === 'native' ||
+    s === 'unnamed native' ||
+    s === 'guest'
+  );
+}
+
 export interface PlanetPosition {
   name: PlanetName;
   sanskritName: string;
@@ -115,6 +133,8 @@ export interface PlanetPosition {
   speed: number; // deg/day
   retrograde: boolean;
   combust: boolean;
+  combustionLevel?: 'CAZIMI' | 'DEEP_COMBUST' | 'COMBUST' | 'NONE';
+  retrogradeDignityNote?: string;
   dignity: DignityType;
   dignityScore: number; // virupas or relative score
   signLord: PlanetName;
@@ -251,6 +271,123 @@ export interface ShadbalaFactor {
   strengthRatio: number; // total / required
   rank: number;
   verdict: 'STRONG' | 'ADEQUATE' | 'WEAK';
+  ishtaPhala?: number; // sqrt(UcchaBala * ChestaBala)
+  kashtaPhala?: number; // 60 - ishtaPhala
+  subBreakdown?: ShadbalaSubBreakdown;
+}
+
+export interface ShadbalaSubBreakdown {
+  sthana?: {
+    uccha: number;
+    saptavargaja: number;
+    ojayugma: number;
+    kendradi: number;
+    drekkana: number;
+  };
+  dig?: {
+    weakPointLongitude?: number;
+    distanceDegrees?: number;
+  };
+  kala?: {
+    natonnatha: number;
+    paksha: number;
+    tribhaga?: number;
+    varadhipati?: number;
+    horadhipati?: number;
+    ayana?: number;
+    yuddha?: number;
+  };
+  chesta?: {
+    chestaKendraDegrees?: number;
+    isRetrograde?: boolean;
+  };
+  drik?: {
+    shubhaDrishti?: number;
+    papaDrishti?: number;
+    drishtiPinda?: number;
+  };
+}
+
+export interface ShadbalaCalculationOptions {
+  methodology?: 'classical_full' | 'classical_partial';
+  birthDateUtc?: Date;
+  latitude?: number;
+  longitude?: number;
+  cusps?: {
+    ascendant: number;
+    mc?: number;
+    descendant?: number;
+    ic?: number;
+  };
+  ayanamsha?: number;
+}
+
+export interface ChalitBhava {
+  houseNumber: number; // 1-12
+  bhavaMadhya: number; // 0..360 sidereal degrees
+  bhavaMadhyaFormatted: string;
+  bhavaMadhyaSign: ZodiacSign;
+  bhavaMadhyaSignIndex: number;
+  aarambhSandhi: number; // Starting junction
+  aarambhSandhiFormatted: string;
+  viramSandhi: number; // Ending junction
+  viramSandhiFormatted: string;
+  occupants: PlanetName[];
+  spanDegrees: number;
+}
+
+export interface ChalitPlanetPlacement {
+  planet: PlanetName;
+  siderealLongitude: number;
+  rashiHouse: number; // Whole sign house from Lagna
+  chalitHouse: number; // Actual Sripathi Bhava
+  shifted: boolean; // True if chalitHouse !== rashiHouse
+  shiftDirection?: 'FORWARD' | 'BACKWARD' | 'SAME';
+  awasiyaBalaShashtiamsha: number; // Residential strength (0 to 60 Shashtiamshas)
+  awasiyaBalaPercent: number; // 0 to 100%
+  bhavaHalf: 'PURVA' | 'UTTARA';
+}
+
+export interface ChalitChart {
+  bhavas: ChalitBhava[];
+  planets: ChalitPlanetPlacement[];
+  midheaven: {
+    longitude: number;
+    sign: ZodiacSign;
+    degreeInSign: number;
+    formattedDegree: string;
+  };
+}
+
+export interface UpgrahaInfo {
+  name: string;
+  sanskritName: string;
+  associatedPlanet: PlanetName;
+  calculationType: 'SUN_DERIVED' | 'TIME_DERIVED';
+  siderealLongitude: number;
+  sign: ZodiacSign;
+  signIndex: number;
+  degreeInSign: number;
+  formattedDegree: string;
+  houseNumber: number; // Whole sign from Lagna
+  nakshatra: string;
+  pada: number;
+  significance: string;
+}
+
+export interface UpgrahasFacts {
+  dhuma: UpgrahaInfo;
+  vyatipata: UpgrahaInfo;
+  parivesha: UpgrahaInfo;
+  indrachapa: UpgrahaInfo;
+  upaketu: UpgrahaInfo;
+  mandi: UpgrahaInfo;
+  gulika: UpgrahaInfo;
+  kala?: UpgrahaInfo;
+  mrityu?: UpgrahaInfo;
+  ardhaprahara?: UpgrahaInfo;
+  yamaghantaka?: UpgrahaInfo;
+  allUpgrahas: UpgrahaInfo[];
 }
 
 export interface BhavaBalaItem {
@@ -281,6 +418,7 @@ export interface StrengthFacts {
     shadbala: 'classical_full' | 'classical_partial' | 'approximate';
     notes: string[];
   };
+  completeShadbala?: ShadbalaFactor[];
 }
 
 export interface YogaFact {
@@ -319,20 +457,46 @@ export interface CharaKaraka {
   signification: string;
 }
 
+export interface AmatyakarakaDetails {
+  planet: PlanetName;
+  degreeInSign: number;
+  formattedDegree: string;
+  d1Sign: ZodiacSign;
+  d1House: number;
+  d9Sign?: ZodiacSign;
+  d9House?: number;
+  d10Sign?: ZodiacSign;
+  d10House?: number;
+}
+
 export interface JaiminiFacts {
   charaKarakas: CharaKaraka[];
   atmakaraka: PlanetName;
+  amatyakaraka?: PlanetName;
+  amatyakarakaDetails?: AmatyakarakaDetails;
   karakaScheme?: 'seven_karaka' | 'eight_karaka';
   /** Backward-compatible field: D1 Rashi sign occupied by the Atmakaraka. */
   karakamsaSign: ZodiacSign;
   /** Standard Karakamsa: D9/Navamsha sign occupied by the Atmakaraka. */
   karakamsaNavamshaSign: ZodiacSign;
+  /** 10th house from Karakamsa in D9 Navamsha (Jaimini Upadesha Sutras career factor) */
+  tenthFromKarakamsaNavamsha?: {
+    sign: ZodiacSign;
+    signIndex: number;
+    occupants: PlanetName[];
+  };
   arudhaLagna: {
     sign: ZodiacSign;
     houseNumber: number;
   };
   upapadaLagna: {
     sign: ZodiacSign;
+    houseNumber: number;
+  };
+  /** Arudha of the 10th house (Rajya Pada / A10) */
+  rajyaPadaA10?: {
+    sign: ZodiacSign;
+    signIndex: number;
     houseNumber: number;
   };
 }
@@ -413,6 +577,9 @@ export interface AIInterpretationContext {
   ascendant: AscendantInfo;
   planets: PlanetPosition[];
   houses: HouseInfo[];
+  chalit?: ChalitChart;
+  upgrahas?: UpgrahasFacts;
+  pastCalibration?: import('./pastCalibration.ts').PastCalibrationResult;
   vargas: Record<VargaCode, VargaChart>;
   panchanga: PanchangaFacts;
   dasha: VimshottariDashaFacts;

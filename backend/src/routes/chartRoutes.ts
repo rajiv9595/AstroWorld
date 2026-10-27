@@ -108,6 +108,140 @@ chartRouter.post('/', async (req: Request, res: Response) => {
   }
 });
 
+// Get single authenticated user's chart
+chartRouter.get('/:chartId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = getAuthenticatedUser(req);
+    const chartId = req.params.chartId;
+
+    const { data, error } = await supabase
+      .from('kundli_charts')
+      .select('*')
+      .eq('id', chartId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[Supabase Get Single Chart Error]:', error.message);
+      return res.status(500).json({ success: false, error: 'Failed to fetch chart.' });
+    }
+
+    if (!data) {
+      return res.status(404).json({ success: false, error: 'Saved chart not found.' });
+    }
+
+    return res.json({
+      success: true,
+      chart: {
+        id: data.id,
+        userId: data.user_id,
+        name: data.name,
+        year: data.year,
+        month: data.month,
+        day: data.day,
+        hour: data.hour,
+        minute: data.minute,
+        second: data.second ?? 0,
+        latitude: Number(data.latitude),
+        longitude: Number(data.longitude),
+        timezone: data.timezone,
+        cityName: data.city_name,
+        gender: data.gender || 'male',
+        notes: data.notes,
+        chartStyle: data.chart_style || 'NORTH_INDIAN',
+        isPrimary: Boolean(data.is_primary),
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      },
+    });
+  } catch (err) {
+    console.error('[Charts GET :id] unexpected error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch chart.' });
+  }
+});
+
+// Update authenticated user's chart
+chartRouter.put('/:chartId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = getAuthenticatedUser(req);
+    const chartId = req.params.chartId;
+    const updates = req.body || {};
+
+    const updatePayload: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (updates.name !== undefined) updatePayload.name = String(updates.name).trim();
+    if (updates.year !== undefined) updatePayload.year = Number(updates.year);
+    if (updates.month !== undefined) updatePayload.month = Number(updates.month);
+    if (updates.day !== undefined) updatePayload.day = Number(updates.day);
+    if (updates.hour !== undefined) updatePayload.hour = Number(updates.hour);
+    if (updates.minute !== undefined) updatePayload.minute = Number(updates.minute);
+    if (updates.second !== undefined) updatePayload.second = Number(updates.second);
+    if (updates.latitude !== undefined) updatePayload.latitude = Number(updates.latitude);
+    if (updates.longitude !== undefined) updatePayload.longitude = Number(updates.longitude);
+    if (updates.timezone !== undefined) updatePayload.timezone = String(updates.timezone);
+    if (updates.cityName !== undefined) updatePayload.city_name = String(updates.cityName);
+    if (updates.notes !== undefined) updatePayload.notes = String(updates.notes);
+    if (updates.gender !== undefined) updatePayload.gender = String(updates.gender);
+    if (updates.chartStyle !== undefined) updatePayload.chart_style = String(updates.chartStyle);
+
+    const { data, error } = await supabase
+      .from('kundli_charts')
+      .update(updatePayload)
+      .eq('id', chartId)
+      .eq('user_id', userId)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      console.error('[Supabase Update Chart Error]:', error.message);
+      return res.status(500).json({ success: false, error: 'Failed to update chart.' });
+    }
+
+    if (!data) {
+      return res.status(404).json({ success: false, error: 'Saved chart not found.' });
+    }
+
+    return res.json({ success: true, chart: data });
+  } catch (err) {
+    console.error('[Charts PUT] unexpected error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update chart.' });
+  }
+});
+
+// Set chart as primary for authenticated user
+chartRouter.put('/:chartId/primary', async (req: Request, res: Response) => {
+  try {
+    const { userId } = getAuthenticatedUser(req);
+    const chartId = req.params.chartId;
+
+    // Reset all existing charts for this user to is_primary = false
+    await supabase
+      .from('kundli_charts')
+      .update({ is_primary: false, updated_at: new Date().toISOString() })
+      .eq('user_id', userId);
+
+    // Set the requested chart to is_primary = true
+    const { data, error } = await supabase
+      .from('kundli_charts')
+      .update({ is_primary: true, updated_at: new Date().toISOString() })
+      .eq('id', chartId)
+      .eq('user_id', userId)
+      .select()
+      .maybeSingle();
+
+    if (error || !data) {
+      console.error('[Supabase Set Primary Chart Error]:', error?.message);
+      return res.status(500).json({ success: false, error: 'Failed to set chart as primary.' });
+    }
+
+    return res.json({ success: true, chart: data });
+  } catch (err) {
+    console.error('[Charts PUT primary] unexpected error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to set primary chart.' });
+  }
+});
+
 // Delete authenticated user's chart
 chartRouter.delete('/:chartId', async (req: Request, res: Response) => {
   try {

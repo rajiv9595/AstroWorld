@@ -36,6 +36,9 @@ import {
 import type { SiderealEphemerisProvider, SiderealEphemerisSnapshot } from './ephemeris.ts';
 import { generateAllShodashavargas } from './vargas.ts';
 import { calculateYogasAndDoshas } from './yogas.ts';
+import { calculateMidheaven, calculateChalitChart } from './chalit.ts';
+import { calculateAllUpgrahas } from './upgrahas.ts';
+import { calibratePastMilestones } from './pastCalibration.ts';
 
 export const DEFAULT_BIRTH_PROFILE: BirthProfile = {
   name: 'Swami Vivekananda',
@@ -178,6 +181,7 @@ function planetsFromEphemerisSnapshot(
     const nakInfo = getNakshatraAndPada(siderealLongitude);
 
     let combust = false;
+    let combustionLevel: 'CAZIMI' | 'DEEP_COMBUST' | 'COMBUST' | 'NONE' = 'NONE';
     if (sunSiderealLongitude !== undefined && planet.name !== 'Sun' && planet.name !== 'Rahu' && planet.name !== 'Ketu') {
       const diff = Math.min(
         Math.abs(siderealLongitude - sunSiderealLongitude),
@@ -191,7 +195,18 @@ function planetsFromEphemerisSnapshot(
         Venus: speed < 0 ? 8.0 : 10.0,
         Saturn: 15.0,
       };
-      combust = diff <= (combustionOrbs[planet.name] || 10.0);
+      const limit = combustionOrbs[planet.name] || 10.0;
+      if (diff <= 0.2833) {
+        // Within 17 arcminutes = Cazimi (Astangata Mukta: In the Heart of the Sun)
+        combust = false;
+        combustionLevel = 'CAZIMI';
+      } else if (diff <= 3.0) {
+        combust = true;
+        combustionLevel = 'DEEP_COMBUST';
+      } else if (diff <= limit) {
+        combust = true;
+        combustionLevel = 'COMBUST';
+      }
     }
 
     return {
@@ -211,6 +226,7 @@ function planetsFromEphemerisSnapshot(
       speed,
       retrograde: speed < 0,
       combust,
+      combustionLevel,
       dignity: 'NEUTRAL',
       dignityScore: 0,
       signLord: SIGN_LORDS[sign],
@@ -225,12 +241,16 @@ function planetsFromEphemerisSnapshot(
  * provider; when absent, the validated Astronomy Engine path is unchanged.
  */
 export function computeCanonicalChart(
-  profile: BirthProfile = GOLDEN_BENCHMARK_PROFILE,
+  profile: BirthProfile,
   evaluationDateUtc: Date = new Date(),
   ephemerisSnapshot?: SiderealEphemerisSnapshot,
   ephemerisProvider?: SiderealEphemerisProvider,
   birthUtcDateOverride?: Date,
 ): AIInterpretationContext {
+  if (!profile || typeof profile.year !== 'number' || typeof profile.month !== 'number' || typeof profile.day !== 'number') {
+    throw new Error('Valid BirthProfile is required to compute canonical chart.');
+  }
+
   // 1. Precise astronomical time conversion.
   // Live astronomical views may already have an exact UTC instant; bypass civil
   // time reverse-resolution in that case, including DST-fold ambiguity.
@@ -268,6 +288,10 @@ export function computeCanonicalChart(
   // 7. Shodashavargas (All 16 Divisional Charts)
   const vargas = generateAllShodashavargas(ascendant.siderealLongitude, planets);
 
+  // 7b. Sripathi Bhava Chalit Chart (Deepak Kapoor Chapter 11)
+  const midheaven = calculateMidheaven(astroTime, profile.longitude, ayanamsha);
+  const chalit = calculateChalitChart(planets, ascendant, midheaven.siderealLongitude);
+
   // 8. Panchanga
   const panchanga = calculatePanchanga(
     planets,
@@ -275,6 +299,21 @@ export function computeCanonicalChart(
     ayanamsha,
     undefined,
     ephemerisProvider,
+  );
+
+  // 8b. Classical Upgrahas (Deepak Kapoor Chapter 13)
+  const sun = planets.find((p) => p.name === 'Sun')!;
+  const sunriseDate = panchanga?.sunriseUtc ? new Date(panchanga.sunriseUtc) : undefined;
+  const sunsetDate = panchanga?.sunsetUtc ? new Date(panchanga.sunsetUtc) : undefined;
+  const upgrahas = calculateAllUpgrahas(
+    sun.siderealLongitude,
+    ascendant.signIndex,
+    birthUtcDate,
+    profile.latitude,
+    profile.longitude,
+    ayanamsha,
+    sunriseDate,
+    sunsetDate
   );
 
   // 9. Vimshottari Dasha
@@ -285,18 +324,28 @@ export function computeCanonicalChart(
     evaluationDateUtc,
   );
 
-  // 10. Strength (Shadbala, Bhava Bala, Avasthas)
+  // 10. Strength (Shadbala, Bhava Bala with Sripathi Madhyas, Avasthas)
+  const bhavaMadhyasArray = [0, ...chalit.bhavas.map((b) => b.bhavaMadhya)];
   const strength = calculateStrengthFacts(
     planets,
     ascendant.signIndex,
     profile.hour + profile.minute / 60 + (profile.second || 0) / 3600,
+    bhavaMadhyasArray,
+    {
+      birthDateUtc: birthUtcDate,
+      ayanamsha,
+      cusps: {
+        ascendant: ascendant.siderealLongitude,
+        mc: chalit.midheaven.longitude,
+      },
+    }
   );
 
   // 11. Yogas and Doshas
   const { yogas, doshas } = calculateYogasAndDoshas(planets, ascendant.sign);
 
   // 12. Jaimini Astrology
-  const jaimini = calculateJaiminiFacts(planets, ascendant.signIndex, vargas['D9']);
+  const jaimini = calculateJaiminiFacts(planets, ascendant.signIndex, vargas['D9'], vargas['D10']);
 
   // 13. Ashtakavarga (337 Bindus)
   const ashtakavarga = calculateAshtakavarga(planets, ascendant.signIndex);
@@ -317,6 +366,13 @@ export function computeCanonicalChart(
     ashtakavarga,
     yogas,
     planets
+  );
+
+  // 15b. Past Calibration (The Daivajna Anchor)
+  const pastCalibration = calibratePastMilestones(
+    moon.siderealLongitude,
+    birthUtcDate,
+    evaluationDateUtc
   );
 
   // 16. Evidence and Provenance Pool
@@ -345,6 +401,9 @@ export function computeCanonicalChart(
     ascendant,
     planets,
     houses,
+    chalit,
+    upgrahas,
+    pastCalibration,
     vargas,
     panchanga,
     dasha,

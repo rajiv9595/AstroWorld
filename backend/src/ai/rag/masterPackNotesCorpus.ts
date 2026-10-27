@@ -1,0 +1,288 @@
+/**
+ * ASTROWORLD — Master Pack Notes Knowledge Corpus
+ * Ingests authoritative architectural and shastric doctrines from:
+ * backend/datasets/AstroWorld_Vedic_Intelligence_Master_Pack/notes/
+ * 
+ * Covering platform doctrine, source hierarchy, chart calculation integrity,
+ * interpretive grammar, yoga rule engine, varga synthesis, and dasha-transit timing.
+ */
+
+import { KnowledgeRecord } from '../schemas/knowledgeRecord.ts';
+
+export const MASTER_PACK_NOTES_CORPUS: KnowledgeRecord[] = [
+  {
+    id: 'MP-NOTE-01-DOCTRINE',
+    sourceText: 'AstroWorld Master Pack Note 01',
+    author: 'AstroWorld Architecture Guild',
+    chapter: 'Platform Doctrine and Deterministic Architecture',
+    citation: 'AstroWorld Master Pack: Note 01 (Platform Doctrine)',
+    canonicalTranslation:
+      'Astrological interpretation must rest on an immutable, deterministic calculation core. Calculations must never be delegated to generative approximations. Interpretations must separate astronomical fact, classical doctrine, and empirical synthesis with explicit epistemic transparency.',
+    normalizedInterpretation:
+      'Every conclusion delivered by the AI must trace to a verified astronomical calculation (Lahiri sidereal degrees, verified varga sign, dasha balance, or transit position). The system never hallucinates dates or planetary positions.',
+    metadata: {
+      tradition: 'classical',
+      topic: 'general',
+      subtopic: 'platform_doctrine',
+      ruleType: 'general_principle',
+      planetarySubjects: [],
+      houseSubjects: [1, 10],
+      signSubjects: [],
+      vargaSubjects: ['D1'],
+      authorityLevel: 'primary_foundational',
+      tags: ['doctrine', 'epistemic_honesty', 'deterministic_calculations', 'architecture'],
+    },
+    version: 'MasterPack-1.0',
+    verified: true,
+  },
+  {
+    id: 'MP-NOTE-02-SOURCE-HIERARCHY',
+    sourceText: 'AstroWorld Master Pack Note 02',
+    author: 'AstroWorld Shastric Council',
+    chapter: 'Source Hierarchy and Corpus Governance',
+    citation: 'AstroWorld Master Pack: Note 02 (Source Hierarchy)',
+    canonicalTranslation:
+      'The knowledge corpus establishes strict hierarchical precedence: 1) Primary Foundational Treatises (Brihat Parashara Hora Shastra, Jaimini Upadesha Sutras, Brihat Jataka, Phaladeepika, Saravali); 2) Secondary Classical Commentaries; 3) Modern Research and Empirical Specializations (Systems Approach, AIFAS timing, KP sub-lords).',
+    normalizedInterpretation:
+      'When resolving conflicting astrological principles, foundational Brihat Parashara Hora Shastra and Phaladeepika take precedence. Empirical specializations serve as precision lenses without violating fundamental parashari dignity.',
+    metadata: {
+      tradition: 'classical',
+      topic: 'classical_rule',
+      subtopic: 'source_hierarchy',
+      ruleType: 'general_principle',
+      planetarySubjects: [],
+      houseSubjects: [],
+      signSubjects: [],
+      vargaSubjects: ['D1', 'D9'],
+      authorityLevel: 'primary_foundational',
+      tags: ['source_hierarchy', 'bphs', 'phaladeepika', 'saravali', 'parashara', 'authority'],
+    },
+    version: 'MasterPack-1.0',
+    verified: true,
+  },
+  {
+    id: 'MP-NOTE-03-CHART-INTEGRITY',
+    sourceText: 'AstroWorld Master Pack Note 03',
+    author: 'Deepak Kapoor & Ephemeris Council',
+    chapter: 'Chart Calculation Integrity: From Birth Data to Reproducible Snapshot',
+    citation: 'AstroWorld Master Pack: Note 03 (Chart Calculation Integrity)',
+    canonicalTranslation:
+      'Deterministic chart generation mandates: Chitrapaksha / Lahiri Ayanamsha, 360-degree rational normalization, exact 13°20\' nakshatra and 3°20\' pada divisions, explicit Whole-Sign and Sripathi Bhava Chalit dual representation, and exact Vimshottari 120-year proportional timing.',
+    normalizedInterpretation:
+      'Never confuse Rashi placement with Bhava placement. When a planet changes house in Sripathi Bhava Chalit, the native feels the psychological urge in the Rashi sign but experiences the concrete worldly fruit in the Chalit bhava.',
+    metadata: {
+      tradition: 'classical',
+      topic: 'general',
+      subtopic: 'calculation_integrity',
+      ruleType: 'general_principle',
+      planetarySubjects: ['Moon', 'Sun'],
+      houseSubjects: [1, 10],
+      signSubjects: [],
+      vargaSubjects: ['D1'],
+      authorityLevel: 'primary_foundational',
+      tags: ['ayanamsha', 'lahiri', 'chalit', 'whole_sign', 'nakshatra_math', 'vimshottari'],
+    },
+    version: 'MasterPack-1.0',
+    verified: true,
+  },
+  {
+    id: 'MP-NOTE-04-INTERPRETIVE-GRAMMAR',
+    sourceText: 'AstroWorld Master Pack Note 04',
+    author: 'AstroWorld Shastric Council',
+    chapter: 'Classical Interpretive Grammar: Graha, Bhava, and Drishti Mechanics',
+    citation: 'AstroWorld Master Pack: Note 04 (Interpretive Grammar)',
+    canonicalTranslation:
+      'Interpretive judgment requires the complete synthesis of Graha Karakatwa (natural significance), Bhavesha Karakatwa (functional house ownership), Dispositor Strength (where the lord resides), and Special Graha Drishti (Parashari full aspects: Mars 4/7/8, Jupiter 5/7/9, Saturn 3/7/10).',
+    normalizedInterpretation:
+      'A planet is not judged in isolation. Its dispositor, its functional lordship from the specific Lagna, and the aspects it receives modify its ultimate manifestation.',
+    metadata: {
+      tradition: 'classical',
+      topic: 'classical_rule',
+      subtopic: 'grammar_mechanics',
+      ruleType: 'general_principle',
+      planetarySubjects: ['Mars', 'Jupiter', 'Saturn'],
+      houseSubjects: [1, 4, 7, 10],
+      signSubjects: [],
+      vargaSubjects: ['D1', 'D9'],
+      authorityLevel: 'primary_foundational',
+      tags: ['drishti', 'aspects', 'karakatwa', 'dispositor', 'parashari_mechanics'],
+    },
+    version: 'MasterPack-1.0',
+    verified: true,
+  },
+  {
+    id: 'MP-NOTE-05-YOGA-RULES',
+    sourceText: 'AstroWorld Master Pack Note 05',
+    author: 'AstroWorld Shastric Council',
+    chapter: 'Yoga Rule Engine: Formation, Cancellation, and Qualification',
+    citation: 'AstroWorld Master Pack: Note 05 (Yoga Rule Engine)',
+    canonicalTranslation:
+      'Yogas produce full fruit only when free from combustion, debilitating aspects, and nodal affliction. Raja Yogas formed by Kendra (1, 4, 7, 10) and Trikona (1, 5, 9) lords elevate status; Dhana Yogas formed by 2nd, 5th, 9th, and 11th lords create capital retention. Neecha Bhanga Raja Yoga requires dispositor strength in Kendra from Lagna or Moon.',
+    normalizedInterpretation:
+      'Always verify yoga qualification. If Mercury in Budhaditya Yoga is combust under 3 degrees, the mental clarity is replaced by neural restlessness unless protected by Jupiter’s aspect.',
+    metadata: {
+      tradition: 'classical',
+      topic: 'classical_rule',
+      subtopic: 'yogas_and_combinations',
+      ruleType: 'yoga_rule',
+      planetarySubjects: ['Sun', 'Mercury', 'Jupiter'],
+      houseSubjects: [1, 4, 5, 7, 9, 10, 11],
+      signSubjects: [],
+      vargaSubjects: ['D1', 'D9'],
+      authorityLevel: 'primary_foundational',
+      tags: ['raja_yoga', 'dhana_yoga', 'neecha_bhanga', 'budhaditya', 'cancellation'],
+    },
+    version: 'MasterPack-1.0',
+    verified: true,
+  },
+  {
+    id: 'MP-NOTE-06-VARGA-SYNTHESIS',
+    sourceText: 'AstroWorld Master Pack Note 06',
+    author: 'Sage Parashara (BPHS Ch. 6)',
+    chapter: 'Varga and Cross-Chart Synthesis: The Shodashavarga Architecture',
+    citation: 'AstroWorld Master Pack: Note 06 (Varga Synthesis)',
+    canonicalTranslation:
+      'Sage Parashara assigns specific existential portfolios to divisional harmonic charts: D1 Deha (physical body), D2 Hora (wealth capital), D3 Drekkhana (courage and siblings), D4 Chaturthamsha (property and vehicles), D7 Saptamsha (children and lineage), D9 Navamsha (dharma, marital longevity, soul foundation), D10 Dashamsha (career leadership and public authority), D24 Siddhamsha (higher academic specialization and degrees), D60 Shashtiamsha (past-life karma and soul destiny).',
+    normalizedInterpretation:
+      'Never predict career status solely from D1 without inspecting D10; never confirm higher educational specialization without D24; never evaluate marriage durability without D9; never decode recurring life crucibles without D60 Devata.',
+    metadata: {
+      tradition: 'classical',
+      topic: 'education',
+      subtopic: 'varga_shodashavarga',
+      ruleType: 'varga_rule',
+      planetarySubjects: [],
+      houseSubjects: [1, 4, 5, 7, 9, 10],
+      signSubjects: [],
+      vargaSubjects: ['D1', 'D9', 'D10', 'D24', 'D60'],
+      authorityLevel: 'primary_foundational',
+      tags: ['vargas', 'shodashavarga', 'd9', 'd10', 'd24', 'd60', 'bphs'],
+    },
+    version: 'MasterPack-1.0',
+    verified: true,
+  },
+  {
+    id: 'MP-NOTE-07-DASHA-TRANSIT-TIMING',
+    sourceText: 'AstroWorld Master Pack Note 07',
+    author: 'AIFAS & Master Guild',
+    chapter: 'Dasha, Transit, and Precision Timing Synthesis',
+    citation: 'AstroWorld Master Pack: Note 07 (Dasha and Transit Timing)',
+    canonicalTranslation:
+      'The Dasha provides the seed and internal sanction; the Transit (Gochara) provides the seasonal trigger and external environment. High-conviction events manifest when: 1) Active Vimshottari Mahadasha and Antardasha lords signify the house; 2) Transiting Jupiter and Saturn simultaneously aspect or occupy the house or its lord (Double Transit Law); 3) Ashtakavarga SAV bindus in the house exceed 28 points, and the transiting planet moves through a bindu-rich Kakshya arc.',
+    normalizedInterpretation:
+      'Do not predict major promotions or life pivots unless both Dasha and Double Transit converge on the relevant house. Dasha opens the door; transits push the native through.',
+    metadata: {
+      tradition: 'classical',
+      topic: 'dasha',
+      subtopic: 'timing_and_transits',
+      ruleType: 'transit_rule',
+      planetarySubjects: ['Jupiter', 'Saturn'],
+      houseSubjects: [1, 7, 10, 11],
+      signSubjects: [],
+      vargaSubjects: ['D1', 'D10'],
+      authorityLevel: 'primary_foundational',
+      tags: ['dasha_timing', 'double_transit', 'gochara', 'kakshya', 'ashtakavarga'],
+    },
+    version: 'MasterPack-1.0',
+    verified: true,
+  },
+  {
+    id: 'MP-NOTE-08-WORKFLOWS',
+    sourceText: 'AstroWorld Master Pack Note 08',
+    author: 'AstroWorld Practice Guild',
+    chapter: 'Question-Specific Interpretation Workflows: Career, Wealth, Marriage, Health',
+    citation: 'AstroWorld Master Pack: Note 08 (Domain Workflows)',
+    canonicalTranslation:
+      'Domain consultations must follow disciplined multi-gate validation: Career requires 10th lord, Amatyakaraka, D10 Lagna/10th, and SAV 10th house; Marriage requires 7th lord, Darakaraka, Upapada Lagna, and D9 Navamsha 7th lord; Wealth requires 2nd/11th lords, Indu Lagna, and D2 Hora dignity; Health requires 6th/8th lords, 22nd Drekkhana, and 64th Navamsha.',
+    normalizedInterpretation:
+      'A single auspicious placement does not guarantee success if three other gates fail. Always report the net confluence score across all gates.',
+    metadata: {
+      tradition: 'classical',
+      topic: 'career',
+      subtopic: 'domain_workflows',
+      ruleType: 'general_principle',
+      planetarySubjects: [],
+      houseSubjects: [2, 6, 7, 8, 10, 11],
+      signSubjects: [],
+      vargaSubjects: ['D1', 'D2', 'D9', 'D10'],
+      authorityLevel: 'authoritative_commentary',
+      tags: ['career_workflow', 'marriage_workflow', 'wealth_workflow', 'health_workflow'],
+    },
+    version: 'MasterPack-1.0',
+    verified: true,
+  },
+  {
+    id: 'MP-NOTE-09-RAG-ENGINEERING',
+    sourceText: 'AstroWorld Master Pack Note 09',
+    author: 'AI Engineering Guild',
+    chapter: 'RAG Retrieval and Ingestion Engineering: Exception Bundling and Provenance',
+    citation: 'AstroWorld Master Pack: Note 09 (RAG Engineering)',
+    canonicalTranslation:
+      'Knowledge retrieval must employ canonical Sanskrit term expansion (IAST to ASCII), authority-tier weighting, and automatic exception bundling. Whenever a primary rule is retrieved, any classical counter-indications or cancellation clauses must be bundled into the context.',
+    normalizedInterpretation:
+      'If the system retrieves an exaltation rule, it must automatically pull any combustion or debilitation cancellation rules to avoid one-sided interpretations.',
+    metadata: {
+      tradition: 'classical',
+      topic: 'general',
+      subtopic: 'rag_architecture',
+      ruleType: 'general_principle',
+      planetarySubjects: [],
+      houseSubjects: [],
+      signSubjects: [],
+      vargaSubjects: ['D1'],
+      authorityLevel: 'authoritative_commentary',
+      tags: ['rag', 'retrieval', 'exception_bundling', 'provenance', 'search_expansion'],
+    },
+    version: 'MasterPack-1.0',
+    verified: true,
+  },
+  {
+    id: 'MP-NOTE-12-DAIVAJNA-NARRATION',
+    sourceText: 'AstroWorld Master Pack Note 12',
+    author: 'Daivajna Guild',
+    chapter: 'Narration and Prompt Design: The 5-Tier Shastric Consultation Architecture',
+    citation: 'AstroWorld Master Pack: Note 12 (Daivajna Narration)',
+    canonicalTranslation:
+      'The consultation narrative must balance ancient shastric gravitas with modern strategic precision: Tier 1 Past Flashback Anchor; Tier 2 Astronomical Foundation (D1, Vargas, Chalit); Tier 3 Dasha & Gochara Roadmap with quarterly milestones; Tier 4 Concrete Real-World Strategic Directives; Tier 5 Authentic Satvic Upayas (prohibiting gemstones for Functional Malefics).',
+    normalizedInterpretation:
+      'Never speak in generic robotic generalities. Every consultation must feel like sitting across from a revered, compassionate Vedic scholar who understands the native’s past, validates their present, and guides their future.',
+    metadata: {
+      tradition: 'classical',
+      topic: 'general',
+      subtopic: 'consultation_architecture',
+      ruleType: 'general_principle',
+      planetarySubjects: [],
+      houseSubjects: [1, 10],
+      signSubjects: [],
+      vargaSubjects: ['D1'],
+      authorityLevel: 'primary_foundational',
+      tags: ['daivajna_narration', '5_tier_architecture', 'consultation_protocol'],
+    },
+    version: 'MasterPack-1.0',
+    verified: true,
+  },
+  {
+    id: 'MP-NOTE-13-SAFETY-PURUSHARTHA',
+    sourceText: 'AstroWorld Master Pack Note 13',
+    author: 'Ethics & Governance Council',
+    chapter: 'Safety, Epistemic Honesty, and Purushartha (Free Will)',
+    citation: 'AstroWorld Master Pack: Note 13 (Safety and Free Will)',
+    canonicalTranslation:
+      'Astrology maps Prarabdha Karma (past momentum), but human consciousness possesses Kriyamana Karma (active present exertion / Purushartha). Fatalistic, fear-based predictions (e.g. predicting death, divorce, or ruin) are strictly prohibited. The astrologer’s role is to illuminate optimal timing and empower satvic action.',
+    normalizedInterpretation:
+      'Remedies and astrological guidance must elevate human agency, never paralyze the native with anxiety. Astrological cycles are seasons of the soul, not prison sentences.',
+    metadata: {
+      tradition: 'classical',
+      topic: 'spirituality',
+      subtopic: 'ethics_and_free_will',
+      ruleType: 'general_principle',
+      planetarySubjects: ['Jupiter', 'Saturn'],
+      houseSubjects: [9, 10, 12],
+      signSubjects: [],
+      vargaSubjects: ['D1'],
+      authorityLevel: 'primary_foundational',
+      tags: ['purushartha', 'free_will', 'ethics', 'prarabdha', 'empowerment'],
+    },
+    version: 'MasterPack-1.0',
+    verified: true,
+  },
+];

@@ -1,8 +1,4 @@
 /**
- * ASTROWORLD AI V2 — Reasoning Engine Barrel Export
+ * Backwards compatibility re-export from unified src/ai/reasoning/index.ts
  */
-
-export * from './ruleMatcher.ts';
-export * from './confluenceEngine.ts';
-export * from './astrologyReasoner.ts';
-export * from './goldenReasoningSet.ts';
+export * from '../../ai/reasoning/index.ts';

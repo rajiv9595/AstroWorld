@@ -69,46 +69,66 @@ export function calculateArudhaPada(
 /**
  * Calculate complete Jaimini facts suite.
  */
+const KARAKA_ROLES_8: {
+  role: 'AK' | 'AmK' | 'BK' | 'MK' | 'PK' | 'GK' | 'DK';
+  roleName: string;
+  signification: string;
+}[] = [
+  { role: 'AK', roleName: 'Atmakaraka (आत्मकारक)', signification: 'Soul signified, deepest spiritual purpose, self-realization, and life essence.' },
+  { role: 'AmK', roleName: 'Amatyakaraka (अमात्यकारक)', signification: 'Career, ministership, intellect, professional achievements, and actions.' },
+  { role: 'BK', roleName: 'Bhratrukaraka (भ्रातृकारक)', signification: 'Guru, mentors, spiritual guides, siblings, and moral courage.' },
+  { role: 'MK', roleName: 'Matrukaraka (मातृकारक)', signification: 'Mother, emotional heart, nurturing shelter, formal schooling, and inner peace.' },
+  { role: 'PK', roleName: 'Pitrukaraka (पितृकारक)', signification: 'Father, ancestry, lineage, higher principles, and purva punya.' },
+  { role: 'PK', roleName: 'Putrakaraka (पुत्रकारक)', signification: 'Children, creative genius, speculative intellect, and disciples.' },
+  { role: 'GK', roleName: 'Gnatikaraka (ज्ञातिकारक)', signification: 'Obstacles, competitive challenges, conflicts, diseases, and karmic tests.' },
+  { role: 'DK', roleName: 'Darakaraka (दारकारक)', signification: 'Spouse, marriage, intimate life partners, business allies, and sensual bonding.' },
+];
+
 /**
  * Convention note:
- * AstroWorld currently uses the 7-karaka scheme (Sun-Saturn). The 8-karaka
- * school that includes Rahu with reversed within-sign degree is intentionally
- * not silently mixed into these results.
+ * AstroWorld supports both the classical 7-karaka scheme (Sun-Saturn, default)
+ * and the 8-karaka scheme (including Rahu with reversed within-sign degree).
+ * The selected scheme is made explicit in the returned metadata.
  */
 export function calculateJaiminiFacts(
   planets: PlanetPosition[],
   ascendantSignIndex: number,
-  d9Chart?: VargaChart
+  d9Chart?: VargaChart,
+  d10Chart?: VargaChart,
+  karakaScheme: 'seven_karaka' | 'eight_karaka' = 'seven_karaka'
 ): JaiminiFacts {
-  // 1. Eligible 7 classical bodies for Chara Karakas
-  const eligibleBodies: PlanetName[] = [
-    'Sun',
-    'Moon',
-    'Mars',
-    'Mercury',
-    'Jupiter',
-    'Venus',
-    'Saturn',
-  ];
+  const eligibleBodies: PlanetName[] =
+    karakaScheme === 'eight_karaka'
+      ? ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu']
+      : ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
 
   const candidates = planets
     .filter((p) => eligibleBodies.includes(p.name))
-    .map((p) => ({
-      name: p.name,
-      degreeInSign: p.degreeInSign,
-      sign: p.sign,
-    }));
+    .map((p) => {
+      // In Jaimini 8-karaka scheme, Rahu moves retrograde through the zodiac;
+      // classical convention calculates its advance within sign as (30° - longitude).
+      const effectiveDegree =
+        karakaScheme === 'eight_karaka' && p.name === 'Rahu'
+          ? Math.max(0, 30 - p.degreeInSign)
+          : p.degreeInSign;
+      return {
+        name: p.name,
+        degreeInSign: effectiveDegree,
+        sign: p.sign,
+      };
+    });
 
-  // Seven-karaka convention: Sun through Saturn, excluding Rahu/Ketu.
-  // Break exact degree ties deterministically by the canonical planet order.
-  const canonicalOrder: PlanetName[] = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  // Break exact degree ties deterministically by canonical planet order.
+  const canonicalOrder: PlanetName[] = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu'];
   candidates.sort((a, b) =>
     b.degreeInSign - a.degreeInSign ||
     canonicalOrder.indexOf(a.name) - canonicalOrder.indexOf(b.name)
   );
 
+  const rolesList = karakaScheme === 'eight_karaka' ? KARAKA_ROLES_8 : KARAKA_ROLES;
+
   const charaKarakas: CharaKaraka[] = candidates.map((c, idx) => {
-    const meta = KARAKA_ROLES[idx];
+    const meta = rolesList[idx] || KARAKA_ROLES[idx] || KARAKA_ROLES[KARAKA_ROLES.length - 1];
     return {
       role: meta.role,
       roleName: meta.roleName,
@@ -121,6 +141,46 @@ export function calculateJaiminiFacts(
   });
 
   const atmakaraka = charaKarakas[0].planet;
+  const amatyakaraka = charaKarakas[1]?.planet;
+
+  // Amatyakaraka detailed multi-layer placements (D1, D9, D10)
+  let amatyakarakaDetails: import('./types.ts').AmatyakarakaDetails | undefined = undefined;
+  if (charaKarakas.length > 1) {
+    const amkCandidate = charaKarakas[1];
+    const amkPlanet = planets.find((p) => p.name === amkCandidate.planet);
+    if (amkPlanet) {
+      const d1House = ((amkPlanet.signIndex - ascendantSignIndex + 12) % 12) + 1;
+      let d9Sign: ZodiacSign | undefined;
+      let d9House: number | undefined;
+      if (d9Chart) {
+        const d9p = d9Chart.planets.find((p) => p.planet === amkCandidate.planet);
+        if (d9p) {
+          d9Sign = d9p.vargaSign;
+          d9House = d9p.houseNumber;
+        }
+      }
+      let d10Sign: ZodiacSign | undefined;
+      let d10House: number | undefined;
+      if (d10Chart) {
+        const d10p = d10Chart.planets.find((p) => p.planet === amkCandidate.planet);
+        if (d10p) {
+          d10Sign = d10p.vargaSign;
+          d10House = d10p.houseNumber;
+        }
+      }
+      amatyakarakaDetails = {
+        planet: amkCandidate.planet,
+        degreeInSign: amkCandidate.degreeInSign,
+        formattedDegree: amkCandidate.formattedDegree,
+        d1Sign: amkPlanet.sign,
+        d1House,
+        d9Sign,
+        d9House,
+        d10Sign,
+        d10House,
+      };
+    }
+  }
 
   // Karakamsa: Navamsha sign of Atmakaraka
   let karakamsaNavamshaSign: ZodiacSign = 'Aries';
@@ -131,18 +191,40 @@ export function calculateJaiminiFacts(
     }
   }
 
+  // 10th House from Karakamsa in D9 Navamsha (Jaimini Sutras 1.2 / 1.3 career factor)
+  const karakamsaNavamshaSignIndex = ZODIAC_SIGNS.indexOf(karakamsaNavamshaSign);
+  const tenthFromKLSignIndex = (karakamsaNavamshaSignIndex + 9) % 12; // 10th sign (9 steps forward)
+  const tenthFromKLSign = ZODIAC_SIGNS[tenthFromKLSignIndex];
+  let kl10Occupants: PlanetName[] = [];
+  if (d9Chart) {
+    kl10Occupants = d9Chart.planets
+      .filter((p) => p.vargaSign === tenthFromKLSign)
+      .map((p) => p.planet);
+  }
+  const tenthFromKarakamsaNavamsha = {
+    sign: tenthFromKLSign,
+    signIndex: tenthFromKLSignIndex,
+    occupants: kl10Occupants,
+  };
+
   // Arudha Lagna (AL = Pada of House 1)
   const al = calculateArudhaPada(1, ascendantSignIndex, planets);
 
   // Upapada Lagna (UL = Pada of House 12)
   const ul = calculateArudhaPada(12, ascendantSignIndex, planets);
 
+  // Rajya Pada (A10 = Pada of House 10: public status, profession, worldly career manifestation)
+  const a10 = calculateArudhaPada(10, ascendantSignIndex, planets);
+
   return {
     charaKarakas,
     atmakaraka,
-    karakaScheme: 'seven_karaka',
+    amatyakaraka,
+    amatyakarakaDetails,
+    karakaScheme,
     karakamsaSign: charaKarakas[0].sign,
     karakamsaNavamshaSign,
+    tenthFromKarakamsaNavamsha,
     arudhaLagna: {
       sign: al.sign,
       houseNumber: al.houseNumber,
@@ -150,6 +232,11 @@ export function calculateJaiminiFacts(
     upapadaLagna: {
       sign: ul.sign,
       houseNumber: ul.houseNumber,
+    },
+    rajyaPadaA10: {
+      sign: a10.sign,
+      signIndex: a10.signIndex,
+      houseNumber: a10.houseNumber,
     },
   };
 }

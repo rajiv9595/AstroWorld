@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { MapPin, X, Sparkles, ShieldCheck } from 'lucide-react';
-import { BirthProfile } from '../engine/types.ts';
+import { BirthProfile, isDemoOrDummyName } from '../engine/types.ts';
 import { birthProfileToUtcDate } from '../engine/astronomy.ts';
 import { CityAutocompleteInput } from './CityAutocompleteInput.tsx';
 import { VedicDatePicker } from './VedicDatePicker.tsx';
@@ -39,16 +39,17 @@ export const BirthInputModal: React.FC<BirthInputModalProps> = ({
   const [minute, setMinute] = useState('');
   const [second, setSecond] = useState('0');
   const [cityName, setCityName] = useState('');
-  const [latitude, setLatitude] = useState('28.6139');
-  const [longitude, setLongitude] = useState('77.2090');
-  const [timezone, setTimezone] = useState('Asia/Kolkata');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [timezone, setTimezone] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
   const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      if (currentProfile && !isOnboarding) {
-        setName(currentProfile.name || '');
+      // 1. Check if currentProfile has valid user data (not demo/dummy)
+      if (currentProfile && currentProfile.name && !isDemoOrDummyName(currentProfile.name)) {
+        setName(currentProfile.name);
         setDay(currentProfile.day ? String(currentProfile.day) : '');
         setMonth(currentProfile.month ? String(currentProfile.month) : '');
         setYear(currentProfile.year ? String(currentProfile.year) : '');
@@ -56,13 +57,12 @@ export const BirthInputModal: React.FC<BirthInputModalProps> = ({
         setMinute(currentProfile.minute !== undefined ? String(currentProfile.minute) : '');
         setSecond(currentProfile.second !== undefined ? String(currentProfile.second) : '0');
         setCityName(currentProfile.cityName || '');
-        setLatitude(currentProfile.latitude !== undefined ? String(currentProfile.latitude) : '28.6139');
-        setLongitude(currentProfile.longitude !== undefined ? String(currentProfile.longitude) : '77.2090');
-        setTimezone(currentProfile.timezone || 'Asia/Kolkata');
+        setLatitude(currentProfile.latitude !== undefined ? String(currentProfile.latitude) : '');
+        setLongitude(currentProfile.longitude !== undefined ? String(currentProfile.longitude) : '');
+        setTimezone(currentProfile.timezone || '');
         setGender(currentProfile.gender || 'male');
-      } else if (isOnboarding) {
-        // Never seed a first-time native profile from the built-in demo chart.
-        // Exact birthplace/timezone data must come from the user or resolver.
+      } else {
+        // Keep inputs plain and empty with dummy placeholders
         setName('');
         setDay('');
         setMonth('');
@@ -75,6 +75,13 @@ export const BirthInputModal: React.FC<BirthInputModalProps> = ({
         setLongitude('');
         setTimezone('');
         setGender('male');
+      }
+
+      try {
+        localStorage.removeItem('astroworld_pending_birth_profile');
+        localStorage.removeItem('astroworld_kundli_form_draft');
+      } catch {
+        // ignore
       }
       setValidationError(null);
     }
@@ -163,14 +170,12 @@ export const BirthInputModal: React.FC<BirthInputModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white border border-amber-300 rounded-3xl shadow-2xl p-6 sm:p-8 text-slate-800">
-        {!isOnboarding && (
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 transition-colors p-1.5 rounded-full hover:bg-slate-100 cursor-pointer"
-          >
-            <X size={20} />
-          </button>
-        )}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 transition-colors p-1.5 rounded-full hover:bg-slate-100 cursor-pointer"
+        >
+          <X size={20} />
+        </button>
 
         <div className="flex items-center gap-2 mb-2 border-b border-slate-100 pb-3">
           <Sparkles className="w-5 h-5 text-orange-500" />
@@ -316,20 +321,18 @@ export const BirthInputModal: React.FC<BirthInputModalProps> = ({
           </div>
 
           <div className="flex gap-3 pt-3 border-t border-slate-100">
-            {!isOnboarding && (
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
             <button
               type="submit"
               className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer"
             >
-              {isOnboarding ? 'Save Details & Generate Kundli' : 'Compute & Update Kundli'}
+              Compute & Update Kundli
             </button>
           </div>
         </form>

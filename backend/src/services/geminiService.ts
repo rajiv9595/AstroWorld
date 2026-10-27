@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
+import { getGrok, GrokService } from './grokService.ts';
 
 dotenv.config();
 
@@ -25,3 +26,4 @@ export function getAi(): GoogleGenAI | null {
 
 // Backwards compatibility export
 export const ai = getAi();
+export { getGrok, GrokService };

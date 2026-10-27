@@ -1,8 +1,4 @@
 /**
- * ASTROWORLD AI V2 — Consultation Module Index
+ * Backwards compatibility re-export from unified src/ai/consultation/index.ts
  */
-
-export * from './consultationOrchestrator.ts';
-export * from './goldenConsultationBenchmark.ts';
-export * from './conversationBenchmark.ts';
-export * from './conversationEvaluator.ts';
+export * from '../../ai/consultation/index.ts';

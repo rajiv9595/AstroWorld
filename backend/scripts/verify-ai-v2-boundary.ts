@@ -45,7 +45,7 @@ async function main() {
       'AI V2 Status Route Output',
       responseData &&
         responseData.system === 'AstroWorld AI V2' &&
-        (responseData.phase === '2B' || responseData.phase === 2 || responseData.phase === 1),
+        (responseData.phase === 'production-convergence' || responseData.phase === '2B' || responseData.phase === 2 || responseData.phase === 1),
       `Received payload: ${JSON.stringify(responseData)}`
     );
   }

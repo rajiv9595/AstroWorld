@@ -12,6 +12,7 @@ import { GenerateKundliSection } from './components/GenerateKundliSection.tsx';
 import { ServicesGrid } from './components/ServicesGrid.tsx';
 import { AstroWorldFooter } from './components/AstroWorldFooter.tsx';
 import { BirthInputModal } from './components/BirthInputModal.tsx';
+import { VedicSageComingSoonModal } from './components/VedicSageComingSoonModal.tsx';
 
 import {
   computeCanonicalChart,
@@ -19,11 +20,12 @@ import {
   getLiveDailyPanchanga,
   detectRegionalChartStyle,
 } from './engine/canonicalChart.ts';
-import { BirthProfile, PlanetName } from './engine/types.ts';
+import { BirthProfile, PlanetName, isDemoOrDummyName } from './engine/types.ts';
 import { fetchUserCharts, saveUserChart, SavedKundliRecord } from './services/chartService.ts';
 import {
   getCurrentSupabaseUser,
   signOutFromSupabase,
+  syncGoogleClientSession,
 } from './lib/supabase.ts';
 
 // Views
@@ -61,18 +63,29 @@ import {
   Calendar,
   Heart,
   FileText,
+  Lock,
 } from 'lucide-react';
 
 export default function App() {
   // Authentication State
 
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [isSageComingSoonOpen, setIsSageComingSoonOpen] = useState(false);
 
   const [authRedirectReason, setAuthRedirectReason] = useState<string>(
     'Please sign in or create a free account to generate and access your detailed Kundli.'
   );
-  const [pendingProfile, setPendingProfile] = useState<BirthProfile | null>(null);
   const [targetTabAfterAuth, setTargetTabAfterAuth] = useState<ProductTab>('overview');
+
+  // Purge any stale pending or draft profiles from localStorage on mount
+  useEffect(() => {
+    try {
+      localStorage.removeItem('astroworld_pending_birth_profile');
+      localStorage.removeItem('astroworld_kundli_form_draft');
+    } catch {
+      // ignore
+    }
+  }, []);
 
   // Chart & Profile State
   const [profile, setProfile] = useState<BirthProfile>(DEFAULT_BIRTH_PROFILE);
@@ -82,13 +95,50 @@ export default function App() {
   const [chartStyle, setChartStyle] = useState<'NORTH_INDIAN' | 'SOUTH_INDIAN'>('NORTH_INDIAN');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isOnboardingMode, setIsOnboardingMode] = useState(false);
+  const [isChartsLoading, setIsChartsLoading] = useState(false);
 
-  // Sync Auth session on mount
+  // Sync Auth session on mount (including OAuth redirect callbacks)
   useEffect(() => {
     const syncSession = async () => {
+      // Handle OAuth return redirect params or hash tokens
+      if (typeof window !== 'undefined') {
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const hash = window.location.hash;
+
+          // Check for error returned by OAuth provider
+          const authError = urlParams.get('authError');
+          if (authError) {
+            setAuthRedirectReason(`Google Sign-in: ${authError}`);
+            setActiveTab('auth');
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+
+          // Check for implicit grant access_token in URL hash
+          if (hash && hash.includes('access_token=')) {
+            const hashParams = new URLSearchParams(hash.replace(/^#/, ''));
+            const accessToken = hashParams.get('access_token');
+            const refreshToken = hashParams.get('refresh_token');
+            if (accessToken && refreshToken) {
+              await syncGoogleClientSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+            }
+            window.history.replaceState({}, document.title, window.location.pathname);
+          } else if (urlParams.get('auth') === 'success') {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch {
+          // ignore parsing error
+        }
+      }
+
       const user = await getCurrentSupabaseUser();
       if (user) {
         setCurrentUser(user);
+        // If user is authenticated, directly route to dashboard ('overview')
+        setActiveTab((prev) => (prev === 'auth' ? 'overview' : prev));
       } else {
         setCurrentUser(null);
         setUserCharts([]);
@@ -97,29 +147,52 @@ export default function App() {
     syncSession();
   }, []);
 
+  // Guard: Logged-in users must never remain on the login/signup auth page
+  useEffect(() => {
+    if (currentUser && activeTab === 'auth') {
+      setActiveTab('overview');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [currentUser, activeTab]);
+
   // Fetch saved charts whenever user logs in or changes
   useEffect(() => {
     const loadCharts = async () => {
       if (currentUser?.id || currentUser?.email) {
-        const charts = await fetchUserCharts(currentUser.id);
-        setUserCharts(charts);
-        if (charts.length > 0) {
-          const latest = charts[0];
-          const prof: BirthProfile = {
-            name: latest.name,
-            year: latest.year,
-            month: latest.month,
-            day: latest.day,
-            hour: latest.hour,
-            minute: latest.minute,
-            second: latest.second ?? 0,
-            latitude: Number(latest.latitude),
-            longitude: Number(latest.longitude),
-            timezone: latest.timezone,
-            cityName: latest.cityName,
-          };
-          setProfile(prof);
-          setChartStyle(detectRegionalChartStyle(prof));
+        setIsChartsLoading(true);
+        try {
+          const charts = await fetchUserCharts(currentUser.id);
+          setUserCharts(charts);
+
+          // Restore default chart from saved charts
+          if (charts.length > 0) {
+            const latest = charts[0];
+            const prof: BirthProfile = {
+              name: latest.name,
+              year: latest.year,
+              month: latest.month,
+              day: latest.day,
+              hour: latest.hour,
+              minute: latest.minute,
+              second: latest.second ?? 0,
+              latitude: Number(latest.latitude),
+              longitude: Number(latest.longitude),
+              timezone: latest.timezone,
+              cityName: latest.cityName,
+            };
+            setProfile(prof);
+            setChartStyle(detectRegionalChartStyle(prof));
+            setIsOnboardingMode(false);
+          } else {
+            setProfile((prev) => ({
+              ...prev,
+              name: currentUser.name || 'Your Birth Chart',
+            }));
+            setIsOnboardingMode(true);
+            setIsProfileModalOpen(true);
+          }
+        } finally {
+          setIsChartsLoading(false);
         }
       }
     };
@@ -158,18 +231,21 @@ export default function App() {
   };
 
   // Auth gate when user tries to generate Kundli
-  const handleRequireAuthForKundli = (newProfile: BirthProfile) => {
-    setPendingProfile(newProfile);
+  const handleRequireAuthForKundli = () => {
     setTargetTabAfterAuth('overview');
     setAuthRedirectReason('Please sign in or create an account to compute and save your personalized Kundli.');
     setActiveTab('auth');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Auth gate when user clicks any calculation service
+  // Auth gate when user clicks any calculation service or AI Astrologer
   const handleRequireAuthForService = (targetTab: ProductTab) => {
     setTargetTabAfterAuth(targetTab);
-    setAuthRedirectReason('Please sign in or create an account to access our detailed astrological services.');
+    setAuthRedirectReason(
+      targetTab === 'ai'
+        ? 'Please sign in or create an account to consult with our canonical AI Astrologer.'
+        : 'Please sign in or create an account to access our detailed astrological services.'
+    );
     setActiveTab('auth');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -189,16 +265,15 @@ export default function App() {
 
   // Successful Login / Signup Callback
   const handleAuthSuccess = async (user: { id: string; name: string; email: string }) => {
+    if (!user || !user.id) return;
     setCurrentUser(user);
-    const uId = user.id;
+    // Directly route user to dashboard immediately!
+    setActiveTab('overview');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    if (pendingProfile) {
-      setProfile(pendingProfile);
-      const saved = await saveUserChart(uId, pendingProfile, chartStyle);
-      setUserCharts((prev) => [saved, ...prev]);
-      setPendingProfile(null);
-      setActiveTab(targetTabAfterAuth || 'overview');
-    } else {
+    const uId = user.id;
+    setIsChartsLoading(true);
+    try {
       const existingCharts = await fetchUserCharts(uId);
       setUserCharts(existingCharts);
       if (existingCharts.length > 0) {
@@ -218,28 +293,19 @@ export default function App() {
         };
         setProfile(prof);
         setChartStyle(detectRegionalChartStyle(prof));
-        setActiveTab(targetTabAfterAuth || 'overview');
+        setIsOnboardingMode(false);
+        setIsProfileModalOpen(false);
       } else {
-        // First-time user without birth details -> Trigger onboarding modal
-        setProfile({
-          name: user.name || '',
-          year: 2000,
-          month: 1,
-          day: 1,
-          hour: 12,
-          minute: 0,
-          second: 0,
-          latitude: 28.6139,
-          longitude: 77.2090,
-          timezone: 'Asia/Kolkata',
-          cityName: '',
-        });
+        setProfile((prev) => ({
+          ...prev,
+          name: user.name || 'Your Birth Chart',
+        }));
         setIsOnboardingMode(true);
         setIsProfileModalOpen(true);
-        setActiveTab('overview');
       }
+    } finally {
+      setIsChartsLoading(false);
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleLogout = async () => {
@@ -247,13 +313,36 @@ export default function App() {
     localStorage.removeItem('astroworld_user');
     setCurrentUser(null);
     setUserCharts([]);
+    setProfile(DEFAULT_BIRTH_PROFILE);
+    setChartStyle(detectRegionalChartStyle(DEFAULT_BIRTH_PROFILE));
     setActiveTab('home');
   };
 
+  const KUNDLI_WORKSPACE_TABS: ProductTab[] = [
+    'overview',
+    'vargas',
+    'planets',
+    'panchanga',
+    'dasha',
+    'strength',
+    'yogas',
+    'jaimini',
+    'ashtakavarga',
+    'transits',
+    'predictions',
+    'report',
+    'ai',
+    'research',
+  ];
+
   const handleTabChange = (tab: ProductTab) => {
-    if (tab === 'overview' && !currentUser) {
-      handleRequireAuthForService('overview');
+    if (KUNDLI_WORKSPACE_TABS.includes(tab) && !currentUser) {
+      handleRequireAuthForService(tab);
       return;
+    }
+    if (KUNDLI_WORKSPACE_TABS.includes(tab) && currentUser && userCharts.length === 0) {
+      setIsOnboardingMode(true);
+      setIsProfileModalOpen(true);
     }
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -279,22 +368,7 @@ export default function App() {
   };
 
   // Is the current view inside the Kundli workspace?
-  const isKundliWorkspace = [
-    'overview',
-    'vargas',
-    'planets',
-    'panchanga',
-    'dasha',
-    'strength',
-    'yogas',
-    'jaimini',
-    'ashtakavarga',
-    'transits',
-    'predictions',
-    'report',
-    'ai',
-    'research',
-  ].includes(activeTab);
+  const isKundliWorkspace = KUNDLI_WORKSPACE_TABS.includes(activeTab);
 
   return (
     <div className="min-h-screen bg-[#FBF9F5] text-slate-800 flex flex-col font-sans selection:bg-orange-500/20 selection:text-orange-900">
@@ -307,7 +381,7 @@ export default function App() {
           onLogout={handleLogout}
           savedChartsCount={userCharts.length}
           onOpenChat={() => {
-            handleTabChange('ai');
+            setIsSageComingSoonOpen(true);
           }}
         />
       </div>
@@ -337,7 +411,7 @@ export default function App() {
             />
 
             <GenerateKundliSection
-              currentProfile={profile}
+              currentProfile={currentUser && userCharts.length > 0 && !isDemoOrDummyName(profile.name) ? profile : undefined}
               isLoggedIn={!!currentUser}
               onGenerate={handleGenerateAndOpenKundli}
               onRequireAuth={handleRequireAuthForKundli}
@@ -379,16 +453,34 @@ export default function App() {
 
         {/* 5. Login / Signup Auth Page */}
         {activeTab === 'auth' && (
-          <AuthView
-            onSuccess={handleAuthSuccess}
-            onBackToHome={() => setActiveTab('home')}
-            redirectReason={authRedirectReason}
-          />
+          currentUser ? (
+            <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh]">
+              <div className="w-8 h-8 border-3 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-xs font-semibold text-slate-500 mt-2 uppercase tracking-wider">
+                Opening your dashboard...
+              </p>
+            </div>
+          ) : (
+            <AuthView
+              onSuccess={handleAuthSuccess}
+              onBackToHome={() => setActiveTab('home')}
+              redirectReason={authRedirectReason}
+            />
+          )
         )}
 
         {/* 6. Protected Kundli Workspace (Accessible after login / Dashboard) */}
         {isKundliWorkspace && (
-          <div className="max-w-7xl w-full mx-auto px-4 py-6 space-y-6 print:p-0 print:m-0 print:max-w-none">
+          currentUser ? (
+            isChartsLoading ? (
+              <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
+                <div className="w-8 h-8 border-3 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Loading your Vedic charts...
+                </p>
+              </div>
+            ) : (
+              <div className="max-w-7xl w-full mx-auto px-4 py-6 space-y-6 print:p-0 print:m-0 print:max-w-none">
             {/* Clean, Minimalist Sub-Bar for Kundli Workspace */}
             <div className="no-print bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 flex-wrap relative">
@@ -398,10 +490,16 @@ export default function App() {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-900 text-xs font-bold transition-colors cursor-pointer"
                 >
                   <User size={13} className="text-orange-600" />
-                  <span>{profile.name}</span>
-                  <span className="text-[10px] text-orange-700/80 font-mono">
-                    ({profile.day}/{profile.month}/{profile.year})
+                  <span>
+                    {userCharts.length === 0
+                      ? (currentUser?.name || 'Enter Birth Details')
+                      : profile.name}
                   </span>
+                  {userCharts.length > 0 && (
+                    <span className="text-[10px] text-orange-700/80 font-mono">
+                      ({profile.day}/{profile.month}/{profile.year})
+                    </span>
+                  )}
                 </button>
 
                 {/* Saved Charts Selector (Quick switch for returning users) */}
@@ -660,10 +758,48 @@ export default function App() {
 
             {activeTab === 'report' && <ReportView context={canonicalContext} />}
 
-            {activeTab === 'ai' && <AIAstrologerView context={canonicalContext} />}
+            {activeTab === 'ai' && (
+              <AIAstrologerView
+                context={canonicalContext}
+                currentUser={currentUser}
+                onRequireAuth={() => handleRequireAuthForService('ai')}
+              />
+            )}
 
             {activeTab === 'research' && <ResearchView context={canonicalContext} />}
           </div>
+        )
+      ) : (
+            <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-6 animate-fadeIn">
+              <div className="w-16 h-16 mx-auto rounded-3xl bg-orange-100 border border-orange-200 flex items-center justify-center text-orange-600 shadow-sm">
+                <Lock size={32} />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-serif font-bold text-[#162058]">
+                  {activeTab === 'ai' ? 'Sign In to Consult AI Astrologer' : 'Authentication Required'}
+                </h2>
+                <p className="text-slate-500 text-sm max-w-md mx-auto leading-relaxed">
+                  {activeTab === 'ai'
+                    ? 'Personalized Vedic Jyotish consultations with our classical AI Astrologer require an active account to safeguard your birth chart data and privacy.'
+                    : 'Please sign in or create a free account to access full Shodashavarga charts, Vimshottari timelines, and astrological calculations.'}
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <button
+                  onClick={() => handleRequireAuthForService(activeTab)}
+                  className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold px-6 py-2.5 rounded-xl shadow-md text-sm transition cursor-pointer"
+                >
+                  Sign In / Create Free Account
+                </button>
+                <button
+                  onClick={() => setActiveTab('home')}
+                  className="bg-white hover:bg-slate-100 text-slate-700 font-semibold px-5 py-2.5 rounded-xl border border-slate-300 text-sm transition cursor-pointer"
+                >
+                  Back to Home
+                </button>
+              </div>
+            </div>
+          )
         )}
       </main>
 
@@ -692,6 +828,12 @@ export default function App() {
           }
           setIsOnboardingMode(false);
         }}
+      />
+
+      {/* 3D Vedic Sage Chatbot Coming Soon Modal */}
+      <VedicSageComingSoonModal
+        isOpen={isSageComingSoonOpen}
+        onClose={() => setIsSageComingSoonOpen(false)}
       />
     </div>
   );

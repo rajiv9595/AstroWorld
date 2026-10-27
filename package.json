@@ -9,7 +9,7 @@
     "shared"
   ],
   "scripts": {
-    "dev": "tsx watch server.ts",
+    "dev": "tsx watch --ignore \"frontend/**\" --ignore \"**/.vite/**\" server.ts",
     "dev:frontend": "npm --workspace=@astroworld/frontend run dev",
     "dev:backend": "npm --workspace=@astroworld/backend run dev",
     "build": "npm --workspace=@astroworld/frontend run build",

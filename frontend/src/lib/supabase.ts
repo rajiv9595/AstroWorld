@@ -136,6 +136,26 @@ export const signOutFromSupabase = async (): Promise<void> => {
   }
 };
 
+export const deleteAccountWithSupabase = async (): Promise<{ success: boolean; message: string }> => {
+  try {
+    const res = await fetch('/api/auth/account', {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: authWriteHeaders({ Accept: 'application/json' }),
+    });
+
+    const data = await parseJsonResponse(res);
+    if (res.ok && data?.success) {
+      localStorage.removeItem('astroworld_user');
+      return { success: true, message: data.message || 'Account successfully deleted.' };
+    }
+
+    return { success: false, message: data?.error || 'Failed to delete account.' };
+  } catch (err: any) {
+    return { success: false, message: err?.message || 'Connection error. Please try again.' };
+  }
+};
+
 export const getCurrentSupabaseUser = async (): Promise<SupabaseUserProfile | null> => {
   try {
     const res = await fetch('/api/auth/session', {
@@ -162,5 +182,53 @@ export const getCurrentSupabaseUser = async (): Promise<SupabaseUserProfile | nu
     return data.user;
   } catch {
     return null;
+  }
+};
+
+export const initiateGoogleOAuth = async (): Promise<{ success: boolean; url?: string; message?: string }> => {
+  try {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const res = await fetch(`/api/auth/google?origin=${encodeURIComponent(origin)}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    const data = await parseJsonResponse(res);
+    if (res.ok && data?.success && data?.url) {
+      return { success: true, url: data.url };
+    }
+
+    return {
+      success: false,
+      message: data?.error || 'Unable to start Google sign in. Please try again.',
+    };
+  } catch (err: any) {
+    return { success: false, message: err?.message || 'Connection error starting Google sign in.' };
+  }
+};
+
+export const syncGoogleClientSession = async (payload: {
+  access_token?: string;
+  refresh_token?: string;
+  code?: string;
+}): Promise<{ success: boolean; user?: SupabaseUserProfile; message?: string }> => {
+  try {
+    const res = await fetch('/api/auth/google/session', {
+      method: 'POST',
+      credentials: 'include',
+      headers: authWriteHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(payload),
+    });
+
+    const data = await parseJsonResponse(res);
+    if (res.ok && data?.success && data?.user) {
+      if (typeof data.csrfToken === 'string') csrfToken = data.csrfToken;
+      localStorage.setItem('astroworld_user', JSON.stringify(data.user));
+      return { success: true, user: data.user };
+    }
+
+    return { success: false, message: data?.error || 'Google session sync failed.' };
+  } catch (err: any) {
+    return { success: false, message: err?.message || 'Connection error syncing Google session.' };
   }
 };

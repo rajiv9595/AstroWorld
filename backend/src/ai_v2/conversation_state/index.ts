@@ -1,12 +1,4 @@
 /**
- * ASTROWORLD AI V2 — Conversation State Engine Module
+ * Backwards compatibility re-export from unified src/ai/conversation_state/index.ts
  */
-
-export * from './conversationStateTypes.ts';
-export * from './conversationContextPack.ts';
-export * from './conversationState.ts';
-export * from './conversationStateResolver.ts';
-export * from './conversationStateUpdater.ts';
-export * from './conversationPersistenceRepository.ts';
-export * from './titleGenerator.ts';
-export * from './conversationStateBenchmark.ts';
+export * from '../../ai/conversation_state/index.ts';

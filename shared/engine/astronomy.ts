@@ -371,13 +371,22 @@ export function calculatePlanetaryPositions(
       const prevLon = tropicalLongitude(b.body, time.AddDays(-dayStep));
       const nextLon = tropicalLongitude(b.body, time.AddDays(dayStep));
       speed = angularDelta(nextLon, prevLon) / (2 * dayStep);
+    } else if (b.name === 'Sun') {
+      const prevSun = Astronomy.SunPosition(time.AddDays(-dayStep));
+      const nextSun = Astronomy.SunPosition(time.AddDays(dayStep));
+      speed = angularDelta(nextSun.elon, prevSun.elon) / (2 * dayStep);
     } else if (b.name === 'Rahu' || b.name === 'Ketu') {
-      speed = -0.05295;
+      const tPrev = time.AddDays(-dayStep).ut / 36525.0;
+      const tNext = time.AddDays(dayStep).ut / 36525.0;
+      const prevNode = normalizeDegrees(125.04452 - 1934.136261 * tPrev + 0.0020708 * tPrev * tPrev);
+      const nextNode = normalizeDegrees(125.04452 - 1934.136261 * tNext + 0.0020708 * tNext * tNext);
+      speed = angularDelta(nextNode, prevNode) / (2 * dayStep);
     } else {
       speed = 0.9856;
     }
 
     let combust = false;
+    let combustionLevel: 'CAZIMI' | 'DEEP_COMBUST' | 'COMBUST' | 'NONE' = 'NONE';
     if (b.name !== 'Sun' && b.name !== 'Rahu' && b.name !== 'Ketu') {
       const diff = Math.min(
         Math.abs(sidLon - sunSidLon),
@@ -391,7 +400,17 @@ export function calculatePlanetaryPositions(
         Venus: (speed < 0 ? 8.0 : 10.0),
         Saturn: 15.0,
       };
-      if (diff <= (combustionOrbs[b.name] || 10.0)) combust = true;
+      const limit = combustionOrbs[b.name] || 10.0;
+      if (diff <= 0.2833) {
+        combust = false;
+        combustionLevel = 'CAZIMI';
+      } else if (diff <= 3.0) {
+        combust = true;
+        combustionLevel = 'DEEP_COMBUST';
+      } else if (diff <= limit) {
+        combust = true;
+        combustionLevel = 'COMBUST';
+      }
     }
 
     const nakInfo = getNakshatraAndPada(sidLon);
@@ -414,6 +433,7 @@ export function calculatePlanetaryPositions(
       speed,
       retrograde: speed < 0,
       combust,
+      combustionLevel,
       dignity: 'NEUTRAL',
       dignityScore: 0,
       signLord,

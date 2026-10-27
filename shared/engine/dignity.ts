@@ -34,24 +34,31 @@ export interface DignityFact {
   naturalRelationshipToLord: 'FRIEND' | 'NEUTRAL' | 'ENEMY' | 'SELF';
   dignity: DignityType;
   deepestPointDistance?: number;
+  retrogradeModifier?: 'VAKRI_NEECHA_UCHCHA_PHALA' | 'VAKRI_UCHCHA_NEECHA_PHALA' | 'NONE';
+  retrogradeNote?: string;
   description: string;
 }
 
 /**
  * Calculate canonical dignity for any planet in any chart or varga.
  * Retains strict independence between charts.
+ * Adheres to classical Phaladeepika Ch. 9 Sloka 20:
+ * - A retrograde debilitated planet (Vakri Neecha) yields results akin to exaltation.
+ * - A retrograde exalted planet (Vakri Uchcha) loses its pure ease.
  */
 export function calculateDignity(
   planet: PlanetName,
   occupiedSign: ZodiacSign,
   degreeInSign: number = 0,
-  chartContext: string = 'D1'
+  chartContext: string = 'D1',
+  isRetrograde: boolean = false
 ): DignityFact {
   const signLord = SIGN_LORDS[occupiedSign];
 
   // 1. Debilitation check
   const deb = DEBILITATION_MAP[planet];
   if (deb && deb.sign === occupiedSign) {
+    const isVakriNeecha = isRetrograde;
     return {
       chartContext,
       planet,
@@ -61,7 +68,13 @@ export function calculateDignity(
       naturalRelationshipToLord: relationshipToSignLord(planet, signLord),
       dignity: 'DEBILITATED',
       deepestPointDistance: Math.abs(degreeInSign - deb.deepDegree),
-      description: `${chartContext} ${planet} in ${occupiedSign} is DEBILITATED (Neecha). Deep debilitation point: ${deb.deepDegree}°.`,
+      retrogradeModifier: isVakriNeecha ? 'VAKRI_NEECHA_UCHCHA_PHALA' : 'NONE',
+      retrogradeNote: isVakriNeecha
+        ? 'Classical Law (Phaladeepika Ch. 9 Sl. 20): Retrograde Debilitated planet acts like an Exalted planet (Vakri Neecha Uchcha-Tulya Phala).'
+        : undefined,
+      description: `${chartContext} ${planet} in ${occupiedSign} is DEBILITATED (Neecha). Deep debilitation point: ${deb.deepDegree}°.${
+        isVakriNeecha ? ' However, being RETROGRADE, classical Phaladeepika Ch. 9 Sl. 20 states it produces effects akin to EXALTATION.' : ''
+      }`,
     };
   }
 
@@ -82,6 +95,7 @@ export function calculateDignity(
       };
     }
 
+    const isVakriUchcha = isRetrograde;
     return {
       chartContext,
       planet,
@@ -91,7 +105,13 @@ export function calculateDignity(
       naturalRelationshipToLord: relationshipToSignLord(planet, signLord),
       dignity: 'EXALTED',
       deepestPointDistance: Math.abs(degreeInSign - ex.deepDegree),
-      description: `${chartContext} ${planet} in ${occupiedSign} is EXALTED (Uchcha). Deep exaltation point: ${ex.deepDegree}°.`,
+      retrogradeModifier: isVakriUchcha ? 'VAKRI_UCHCHA_NEECHA_PHALA' : 'NONE',
+      retrogradeNote: isVakriUchcha
+        ? 'Classical Law: Retrograde Exalted planet loses its smooth ease and requires intense conscious effort to manifest.'
+        : undefined,
+      description: `${chartContext} ${planet} in ${occupiedSign} is EXALTED (Uchcha). Deep exaltation point: ${ex.deepDegree}°.${
+        isVakriUchcha ? ' Being RETROGRADE, its exaltation energy is introverted and requires intense conscious navigation.' : ''
+      }`,
     };
   }
 
@@ -160,7 +180,7 @@ export function calculateDignity(
  */
 export function enrichPlanetaryDignity(planets: PlanetPosition[]): PlanetPosition[] {
   return planets.map((p) => {
-    const fact = calculateDignity(p.name, p.sign, p.degreeInSign, 'D1');
+    const fact = calculateDignity(p.name, p.sign, p.degreeInSign, 'D1', p.retrograde);
     const scoreMap: Record<DignityType, number> = {
       EXALTED: 60,
       MOOLATRIKONA: 45,
@@ -170,10 +190,15 @@ export function enrichPlanetaryDignity(planets: PlanetPosition[]): PlanetPositio
       ENEMY: 7.5,
       DEBILITATED: 0,
     };
+    let score = scoreMap[fact.dignity] ?? 15;
+    if (fact.retrogradeModifier === 'VAKRI_NEECHA_UCHCHA_PHALA') {
+      score = 50; // Elevated score reflecting Vakri Neecha Uchcha-Tulya Phala
+    }
     return {
       ...p,
       dignity: fact.dignity,
-      dignityScore: scoreMap[fact.dignity] ?? 15,
+      dignityScore: score,
+      retrogradeDignityNote: fact.retrogradeNote,
       naturalRelationshipToLord: fact.naturalRelationshipToLord === 'SELF' ? 'FRIEND' : fact.naturalRelationshipToLord,
     };
   });

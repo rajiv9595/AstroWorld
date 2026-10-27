@@ -24,6 +24,7 @@ import {
   AlertCircle,
   Loader2,
   Trash2,
+  Lock,
 } from 'lucide-react';
 
 import {
@@ -43,21 +44,50 @@ import { ChatEmptyState } from '../components/chat/ChatEmptyState.tsx';
 import { ChatSidebar } from '../components/chat/ChatSidebar.tsx';
 import { MemoryModal } from '../components/chat/MemoryModal.tsx';
 import { BirthProfileEditorModal } from '../components/chat/BirthProfileEditorModal.tsx';
+import { SupabaseUserProfile } from '../lib/supabase.ts';
 
-const STORAGE_CONVERSATIONS_KEY = 'astroworld_conversations';
+function getConversationsStorageKey(userId: string): string {
+  return `astroworld_${userId}_conversations`;
+}
 
-function getLocalConversations(): ConversationSummary[] {
+function getActiveConvStorageKey(userId: string, fingerprint: string): string {
+  return `astroworld_${userId}_active_conv_${fingerprint}`;
+}
+
+function getMessagesStorageKey(userId: string, convId: string): string {
+  return `astroworld_${userId}_messages_${convId}`;
+}
+
+function cleanLegacyStorage(): void {
   try {
-    const raw = localStorage.getItem(STORAGE_CONVERSATIONS_KEY);
+    localStorage.removeItem('astroworld_conversations');
+    localStorage.removeItem('astroworld_active_conv_id');
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && (
+        key === 'astroworld_conversations' ||
+        key === 'astroworld_active_conv_id' ||
+        (key.startsWith('astroworld_messages_') && !key.startsWith('astroworld_guest_') && !key.match(/^astroworld_[0-9a-fA-F-]{36}_/)) ||
+        (key.startsWith('astroworld_active_conv_') && !key.startsWith('astroworld_guest_') && !key.match(/^astroworld_[0-9a-fA-F-]{36}_/))
+      )) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch {}
+}
+
+function getLocalConversations(userId: string): ConversationSummary[] {
+  try {
+    const raw = localStorage.getItem(getConversationsStorageKey(userId));
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 }
 
-function saveLocalConversations(convs: ConversationSummary[]): void {
+function saveLocalConversations(userId: string, convs: ConversationSummary[]): void {
   try {
-    localStorage.setItem(STORAGE_CONVERSATIONS_KEY, JSON.stringify(convs));
+    localStorage.setItem(getConversationsStorageKey(userId), JSON.stringify(convs));
   } catch {
     // quota safety
   }
@@ -113,9 +143,14 @@ function generateQuickNickname(text: string): string {
 
 interface AIAstrologerViewProps {
   context?: AIInterpretationContext;
+  currentUser?: SupabaseUserProfile | null;
+  onRequireAuth?: () => void;
 }
 
-export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) => {
+export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context, currentUser, onRequireAuth }) => {
+  const activeUserId = currentUser?.id || 'guest';
+  const prevUserIdRef = useRef<string>(activeUserId);
+
   // 1. Birth Profile Context
   const [profile, setProfile] = useState<BirthProfile>(() => {
     return context?.birthProfile || DEFAULT_BIRTH_PROFILE;
@@ -124,24 +159,31 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
   const fingerprint = computeProfileFingerprint(profile);
   const prevFingerprintRef = useRef<string>(fingerprint);
 
-  // 2. Active Session & Conversation State (Profile-scoped isolation)
+  // Clean legacy shared storage immediately to prevent cross-user leak
+  useEffect(() => {
+    cleanLegacyStorage();
+  }, []);
+
+  // 2. Active Session & Conversation State (User- and profile-scoped isolation)
   const [conversationId, setConversationId] = useState<string>(() => {
-    const savedForProfile = localStorage.getItem(`astroworld_active_conv_${fingerprint}`);
+    cleanLegacyStorage();
+    const savedForProfile = localStorage.getItem(getActiveConvStorageKey(activeUserId, fingerprint));
     if (savedForProfile) return savedForProfile;
-    const legacySaved = localStorage.getItem('astroworld_active_conv_id');
-    return legacySaved || `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    return `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   });
 
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
-      const saved = localStorage.getItem(`astroworld_messages_${conversationId}`);
+      const saved = localStorage.getItem(getMessagesStorageKey(activeUserId, conversationId));
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
     }
   });
 
-  const [conversations, setConversations] = useState<ConversationSummary[]>(() => getLocalConversations());
+  const [conversations, setConversations] = useState<ConversationSummary[]>(() =>
+    getLocalConversations(activeUserId)
+  );
   const [composerText, setComposerText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isRetryingTurnId, setIsRetryingTurnId] = useState<string | null>(null);
@@ -163,22 +205,48 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
     }
   }, [context?.birthProfile]);
 
+  // Account switch detector: isolates conversation history and active state when user changes
+  useEffect(() => {
+    if (activeUserId !== prevUserIdRef.current) {
+      prevUserIdRef.current = activeUserId;
+      abortControllerRef.current?.abort();
+
+      const currentFp = computeProfileFingerprint(profile);
+      const targetConvId =
+        localStorage.getItem(getActiveConvStorageKey(activeUserId, currentFp)) ||
+        `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+      let loadedMessages: ChatMessage[] = [];
+      try {
+        const saved = localStorage.getItem(getMessagesStorageKey(activeUserId, targetConvId));
+        if (saved) loadedMessages = JSON.parse(saved);
+      } catch {}
+
+      setConversationId(targetConvId);
+      setMessages(loadedMessages);
+      setConversations(getLocalConversations(activeUserId));
+      setComposerText('');
+      setIsLoading(false);
+      setIsRetryingTurnId(null);
+    }
+  }, [activeUserId, profile]);
+
   // Profile switch detector: automatically switches conversation & isolates message caches
   useEffect(() => {
     const newFp = computeProfileFingerprint(profile);
     if (newFp !== prevFingerprintRef.current) {
       // 1. Persist current conversation ID for previous profile
-      localStorage.setItem(`astroworld_active_conv_${prevFingerprintRef.current}`, conversationId);
+      localStorage.setItem(getActiveConvStorageKey(activeUserId, prevFingerprintRef.current), conversationId);
 
       // 2. Look up or create conversation for the new profile
       const targetConvId =
-        localStorage.getItem(`astroworld_active_conv_${newFp}`) ||
+        localStorage.getItem(getActiveConvStorageKey(activeUserId, newFp)) ||
         `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
       // 3. Load messages for that profile's conversation
       let loadedMessages: ChatMessage[] = [];
       try {
-        const saved = localStorage.getItem(`astroworld_messages_${targetConvId}`);
+        const saved = localStorage.getItem(getMessagesStorageKey(activeUserId, targetConvId));
         if (saved) loadedMessages = JSON.parse(saved);
       } catch {}
 
@@ -190,21 +258,23 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
       setIsRetryingTurnId(null);
       abortControllerRef.current?.abort();
     }
-  }, [profile, conversationId]);
+  }, [activeUserId, profile, conversationId]);
 
-  // Persist current conversation ID and turns to localStorage scoped by profile
+  // Persist current conversation ID and turns to localStorage scoped by user and profile
   useEffect(() => {
-    localStorage.setItem(`astroworld_active_conv_${fingerprint}`, conversationId);
-    localStorage.setItem('astroworld_active_conv_id', conversationId);
-  }, [conversationId, fingerprint]);
+    localStorage.setItem(getActiveConvStorageKey(activeUserId, fingerprint), conversationId);
+  }, [activeUserId, conversationId, fingerprint]);
 
   useEffect(() => {
     try {
-      localStorage.setItem(`astroworld_messages_${conversationId}`, JSON.stringify(messages));
+      localStorage.setItem(
+        getMessagesStorageKey(activeUserId, conversationId),
+        JSON.stringify(messages)
+      );
     } catch {
       // Storage quota safety
     }
-  }, [conversationId, messages]);
+  }, [activeUserId, conversationId, messages]);
 
   // Scroll to bottom when messages update
   const scrollToBottom = useCallback((smooth = true) => {
@@ -217,11 +287,9 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
 
   // Refresh user conversations & memories on mount and after actions
   const refreshUserData = useCallback(async () => {
-    // 1. Immediately sync with local storage so history is never blank
-    const localConvs = getLocalConversations();
-    if (localConvs.length > 0) {
-      setConversations(prev => (prev.length === 0 ? localConvs : prev));
-    }
+    // 1. Immediately sync with local storage for THIS active user
+    const localConvs = getLocalConversations(activeUserId);
+    setConversations(localConvs);
 
     try {
       const [mems, sum, remoteConvs] = await Promise.all([
@@ -232,7 +300,7 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
       setMemories(mems);
       setMemorySummary(sum);
 
-      // Merge local and remote
+      // Merge local and remote exclusively for this user
       const map = new Map<string, ConversationSummary>();
       for (const c of localConvs) {
         map.set(c.conversationId, c);
@@ -249,12 +317,12 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
         (a, b) => new Date(b.lastActivityIso).getTime() - new Date(a.lastActivityIso).getTime()
       );
 
-      saveLocalConversations(merged);
+      saveLocalConversations(activeUserId, merged);
       setConversations(merged);
     } catch {
       // Graceful background sync
     }
-  }, []);
+  }, [activeUserId]);
 
   useEffect(() => {
     refreshUserData();
@@ -274,7 +342,7 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
     setConversationId(targetConvId);
     let loadedMessages: ChatMessage[] = [];
     try {
-      const saved = localStorage.getItem(`astroworld_messages_${targetConvId}`);
+      const saved = localStorage.getItem(getMessagesStorageKey(activeUserId, targetConvId));
       if (saved) {
         loadedMessages = JSON.parse(saved);
       }
@@ -300,21 +368,27 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
                 timestamp: t.createdAt || new Date().toISOString(),
               });
             }
-            if (t.answerSummary?.mainConclusion) {
+            const assistantText = t.fullAnswer || t.answerSummary?.mainConclusion;
+            if (assistantText) {
               reconstructed.push({
                 id: `a_${t.turnId || Date.now()}`,
                 role: 'assistant',
-                text: t.answerSummary.mainConclusion,
+                text: assistantText,
                 timestamp: t.createdAt || new Date().toISOString(),
                 domain: t.domain,
                 topic: t.intent,
+                visualizations: (t as any).visualizations,
+                agentCouncil: (t as any).agentCouncil,
               });
             }
           }
           if (reconstructed.length > 0) {
             setMessages(reconstructed);
             try {
-              localStorage.setItem(`astroworld_messages_${targetConvId}`, JSON.stringify(reconstructed));
+              localStorage.setItem(
+                getMessagesStorageKey(activeUserId, targetConvId),
+                JSON.stringify(reconstructed)
+              );
             } catch {}
           }
         }
@@ -322,25 +396,31 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
         // graceful fallback
       }
     }
-  }, []);
+  }, [activeUserId]);
 
   // Delete a conversation thread
   const handleDeleteConversation = useCallback(async (targetConvId: string) => {
     await aiApiClient.deleteConversation(targetConvId).catch(() => {});
-    localStorage.removeItem(`astroworld_messages_${targetConvId}`);
+    localStorage.removeItem(getMessagesStorageKey(activeUserId, targetConvId));
     setConversations(prev => {
       const next = prev.filter(c => c.conversationId !== targetConvId);
-      saveLocalConversations(next);
+      saveLocalConversations(activeUserId, next);
       return next;
     });
 
     if (conversationId === targetConvId) {
       handleNewConversation();
     }
-  }, [conversationId, handleNewConversation]);
+  }, [activeUserId, conversationId, handleNewConversation]);
 
   // Send a consultation inquiry
   const handleSendMessage = async (customText?: string, existingIdempotencyKey?: string) => {
+    if (!currentUser) {
+      if (onRequireAuth) {
+        onRequireAuth();
+      }
+      return;
+    }
     const textToSend = (customText ?? composerText).trim();
     if (!textToSend || isLoading) return;
 
@@ -377,7 +457,7 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
     setConversations(prev => {
       const filtered = prev.filter(c => c.conversationId !== conversationId);
       const next = [activeConvSummary, ...filtered];
-      saveLocalConversations(next);
+      saveLocalConversations(activeUserId, next);
       return next;
     });
 
@@ -412,6 +492,8 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
         idempotencyKey,
         executionMode: (response.executionMetadata as any)?.executionMode,
         fallbackReason: (response.executionMetadata as any)?.fallbackReason,
+        visualizations: response.userResponse.visualizations,
+        agentCouncil: response.userResponse.agentCouncil,
       };
 
       setMessages(prev => [...prev, assistantMsg]);
@@ -437,7 +519,7 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
           }
           return c;
         });
-        saveLocalConversations(next);
+        saveLocalConversations(activeUserId, next);
         return next;
       });
 
@@ -597,9 +679,11 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
                     <span>{domainBadge.label}</span>
                   </span>
                 )}
-                <span className="hidden sm:inline-block text-[11px] text-slate-500 font-mono">
-                  ({profile.name})
-                </span>
+                {currentUser && (
+                  <span className="hidden sm:inline-block text-[11px] text-slate-500 font-mono">
+                    ({profile.name})
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-slate-500 truncate flex items-center gap-1.5 mt-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
@@ -654,6 +738,8 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
               birthProfile={profile}
               onSelectPrompt={p => handleSendMessage(p)}
               onOpenProfileModal={() => setIsProfileModalOpen(true)}
+              isLoggedIn={!!currentUser}
+              onRequireAuth={onRequireAuth}
             />
           ) : (
             <div className="max-w-3xl mx-auto">
@@ -690,13 +776,34 @@ export const AIAstrologerView: React.FC<AIAstrologerViewProps> = ({ context }) =
         {/* 4. Bottom Message Composer */}
         <div className="p-3 sm:p-4 border-t border-slate-200/90 bg-white/95 backdrop-blur-xs shrink-0">
           <div className="max-w-3xl mx-auto">
-            <ChatComposer
-              value={composerText}
-              onChange={setComposerText}
-              onSubmit={() => handleSendMessage()}
-              onAbort={handleAbort}
-              isLoading={isLoading}
-            />
+            {currentUser ? (
+              <ChatComposer
+                value={composerText}
+                onChange={setComposerText}
+                onSubmit={() => handleSendMessage()}
+                onAbort={handleAbort}
+                isLoading={isLoading}
+              />
+            ) : (
+              <div className="bg-gradient-to-r from-orange-50 via-amber-50 to-orange-50 border border-orange-200/80 rounded-2xl p-4 text-center flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs animate-fadeIn">
+                <div className="flex items-center gap-2.5 text-left">
+                  <div className="w-8 h-8 rounded-xl bg-orange-500/10 text-orange-600 flex items-center justify-center shrink-0">
+                    <Lock size={16} />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-[#162058]">Sign in to consult with AI Astrologer</div>
+                    <div className="text-[11px] text-slate-500">Create an account or sign in to ask questions and receive classical astrological readings.</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={onRequireAuth}
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer whitespace-nowrap"
+                >
+                  Sign In / Register
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
