@@ -40,6 +40,13 @@ import { evaluateChartGandanta } from '../reasoning/gandantaDetector.ts';
 import { getRelevantCaseStudies, EmpiricalCaseStudy } from '../rag/empiricalCaseStudies.ts';
 import { generateChartFingerprintVector, globalCaseStudyRepository } from '../cases/index.ts';
 import { globalShastricGraphEngine } from '../shastras/index.ts';
+import {
+  calculateInduLagna,
+  calculateBhriguBindu,
+  calculateYogiAvayogi,
+  calculateBhriguNadiTrines,
+  evaluateMedicalVulnerabilities,
+} from '../research/index.ts';
 import { NAKSHATRAS } from '../../../../shared/engine/constants.ts';
 
 export interface AgentCouncilDimension {
@@ -640,6 +647,67 @@ export class ConsultAgent {
       // Graceful fallback
     }
 
+    // Tool G5: Advanced Research Corpus Diagnostic Mechanics
+    try {
+      const bc = toolPayloads.get_birth_chart;
+      if (bc && bc.planets && bc.ascendant) {
+        const moon = bc.planets.find((p: any) => p.name === 'Moon');
+        const sun = bc.planets.find((p: any) => p.name === 'Sun');
+        const rahu = bc.planets.find((p: any) => p.name === 'Rahu');
+
+        const researchData: any = {};
+
+        const getLon = (entity: any) =>
+          entity?.siderealLongitude ?? (typeof entity?.longitude === 'number' ? entity.longitude : ((entity?.signIndex ?? 0) * 30 + (entity?.degreeInSign ?? 0)));
+
+        const moonLon = moon ? getLon(moon) : undefined;
+        const sunLon = sun ? getLon(sun) : undefined;
+        const rahuLon = rahu ? getLon(rahu) : undefined;
+        const lagnaLon = bc.ascendant ? getLon(bc.ascendant) : 0;
+
+        // 1. Indu Lagna (Wealth Matrix)
+        if (moon && bc.ascendant.sign) {
+          researchData.induLagna = calculateInduLagna(bc.ascendant.sign, moon.sign, bc.planets);
+        }
+
+        // 2. Bhrigu Bindu
+        if (typeof moonLon === 'number' && typeof rahuLon === 'number') {
+          researchData.bhriguBindu = calculateBhriguBindu(moonLon, rahuLon, lagnaLon);
+        }
+
+        // 3. Yogi & Avayogi Points
+        if (typeof sunLon === 'number' && typeof moonLon === 'number') {
+          researchData.yogiAvayogi = calculateYogiAvayogi(sunLon, moonLon);
+        }
+
+        // 4. Bhrigu Nadi Directional Trines & Combinations
+        const planetsMapped = bc.planets.map((p: any) => ({
+          name: p.name,
+          sign: p.sign,
+          degreeInSign: (p.degreeInSign !== undefined ? p.degreeInSign : (p.longitude !== undefined ? p.longitude % 30 : (p.degree || 0))),
+        }));
+        researchData.bhriguNadiTrines = calculateBhriguNadiTrines(planetsMapped);
+
+        // 5. Medical Diagnostics & Tridosha Balance
+        researchData.medicalReport = evaluateMedicalVulnerabilities({
+          ascendant: { sign: bc.ascendant.sign },
+          planets: bc.planets.map((p: any) => ({ name: p.name, sign: p.sign, houseNumber: p.houseNumber })),
+          houses: bc.houses,
+        });
+
+        toolPayloads.research_diagnostics = researchData;
+        toolsCalled.push('evaluate_research_diagnostics');
+        toolTrace.push({
+          round: toolTrace.length + 1,
+          toolName: 'evaluate_research_diagnostics',
+          success: true,
+          durationMs: 1,
+        });
+      }
+    } catch {
+      // Non-blocking fallback
+    }
+
     // Tool H: Sripathi Bhava Chalit Chart & Awasiya Bala
     const asksChalit = /\b(chalit|bhava chart|bhava madhya|sandhi|cusp|cusps|house shift|shifted)\b/i.test(lower);
     if (asksChalit || asksAnyDivisional || domains.includes('education') || domains.includes('career') || domains.includes('property') || domains.includes('health')) {
@@ -849,6 +917,7 @@ export class ConsultAgent {
     signals?: ConversationalSignals
   ): string {
     const parts: string[] = [];
+    const qLower = question.toLowerCase();
 
     parts.push(`USER CONSULTATION INQUIRY: "${question}"`);
     parts.push(`TEMPORAL HORIZON: ${window.disclosedNote} (${window.fromIso.slice(0, 10)} to ${window.toIso.slice(0, 10)})`);
@@ -1607,6 +1676,31 @@ EPISTEMIC GUARDRAIL: Explain compatibility as heuristic alignment (0–100), nev
       parts.push(`MANDATORY CITATION DIRECTIVE: Seamlessly cite these exact classical authorities (${tools.shastric_evidence.map((e: any) => e.sourceCitation.split(',')[0]).join(', ')}) when explaining why the planets behave this way.`);
     }
 
+    // Spoon-feed Research Corpus Diagnostic Mechanics (Indu Lagna, Bhrigu Bindu, Yogi/Avayogi, Nadi Trines)
+    if (tools.research_diagnostics) {
+      const rd = tools.research_diagnostics;
+      parts.push(`\n--- ADVANCED RESEARCH CORPUS FORMULAS & DIAGNOSTICS ---`);
+      if (rd.induLagna) {
+        parts.push(`• Indu Lagna (Moon Wealth Ascendant - Rule 67): ${rd.induLagna.induSign} (House ${rd.induLagna.houseFromLagna} from Lagna) | Wealth Tier: ${rd.induLagna.wealthTier} (${rd.induLagna.totalKalas} Kalas). Occupants: ${rd.induLagna.planetsInInduLagna.join(', ') || 'None'}`);
+      }
+      if (rd.bhriguBindu) {
+        parts.push(`• Bhrigu Bindu (Destiny Seed Point - Rule 4): ${rd.bhriguBindu.formattedDegree} in House ${rd.bhriguBindu.houseFromLagna} (Nakshatra: ${rd.bhriguBindu.nakshatra}, Lord: ${rd.bhriguBindu.nakshatraLord})`);
+      }
+      if (rd.yogiAvayogi) {
+        parts.push(`• Yogi Planet (Rule 5): ${rd.yogiAvayogi.yogiPlanet} (Sahayogi: ${rd.yogiAvayogi.sahayogiPlanet}) | Avayogi (Obstruction): ${rd.yogiAvayogi.avayogiPlanet}`);
+      }
+      if (rd.bhriguNadiTrines) {
+        for (const [elem, data] of Object.entries(rd.bhriguNadiTrines) as any) {
+          if (data.detectedCombinations.length > 0) {
+            parts.push(`• Bhrigu Nadi Directional Trine (${elem}): ${data.detectedCombinations.join(', ')} | Degrees: ${data.planets.map((p: any) => `${p.name} (${p.formattedDegree})`).join(' -> ')}`);
+          }
+        }
+      }
+      if (rd.medicalReport && (qLower.includes('health') || qLower.includes('medical') || qLower.includes('disease') || qLower.includes('vitality'))) {
+        parts.push(`• Ayurvedic Tridosha Diagnostic: Dominant Dosha: ${rd.medicalReport.dominantDosha} (Vata: ${rd.medicalReport.doshaScores.vata}, Pitta: ${rd.medicalReport.doshaScores.pitta}, Kapha: ${rd.medicalReport.doshaScores.kapha}) | Notes: ${rd.medicalReport.diagnosticNotes.join('; ')}`);
+      }
+    }
+
     parts.push(`\n--- EPISTEMIC CALIBRATION & REASONING STANDARDS ---`);
     parts.push(`1. CALCULATED ASTROLOGICAL FACTS: Anchor every statement in the calculated positions above (D1, D9, D24, Chalit, Dasha). Do NOT guess or hallucinate any placement.`);
     parts.push(`2. CLASSICAL SHASTRA RULES: Cite explicit shastra authorities (BPHS, Phaladeepika, Saravali, Jaimini Sutras) for why a placement indicates a certain aptitude.`);
@@ -1981,7 +2075,27 @@ ${matrixRows.length > 0 ? `### 3. Chronological Timing Windows Matrix\n\n| Perio
         ? `Your 11th house holds **${sav11} bindus** compared to **${sav12} bindus** in your 12th house (expenditure). ${sav11 >= sav12 ? `Because gains (${sav11}) exceed expenditure (${sav12}), your chart possesses strong classical retention capacity—meaning income converts sustainably into capital assets rather than leaking away.` : `Because expenditure points (${sav12}) are elevated relative to gains, disciplined capital allocation and automated wealth locks are essential to prevent wealth dispersion.`}`
         : 'Evaluated from the relative strength of the 11th house of gains versus the 12th house of expenditure.';
 
-      return `### 💰 High-Net-Worth Wealth & Abundance Analysis\n\nIn classical Vedic Jyotish (Bhavartha Ratnakara & BPHS Ch. 41–42), wealth mastery is evaluated through the dynamic ratio between the **2nd house (Dhana / Asset Accumulation)**, the **11th house (Labha / Scaled Inflow)**, and the **Sarvashtakavarga Retention Index**:\n\n- **2nd House (Asset Storage)**: Placed in **${p2?.sign || 'the 2nd house'}**, governed by **${p2?.lord || 'the 2nd lord'}**.\n- **11th House (Network & Inflow)**: Placed in **${p11?.sign || 'the 11th house'}**, governed by **${p11?.lord || 'the 11th lord'}**.\n- **Sarvashtakavarga Retention Metric**: ${savMetricText}\n\n**Operating Timing**: Running **${dasha?.activeMahadasha?.planet || 'active'} Mahadasha – ${dasha?.activeAntardasha?.planet || 'active'} Antardasha**. Dasha sub-periods connecting the 2nd, 9th, and 11th lords create structural wealth inflections.`;
+      const rd = tools.research_diagnostics;
+      let induText = '';
+      if (rd?.induLagna) {
+        induText = `\n- **Indu Lagna (Billionaire Wealth Seat — Rule 67)**: Sits in **${rd.induLagna.induSign}** (House ${rd.induLagna.houseFromLagna} from Lagna) with **${rd.induLagna.totalKalas} Kalas**. Evaluated Wealth Tier: **${rd.induLagna.wealthTier}**${rd.induLagna.planetsInInduLagna.length > 0 ? ` (Occupants: ${rd.induLagna.planetsInInduLagna.join(', ')})` : ''}.`;
+      }
+      let yogiText = '';
+      if (rd?.yogiAvayogi) {
+        yogiText = `\n- **Yogi Planet (Effortless Prosperity — Rule 5)**: **${rd.yogiAvayogi.yogiPlanet}** (Sahayogi: ${rd.yogiAvayogi.sahayogiPlanet}). Avayogi Planet of obstruction: **${rd.yogiAvayogi.avayogiPlanet}**.`;
+      }
+
+      return `### 💰 High-Net-Worth Wealth & Abundance Analysis\n\nIn classical Vedic Jyotish (Bhavartha Ratnakara & BPHS Ch. 41–42), wealth mastery is evaluated through the dynamic ratio between the **2nd house (Dhana / Asset Accumulation)**, the **11th house (Labha / Scaled Inflow)**, and the **Sarvashtakavarga Retention Index**:\n\n- **2nd House (Asset Storage)**: Placed in **${p2?.sign || 'the 2nd house'}**, governed by **${p2?.lord || 'the 2nd lord'}**.\n- **11th House (Network & Inflow)**: Placed in **${p11?.sign || 'the 11th house'}**, governed by **${p11?.lord || 'the 11th lord'}**.\n- **Sarvashtakavarga Retention Metric**: ${savMetricText}${induText}${yogiText}\n\n**Operating Timing**: Running **${dasha?.activeMahadasha?.planet || 'active'} Mahadasha – ${dasha?.activeAntardasha?.planet || 'active'} Antardasha**. Dasha sub-periods connecting the 2nd, 9th, and 11th lords create structural wealth inflections.`;
+    }
+
+    if (/\b(health|disease|illness|vitality|dosha|ayurveda|tridosha|medical)\b/i.test(lower) && !domains.includes('career') && !domains.includes('marriage')) {
+      const rd = tools.research_diagnostics;
+      const med = rd?.medicalReport;
+      const p6 = bc?.houses?.find((h: any) => h.houseNumber === 6);
+      const p8 = bc?.houses?.find((h: any) => h.houseNumber === 8);
+      const p12 = bc?.houses?.find((h: any) => h.houseNumber === 12);
+
+      return `### 🩺 Ayurvedic Medical Astrology & Tridosha Diagnostics\n\nIn classical Vedic Medical Astrology (*Charaka Samhita & BPHS Ch. 18*), physical health and cellular vitality are governed by the **Tridosha balance**, the **Disease Genesis Triad (Houses 6, 8, 12)**, and natural health significator **Sun (Surya)**:\n\n- **Ayurvedic Constitution**: Dominant Dosha: **${med?.dominantDosha || 'Vata'}** (Vata: ${med?.doshaScores?.vata ?? 3}, Pitta: ${med?.doshaScores?.pitta ?? 3}, Kapha: ${med?.doshaScores?.kapha ?? 3}).\n- **6th House (Acute Diagnosis & Immunity)**: Placed in **${p6?.sign || 'the 6th house'}**, governed by **${p6?.lord || 'the 6th lord'}**.\n- **8th House (Chronic Resilience & Longevity)**: Placed in **${p8?.sign || 'the 8th house'}**, governed by **${p8?.lord || 'the 8th lord'}**.\n- **12th House (Sleep & Hospitalization Axis)**: Placed in **${p12?.sign || 'the 12th house'}**, governed by **${p12?.lord || 'the 12th lord'}**.\n${med?.diagnosticNotes?.length ? `\n**Key Diagnostic Indicators (Research Rules 46–54)**:\n${med.diagnosticNotes.map((n: string) => `- ${n}`).join('\n')}\n` : ''}\n**Actionable Preventive Guidance**: Maintain a daily routine (Dinacharya) aligned with your dominant ${med?.dominantDosha || 'constitution'}. Prioritize regular sleep schedules and hydration, especially during sub-periods of the 6th or 8th lords.`;
     }
 
     if (/\b(atmakaraka|karakamsa)\b/i.test(lower)) {

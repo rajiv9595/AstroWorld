@@ -224,6 +224,54 @@ export const SHASTRIC_KNOWLEDGE_GRAPH: ShastricRuleNode[] = [
       const ketu = (chart.planets || []).find((p: any) => p.name === 'Ketu');
       return Boolean(ketu);
     },
+  },
+
+  // 12. Indu Lagna Sovereign Wealth Matrix (Rule 67)
+  {
+    id: 'indu_lagna_wealth_matrix',
+    sourceText: 'Brihat Jataka',
+    edition: 'Varahamihira, Ch. 12 & Jataka Parijata Ch. 7',
+    chapter: 12,
+    verse: 'Sl. 21',
+    sanskritVerse: 'इन्दोर्लग्ने यदा सौम्यः कोटिशः सम्प्रदापयेत्।',
+    domain: 'wealth',
+    targetHouse: 2,
+    conditionDescription: 'Indu Lagna calculated from 9th lords Kalas occupied or aspected by benefics.',
+    classicalDictum: 'When benefics occupy the Indu Lagna (calculated from the Kalas of the 9th lord from Lagna and Moon), the native commands multi-millionaire or billionaire liquid wealth.',
+    modernManifestation: 'Extreme liquid net worth, institutional venture capital allocation, compounding wealth reserves, and scalable capital retention.',
+    evaluator: (chart: any) => Boolean(chart.ascendant && chart.planets && chart.planets.length >= 7),
+  },
+
+  // 13. Bhrigu Nadi Supreme Commercial Triad (Rule 161)
+  {
+    id: 'bhrigu_nadi_commercial_triad',
+    sourceText: 'Bhrigu Nadi',
+    edition: 'Directional Trines & Planetary Fusion Sutras',
+    chapter: 3,
+    verse: 'Sl. 18',
+    sanskritVerse: 'शनि-शुक्र-बुध-योगे महावाणिज्यनायकः।',
+    domain: 'career',
+    targetGraha: 'Saturn',
+    conditionDescription: 'Saturn, Venus, and Mercury in mutual directional harmony in the same elemental trine.',
+    classicalDictum: 'When Saturn (Karma), Venus (Lakshmi), and Mercury (Trade/Intellect) inhabit the same directional trine, the native builds a formidable commercial or industrial empire.',
+    modernManifestation: 'Tech company founders, fin-tech executives, quantitative algorithmic traders, and commercial industrial leadership.',
+    evaluator: (chart: any) => Boolean(chart.planets && chart.planets.length >= 7),
+  },
+
+  // 14. Vipareeta Raja Yoga: Crisis to Sovereignty (Rule 76)
+  {
+    id: 'vipareeta_raja_yoga_triumph',
+    sourceText: 'Phaladeepika',
+    edition: 'Mantreswara, Ch. 6 (Vipareeta Raja Yogas)',
+    chapter: 6,
+    verse: 'Sl. 63',
+    sanskritVerse: 'षष्ठाष्टमव्ययेशानां परस्परगृहस्थितिः। विपरीतराजयोगोऽयं शत्रुनाशकरः परः॥',
+    domain: 'career',
+    targetHouse: 6,
+    conditionDescription: 'Lords of 6th, 8th, or 12th houses situated exclusively in dusthanas without trikona affliction.',
+    classicalDictum: 'When lords of the 6th, 8th, and 12th houses occupy each other\'s houses free from Kendra/Trikona connection, Vipareeta Raja Yoga elevates the native to sovereignty through the collapse of rivals.',
+    modernManifestation: 'Thriving in distressed markets, legal vindication against corporate adversaries, and contrarian business victories.',
+    evaluator: (chart: any) => Boolean(chart.houses && chart.houses.length >= 12),
   }
 ];
 

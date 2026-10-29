@@ -9,7 +9,9 @@ export type ClassicalShastraSource =
   | 'Jataka Parijata'
   | 'Bhavartha Ratnakara'
   | 'Uttara Kalamrita'
-  | 'Prasna Marga';
+  | 'Prasna Marga'
+  | 'Brihat Jataka'
+  | 'Bhrigu Nadi';
 
 export interface ShastricRuleNode {
   id: string;
