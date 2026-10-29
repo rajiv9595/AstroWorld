@@ -183,11 +183,20 @@ export function calculateJaiminiFacts(
   }
 
   // Karakamsa: Navamsha sign of Atmakaraka
-  let karakamsaNavamshaSign: ZodiacSign = 'Aries';
+  let karakamsaNavamshaSign: ZodiacSign | undefined;
   if (d9Chart) {
     const d9Placement = d9Chart.planets.find((p) => p.planet === atmakaraka);
     if (d9Placement) {
       karakamsaNavamshaSign = d9Placement.vargaSign;
+    }
+  }
+  if (!karakamsaNavamshaSign) {
+    const akPlanet = planets.find((p) => p.name === atmakaraka);
+    if (akPlanet && typeof akPlanet.siderealLongitude === 'number') {
+      const d9SignIndex = Math.floor(akPlanet.siderealLongitude / (30 / 9)) % 12;
+      karakamsaNavamshaSign = ZODIAC_SIGNS[d9SignIndex];
+    } else {
+      karakamsaNavamshaSign = 'Aries';
     }
   }
 
