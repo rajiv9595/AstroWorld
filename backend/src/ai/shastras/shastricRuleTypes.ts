@@ -11,7 +11,10 @@ export type ClassicalShastraSource =
   | 'Uttara Kalamrita'
   | 'Prasna Marga'
   | 'Brihat Jataka'
-  | 'Bhrigu Nadi';
+  | 'Bhrigu Nadi'
+  | 'Jaimini Sutras'
+  | 'Tajika Neelakanthi'
+  | 'Charaka Samhita';
 
 export interface ShastricRuleNode {
   id: string;

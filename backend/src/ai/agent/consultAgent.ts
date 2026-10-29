@@ -46,6 +46,12 @@ import {
   calculateYogiAvayogi,
   calculateBhriguNadiTrines,
   evaluateMedicalVulnerabilities,
+  calculateJaiminiCharaKarakas,
+  calculateJaiminiArudhaPada,
+  calculateBhriguAgeClock,
+  calculatePushkaraNavamsha,
+  calculateGandanta,
+  globalAstrologyCorpusIndex,
 } from '../research/index.ts';
 import { NAKSHATRAS } from '../../../../shared/engine/constants.ts';
 
@@ -694,6 +700,75 @@ export class ConsultAgent {
           planets: bc.planets.map((p: any) => ({ name: p.name, sign: p.sign, houseNumber: p.houseNumber })),
           houses: bc.houses,
         });
+
+        // 6. Jaimini Chara Karakas Hierarchy (Rule 161 & Rule 172)
+        const planetsByGraha: Record<string, any> = {};
+        for (const p of bc.planets) {
+          planetsByGraha[p.name] = {
+            longitude: getLon(p),
+            degreeInSign: (p.degreeInSign !== undefined ? p.degreeInSign : (getLon(p) % 30)),
+            sign: p.sign,
+          };
+        }
+        researchData.jaiminiCharaKarakas = calculateJaiminiCharaKarakas(planetsByGraha);
+
+        // 7. Jaimini Arudha Padas (AL & UL) (Rules 163, 164, 165)
+        const ZODIAC_LIST = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+        const lagnaSignIdx = ZODIAC_LIST.indexOf(bc.ascendant.sign);
+        if (lagnaSignIdx >= 0) {
+          const SIGN_LORDS_MAP: Record<string, string> = {
+            Aries: 'Mars', Taurus: 'Venus', Gemini: 'Mercury', Cancer: 'Moon',
+            Leo: 'Sun', Virgo: 'Mercury', Libra: 'Venus', Scorpio: 'Mars',
+            Sagittarius: 'Jupiter', Capricorn: 'Saturn', Aquarius: 'Saturn', Pisces: 'Jupiter'
+          };
+          const houseLordSigns: number[] = [];
+          for (let h = 1; h <= 12; h++) {
+            const hSign = ZODIAC_LIST[(lagnaSignIdx + h - 1) % 12];
+            const lordName = SIGN_LORDS_MAP[hSign];
+            const lordPlanet = bc.planets.find((p: any) => p.name === lordName);
+            const lordSignIdx = lordPlanet ? ZODIAC_LIST.indexOf(lordPlanet.sign) : (lagnaSignIdx + h - 1) % 12;
+            houseLordSigns.push(lordSignIdx >= 0 ? lordSignIdx : (lagnaSignIdx + h - 1) % 12);
+          }
+          researchData.arudhaLagna = calculateJaiminiArudhaPada(1, lagnaSignIdx, houseLordSigns);
+          researchData.upapadaLagna = calculateJaiminiArudhaPada(12, lagnaSignIdx, houseLordSigns);
+          researchData.rajyapadaA10 = calculateJaiminiArudhaPada(10, lagnaSignIdx, houseLordSigns);
+          researchData.labhapadaA11 = calculateJaiminiArudhaPada(11, lagnaSignIdx, houseLordSigns);
+        }
+
+        // 8. Bhrigu 12-Year Jupiter Age Clock (Rule 151 / 153)
+        const jup = bc.planets.find((p: any) => p.name === 'Jupiter');
+        const birthYear = typeof birthProfile.year === 'number' ? birthProfile.year : 2000;
+        const clientAge = Math.max(1, new Date().getFullYear() - birthYear);
+        if (jup) {
+          researchData.bhriguAgeClock = calculateBhriguAgeClock(getLon(jup), clientAge);
+        }
+
+        // 9. Pushkara Navamsha & Gandanta Analysis
+        const pushkaraPlanets: string[] = [];
+        const gandantaPoints: string[] = [];
+        for (const p of bc.planets) {
+          const lon = getLon(p);
+          const push = calculatePushkaraNavamsha(lon);
+          if (push.isPushkara) pushkaraPlanets.push(`${p.name} (${push.pushkaraNavamshaSign} Pushkara)`);
+          const gand = calculateGandanta(lon);
+          if (gand.isGandanta) gandantaPoints.push(`${p.name} in ${gand.junctionName}`);
+        }
+        const lagnaGand = calculateGandanta(lagnaLon);
+        if (lagnaGand.isGandanta) gandantaPoints.push(`Lagna in ${lagnaGand.junctionName}`);
+        researchData.pushkaraNavamshas = pushkaraPlanets;
+        researchData.gandantaPoints = gandantaPoints;
+
+        // 10. Atomic Research Corpus (AST-00001 to AST-01309) Matches
+        const astMatches = globalAstrologyCorpusIndex.search(question, { limit: 4 });
+        if (astMatches.length > 0) {
+          researchData.atomicCorpusRules = astMatches.map(r => ({
+            id: r.id,
+            title: r.title,
+            status: r.status,
+            group: r.group,
+            methodRule: r.methodRule,
+          }));
+        }
 
         toolPayloads.research_diagnostics = researchData;
         toolsCalled.push('evaluate_research_diagnostics');
@@ -1699,6 +1774,27 @@ EPISTEMIC GUARDRAIL: Explain compatibility as heuristic alignment (0–100), nev
       if (rd.medicalReport && (qLower.includes('health') || qLower.includes('medical') || qLower.includes('disease') || qLower.includes('vitality'))) {
         parts.push(`• Ayurvedic Tridosha Diagnostic: Dominant Dosha: ${rd.medicalReport.dominantDosha} (Vata: ${rd.medicalReport.doshaScores.vata}, Pitta: ${rd.medicalReport.doshaScores.pitta}, Kapha: ${rd.medicalReport.doshaScores.kapha}) | Notes: ${rd.medicalReport.diagnosticNotes.join('; ')}`);
       }
+      if (rd.jaiminiCharaKarakas) {
+        parts.push(`• Jaimini Chara Karakas Hierarchy (Rule 161/172): AK: ${rd.jaiminiCharaKarakas.atmakaraka.planet} (${rd.jaiminiCharaKarakas.atmakaraka.formattedDegree} ${rd.jaiminiCharaKarakas.atmakaraka.sign}), AmK: ${rd.jaiminiCharaKarakas.amatyakaraka.planet} (${rd.jaiminiCharaKarakas.amatyakaraka.formattedDegree} ${rd.jaiminiCharaKarakas.amatyakaraka.sign}) | Full: ${Object.entries(rd.jaiminiCharaKarakas.karakas).map(([k, v]: any) => `${k}:${v.planet}`).join(', ')}`);
+      }
+      if (rd.arudhaLagna && rd.upapadaLagna) {
+        parts.push(`• Jaimini Arudhas (Rules 163–165): Arudha Lagna (AL): ${rd.arudhaLagna.finalArudhaSign}${rd.arudhaLagna.shifted ? ' (Shifted +10)' : ''} | Upapada Lagna (UL / Marriage): ${rd.upapadaLagna.finalArudhaSign}${rd.upapadaLagna.shifted ? ' (Shifted +10)' : ''}`);
+      }
+      if (rd.bhriguAgeClock) {
+        parts.push(`• Bhrigu 12-Year Jupiter Age Clock (Rule 151/153): ${rd.bhriguAgeClock.lifePhaseSignificance}`);
+      }
+      if (rd.pushkaraNavamshas && rd.pushkaraNavamshas.length > 0) {
+        parts.push(`• Pushkara Navamsha Auspicious Zones (Rule 13): ${rd.pushkaraNavamshas.join(', ')}`);
+      }
+      if (rd.gandantaPoints && rd.gandantaPoints.length > 0) {
+        parts.push(`• Gandanta Karmic Knots (Rule 14): ${rd.gandantaPoints.join('; ')}`);
+      }
+      if (rd.atomicCorpusRules && rd.atomicCorpusRules.length > 0) {
+        parts.push(`• Atomic Research Corpus Directives (1309-Rule RAG):`);
+        for (const ar of rd.atomicCorpusRules) {
+          parts.push(`  - [${ar.id}] ${ar.title} (${ar.status}): ${ar.methodRule}`);
+        }
+      }
     }
 
     parts.push(`\n--- EPISTEMIC CALIBRATION & REASONING STANDARDS ---`);
@@ -2098,9 +2194,33 @@ ${matrixRows.length > 0 ? `### 3. Chronological Timing Windows Matrix\n\n| Perio
       return `### 🩺 Ayurvedic Medical Astrology & Tridosha Diagnostics\n\nIn classical Vedic Medical Astrology (*Charaka Samhita & BPHS Ch. 18*), physical health and cellular vitality are governed by the **Tridosha balance**, the **Disease Genesis Triad (Houses 6, 8, 12)**, and natural health significator **Sun (Surya)**:\n\n- **Ayurvedic Constitution**: Dominant Dosha: **${med?.dominantDosha || 'Vata'}** (Vata: ${med?.doshaScores?.vata ?? 3}, Pitta: ${med?.doshaScores?.pitta ?? 3}, Kapha: ${med?.doshaScores?.kapha ?? 3}).\n- **6th House (Acute Diagnosis & Immunity)**: Placed in **${p6?.sign || 'the 6th house'}**, governed by **${p6?.lord || 'the 6th lord'}**.\n- **8th House (Chronic Resilience & Longevity)**: Placed in **${p8?.sign || 'the 8th house'}**, governed by **${p8?.lord || 'the 8th lord'}**.\n- **12th House (Sleep & Hospitalization Axis)**: Placed in **${p12?.sign || 'the 12th house'}**, governed by **${p12?.lord || 'the 12th lord'}**.\n${med?.diagnosticNotes?.length ? `\n**Key Diagnostic Indicators (Research Rules 46–54)**:\n${med.diagnosticNotes.map((n: string) => `- ${n}`).join('\n')}\n` : ''}\n**Actionable Preventive Guidance**: Maintain a daily routine (Dinacharya) aligned with your dominant ${med?.dominantDosha || 'constitution'}. Prioritize regular sleep schedules and hydration, especially during sub-periods of the 6th or 8th lords.`;
     }
 
-    if (/\b(atmakaraka|karakamsa)\b/i.test(lower)) {
+    if (/\b(atmakaraka|karakamsa|jaimini|chara karaka|arudha|upapada)\b/i.test(lower)) {
+      const rd = tools.research_diagnostics;
       const { ak, kl } = this.resolveAtmakarakaAndKarakamsa(bc, tools.get_jaimini_details);
-      return `### 🕉️ Atmakaraka & Soul Destiny Analysis\n\nAccording to Maharishi Jaimini's *Upadesha Sutras*, the **Atmakaraka (AK)** is the soul king of your chart—the planet holding the highest longitude that governs your deepest life purpose, primary karmic test, and path to spiritual liberation:\n\n- **Your Atmakaraka**: **${ak}**\n- **Karakamsa (AK in Navamsha D9)**: Located in **${kl}**\n\n**Soul Lesson & Evolutionary Focus**: Because **${ak}** is your Atmakaraka, your supreme karmic work in this incarnation centers on mastering the virtues of ${ak}. The periods of ${ak} provide deep spiritual awakening, burning away ego attachments so true inner clarity and divine peace can manifest.`;
+      const karakas = rd?.jaiminiCharaKarakas?.karakas;
+      const al = rd?.arudhaLagna;
+      const ul = rd?.upapadaLagna;
+
+      let karakasText = '';
+      if (karakas) {
+        karakasText = `\n\n**Complete Jaimini Chara Karakas Hierarchy (Rules 161 & 172)**:\n` +
+          `- **Atmakaraka (AK - Soul King)**: **${karakas.AK.planet}** (${karakas.AK.formattedDegree} ${karakas.AK.sign})\n` +
+          `- **Amatyakaraka (AmK - Career Minister)**: **${karakas.AmK.planet}** (${karakas.AmK.formattedDegree} ${karakas.AmK.sign})\n` +
+          `- **Bhratrikaraka (BK - Guru & Siblings)**: **${karakas.BK.planet}** (${karakas.BK.formattedDegree} ${karakas.BK.sign})\n` +
+          `- **Matrikaraka (MK - Mother & Foundation)**: **${karakas.MK.planet}** (${karakas.MK.formattedDegree} ${karakas.MK.sign})\n` +
+          `- **Putrakaraka (PK - Progeny & Intellect)**: **${karakas.PK.planet}** (${karakas.PK.formattedDegree} ${karakas.PK.sign})\n` +
+          `- **Gnatikaraka (GK - Rivals & Obstacles)**: **${karakas.GK.planet}** (${karakas.GK.formattedDegree} ${karakas.GK.sign})\n` +
+          `- **Darakaraka (DK - Spouse & Partnerships)**: **${karakas.DK.planet}** (${karakas.DK.formattedDegree} ${karakas.DK.sign})`;
+      }
+
+      let arudhaText = '';
+      if (al && ul) {
+        arudhaText = `\n\n**Jaimini Arudha Padas (Rules 163–165)**:\n` +
+          `- **Arudha Lagna (AL - Maya & Public Status)**: **${al.finalArudhaSign}**${al.shifted ? ' *(Shifted 10 signs per classical Swastha Daridra exception)*' : ''}\n` +
+          `- **Upapada Lagna (UL - Matrimonial Sustenance)**: **${ul.finalArudhaSign}**${ul.shifted ? ' *(Shifted 10 signs per classical exception)*' : ''}`;
+      }
+
+      return `### 🕉️ Jaimini Sutras & Soul Destiny Analysis\n\nAccording to Maharishi Jaimini's *Upadesha Sutras*, planetary rankings and Arudha Padas govern the soul's karmic agenda and external social reality:\n\n- **Your Atmakaraka (AK)**: **${ak}** (Soul's supreme lesson)\n- **Karakamsa (AK in Navamsha D9)**: Located in **${kl}**${karakasText}${arudhaText}\n\n**Soul Lesson & Evolutionary Focus**: Because **${ak}** is your Atmakaraka, your supreme karmic work in this incarnation centers on mastering the virtues of ${ak}. The periods of ${ak} provide deep spiritual awakening, burning away ego attachments so true inner clarity and divine peace can manifest.`;
     }
 
     if (/\b(ishta\s*devata|ishtadevata|spiritual\s*path|deity|moksha)\b/i.test(lower)) {

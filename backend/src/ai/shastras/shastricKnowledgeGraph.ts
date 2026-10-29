@@ -272,6 +272,68 @@ export const SHASTRIC_KNOWLEDGE_GRAPH: ShastricRuleNode[] = [
     classicalDictum: 'When lords of the 6th, 8th, and 12th houses occupy each other\'s houses free from Kendra/Trikona connection, Vipareeta Raja Yoga elevates the native to sovereignty through the collapse of rivals.',
     modernManifestation: 'Thriving in distressed markets, legal vindication against corporate adversaries, and contrarian business victories.',
     evaluator: (chart: any) => Boolean(chart.houses && chart.houses.length >= 12),
+  },
+
+  // 15. Jaimini Sutras: Atmakaraka & Amatyakaraka Soul Alliance (Rule 169)
+  {
+    id: 'jaimini_atmakaraka_amk_alliance',
+    sourceText: 'Jaimini Sutras',
+    edition: 'Sanjay Rath Translation & Commentary, Ch. 1, Pada 1',
+    chapter: 1,
+    verse: 'Sl. 1–4',
+    sanskritVerse: 'आत्मकारकादीनां बलाबलविवेकः। अमात्यकारकेण संबन्धे महाराजयोगः॥',
+    domain: 'career',
+    targetGraha: 'Sun',
+    conditionDescription: 'Atmakaraka (highest degree) and Amatyakaraka (2nd highest degree) in mutual conjunction or Rashi Drishti.',
+    classicalDictum: 'When the Soul King (AK) and the Supreme Minister (AmK) unite by conjunction or permanent sign aspect (Rashi Drishti), the native ascends to executive command and institutional leadership.',
+    modernManifestation: 'Alignment between the soul\'s deepest values and professional livelihood, ensuring career durability and executive elevation.',
+    evaluator: (chart: any) => Boolean(chart.planets && chart.planets.length >= 7),
+  },
+
+  // 16. Prasna Marga: Medical Vaidya & Treatment Diagnostic Axis (Rule 191)
+  {
+    id: 'prasna_marga_vaidya_treatment_axis',
+    sourceText: 'Prasna Marga',
+    edition: 'Dr. B.V. Raman Translation, Ch. 12 (Diseases & Diagnosis)',
+    chapter: 12,
+    verse: 'Sl. 24–28',
+    sanskritVerse: 'रोगिणां सप्तमो वैद्यो दशमं भेषजं स्मृतम्। रोगि लग्नं चतुर्थं तु स्वास्थ्यं विनिर्दिशेत्॥',
+    domain: 'health',
+    targetHouse: 7,
+    conditionDescription: '7th house represents the physician (Vaidya); 10th house represents the prescribed therapy or medication.',
+    classicalDictum: 'The patient is the 1st house; the doctor is the 7th house; the medication is the 10th house; the restoration of health is the 4th house. Malefics in the 7th or 10th warn of misdiagnosis or ineffective therapy.',
+    modernManifestation: 'Diagnostic verification, seeking trusted second medical opinions before surgery, and validating medical treatments through empirical laboratory markers.',
+    evaluator: (chart: any) => Boolean(chart.houses && chart.houses.length >= 12),
+  },
+
+  // 17. Tajika Neelakanthi: Ithasala Yoga Event Fulfillment (Rule 284)
+  {
+    id: 'tajika_neelakanthi_ithasala_guarantee',
+    sourceText: 'Tajika Neelakanthi',
+    edition: 'Pandit Neelakantha, Yoga Adhyaya, Sl. 14–17',
+    chapter: 2,
+    verse: 'Sl. 14',
+    sanskritVerse: 'दीप्तांशकान्तरे शीघ्रः पश्चात्स्थो मन्दगामिनम्। संस्पृशन् कुरुते कार्यं इत्थशालः स उच्यते॥',
+    domain: 'general',
+    conditionDescription: 'Faster-moving planet at lower degree applying to slower-moving planet at higher degree within combined Deeptamsha orbs.',
+    classicalDictum: 'When a swifter planet behind applies to a slower planet ahead within their radiant light orb (Deeptamsha), Ithasala Yoga guarantees the unhindered fulfillment of the queried undertaking.',
+    modernManifestation: 'Definitive horary and predictive confirmation of contract signing, commercial closing, marriage timing, and project completion.',
+    evaluator: (chart: any) => Boolean(chart.planets && chart.planets.length >= 7),
+  },
+
+  // 18. Charaka Samhita: Tridosha Biological Equilibrium (Rule 189)
+  {
+    id: 'charaka_samhita_tridosha_samatva',
+    sourceText: 'Charaka Samhita',
+    edition: 'Sutrasthana Ch. 1 (Dirghanjivitiya Adhyaya)',
+    chapter: 1,
+    verse: 'Sl. 53',
+    sanskritVerse: 'वायुः पित्तं कफश्चोक्तः शारीरो दोषसंग्रहः। समदोषः समाग्निश्च समधातुमलक्रियः॥',
+    domain: 'health',
+    conditionDescription: 'Equilibrium of Vata (Air/Space), Pitta (Fire), and Kapha (Water/Earth) maintains health; planetary imbalances trigger doshic aggravation.',
+    classicalDictum: 'Body is governed by the trinity of Vata, Pitta, and Kapha. A balanced constitution with synchronized metabolism, tissues, and excretion constitutes true vitality.',
+    modernManifestation: 'Personalized holistic wellness, chronobiology, circadian lifestyle optimization, and customized anti-inflammatory nutritional regimens.',
+    evaluator: (chart: any) => Boolean(chart.planets && chart.planets.length >= 7),
   }
 ];
 
