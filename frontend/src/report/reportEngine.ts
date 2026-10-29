@@ -217,7 +217,7 @@ export function buildAstroWorldReportDocument(
       karakamsaSign: jaimini.karakamsaNavamshaSign || jaimini.karakamsaSign,
     },
     amatyakaraka: {
-      planet: (jaimini.charaKarakas && jaimini.charaKarakas.find(k => k.role === 'AmK')?.planet) || 'Mercury',
+      planet: jaimini.amatyakaraka || (jaimini.charaKarakas && jaimini.charaKarakas.find(k => k.role === 'AmK')?.planet) || 'Amatyakaraka',
     },
     lagnaSignificance: `With ${ascendant.sign} ascending and Lagna Lord ${lagnaLord} positioned in House ${lagnaLordPos ? lagnaLordPos.houseNumber : 1}, the native possesses natural resilience, structural purpose, and dignified personal magnetism. The Moon in ${moon.sign} (${moon.nakshatra}) further anchors emotional discernment.`,
   };
@@ -516,7 +516,7 @@ export function buildAstroWorldReportDocument(
 
   const calculatedTransits = keyTransitPlanets.map(({ planet, interpretation }) => {
     const liveTransit = transits?.planets?.find((p: any) => p.planet === planet);
-    const currentSign = (liveTransit?.sign || 'Aries') as ZodiacSign;
+    const currentSign = (liveTransit?.sign ? liveTransit.sign : ascendant.sign) as ZodiacSign;
     const houseFromLagna = liveTransit?.houseFromLagna ??
       (((ZODIAC_SIGNS.indexOf(currentSign) - ZODIAC_SIGNS.indexOf(ascendant.sign) + 12) % 12) + 1);
     const houseFromMoon = liveTransit?.houseFromMoon ??

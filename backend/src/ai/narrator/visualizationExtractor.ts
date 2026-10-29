@@ -237,7 +237,8 @@ export async function extractConsultationVisualizations(params: {
       const housesViz: AshtakavargaHouseViz[] = [];
 
       for (const houseNum of targetHouses) {
-        const bindus = Number(sav[houseNum - 1]) || 28;
+        const rawBindus = Number(sav[houseNum - 1]);
+        const bindus = Number.isFinite(rawBindus) ? rawBindus : 0;
         const status = bindus >= 32 ? 'exceptional' : bindus >= 28 ? 'strong' : bindus >= 25 ? 'average' : 'friction';
         housesViz.push({
           type: 'ashtakavarga_house',

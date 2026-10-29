@@ -1475,7 +1475,7 @@ EPISTEMIC GUARDRAIL: Explain compatibility as heuristic alignment (0–100), nev
         parts.push(`• CONTINUATION CONVERSATION: The user is in an ongoing chat. DO NOT repeat greetings ("Namaste", "Welcome seeker", "Greetings") or re-explain baseline chart placements. Jump IMMEDIATELY and directly into answering their specific follow-up.`);
       }
       if (signals.timingDirectQuery) {
-        parts.push(`• DIRECT VERDICT FIRST: Provide the direct, unequivocal answer/verdict in the VERY FIRST sentence (e.g. "Yes, 2026 holds high-probability breakthrough windows for your job offer..."). Do NOT bury the answer behind background text.`);
+        parts.push(`• DIRECT VERDICT FIRST: Provide the direct, unequivocal answer/verdict in the VERY FIRST sentence (e.g. state whether the evaluated timeline contains supportive, neutral, or challenging confluence windows for their goal). Do NOT bury the answer behind background text.`);
       }
       if (signals.conversationalRegister === 'casual_direct') {
         parts.push(`• CASUAL REGISTER: The user is speaking informally and directly. Match their friendly, down-to-earth energy. Be warm, natural, and authentic without stiff, theatrical preambles.`);
@@ -1637,7 +1637,7 @@ EPISTEMIC GUARDRAIL: Explain compatibility as heuristic alignment (0–100), nev
       }
       const jupLagnaH = jupTransit?.natalLagnaHouse || 1;
       const jupMoonH = jupTransit?.chandraLagnaHouse || 1;
-      const bindus = jupTransit?.ashtakavargaBindus ?? 28;
+      const bindus = jupTransit?.ashtakavargaBindus !== undefined ? jupTransit.ashtakavargaBindus : (tools.get_ashtakavarga?.sarvashtakavarga?.[jupTransit?.signIndex] ?? (bc?.ashtakavarga?.sav?.[jupTransit?.signIndex] ?? 'evaluating'));
 
       return `Currently, transiting **Jupiter (Guru)** is moving through the sign of **${jupSign}**.\n\n- **From your Lagna (${lagna})**: Jupiter is transiting your **${jupLagnaH}th house**.\n- **From your Moon (${moonSign})**: Jupiter is transiting your **${jupMoonH}th house**.\n- **Ashtakavarga Support**: This house holds **${bindus} bindus** in Sarvashtakavarga.\n\nJupiter’s transit here casts its expansive 5th, 7th, and 9th aspects over your chart, bringing growth, guidance, and spiritual protection to the areas it touches.`;
     }
@@ -1752,11 +1752,16 @@ ${matrixRows.length > 0 ? `### 3. Chronological Timing Windows Matrix\n\n| Perio
       const p2 = bc?.houses?.find((h: any) => h.houseNumber === 2);
       const p11 = bc?.houses?.find((h: any) => h.houseNumber === 11);
       const p12 = bc?.houses?.find((h: any) => h.houseNumber === 12);
-      const sav11 = tools.get_ashtakavarga?.sarvashtakavarga?.[p11?.signIndex ?? 10] ?? 32;
-      const sav12 = tools.get_ashtakavarga?.sarvashtakavarga?.[p12?.signIndex ?? 11] ?? 26;
-      const savSurplus = sav11 >= sav12;
+      const savArray = tools.get_ashtakavarga?.sarvashtakavarga || tools.get_ashtakavarga?.sav || bc?.ashtakavarga?.sav;
+      const p11Idx = p11?.signIndex;
+      const p12Idx = p12?.signIndex;
+      const sav11 = (savArray && typeof p11Idx === 'number') ? savArray[p11Idx] : undefined;
+      const sav12 = (savArray && typeof p12Idx === 'number') ? savArray[p12Idx] : undefined;
+      const savMetricText = (sav11 !== undefined && sav12 !== undefined)
+        ? `Your 11th house holds **${sav11} bindus** compared to **${sav12} bindus** in your 12th house (expenditure). ${sav11 >= sav12 ? `Because gains (${sav11}) exceed expenditure (${sav12}), your chart possesses strong classical retention capacity—meaning income converts sustainably into capital assets rather than leaking away.` : `Because expenditure points (${sav12}) are elevated relative to gains, disciplined capital allocation and automated wealth locks are essential to prevent wealth dispersion.`}`
+        : 'Evaluated from the relative strength of the 11th house of gains versus the 12th house of expenditure.';
 
-      return `### 💰 High-Net-Worth Wealth & Abundance Analysis\n\nIn classical Vedic Jyotish (Bhavartha Ratnakara & BPHS Ch. 41–42), wealth mastery is evaluated through the dynamic ratio between the **2nd house (Dhana / Asset Accumulation)**, the **11th house (Labha / Scaled Inflow)**, and the **Sarvashtakavarga Retention Index**:\n\n- **2nd House (Asset Storage)**: Placed in **${p2?.sign || 'the 2nd house'}**, governed by **${p2?.lord || 'the 2nd lord'}**.\n- **11th House (Network & Inflow)**: Placed in **${p11?.sign || 'the 11th house'}**, governed by **${p11?.lord || 'the 11th lord'}**.\n- **Sarvashtakavarga Retention Metric**: Your 11th house holds **${sav11} bindus** compared to **${sav12} bindus** in your 12th house (expenditure). ${savSurplus ? `Because gains (${sav11}) exceed expenditure (${sav12}), your chart possesses strong classical retention capacity—meaning income converts sustainably into capital assets rather than leaking away.` : `Because expenditure points (${sav12}) are elevated relative to gains, disciplined capital allocation and automated wealth locks are essential to prevent wealth dispersion.`}\n\n**Operating Timing**: Running **${dasha?.activeMahadasha?.planet || 'active'} Mahadasha – ${dasha?.activeAntardasha?.planet || 'active'} Antardasha**. Dasha sub-periods connecting the 2nd, 9th, and 11th lords create structural wealth inflections.`;
+      return `### 💰 High-Net-Worth Wealth & Abundance Analysis\n\nIn classical Vedic Jyotish (Bhavartha Ratnakara & BPHS Ch. 41–42), wealth mastery is evaluated through the dynamic ratio between the **2nd house (Dhana / Asset Accumulation)**, the **11th house (Labha / Scaled Inflow)**, and the **Sarvashtakavarga Retention Index**:\n\n- **2nd House (Asset Storage)**: Placed in **${p2?.sign || 'the 2nd house'}**, governed by **${p2?.lord || 'the 2nd lord'}**.\n- **11th House (Network & Inflow)**: Placed in **${p11?.sign || 'the 11th house'}**, governed by **${p11?.lord || 'the 11th lord'}**.\n- **Sarvashtakavarga Retention Metric**: ${savMetricText}\n\n**Operating Timing**: Running **${dasha?.activeMahadasha?.planet || 'active'} Mahadasha – ${dasha?.activeAntardasha?.planet || 'active'} Antardasha**. Dasha sub-periods connecting the 2nd, 9th, and 11th lords create structural wealth inflections.`;
     }
 
     if (/\b(atmakaraka|karakamsa)\b/i.test(lower)) {
@@ -1953,9 +1958,12 @@ According to Sage Parashara (*BPHS Ch. 6*), **D24 (Chaturvimshamsha)** specifica
 
     // Header & Direct Answer
     if (signals?.isFollowUp || signals?.timingDirectQuery) {
-      if (signals?.timingDirectQuery && (lower.includes('job') || lower.includes('career') || lower.includes('offer') || lower.includes('2026') || lower.includes('2027'))) {
-        sections.push(`## 🎯 Career Offer & Placement Windows`);
-        sections.push(`**Yes, your chart indicates clear, high-probability windows for your job offer.** Operating under your **${lagna} Lagna** and the active **${md} Mahadasha – ${ad} Antardasha**, here is your direct timing breakdown:`);
+      if (signals?.timingDirectQuery && (domains.includes('career') || lower.includes('job') || lower.includes('career') || lower.includes('offer') || lower.includes('placement') || lower.includes('promot'))) {
+        sections.push(`## 🎯 Career & Vocational Timing Windows`);
+        sections.push(`Regarding your vocational inquiry: operating under your **${lagna} Lagna** and active **${md} Mahadasha – ${ad} Antardasha**, here is your timing analysis across **${window.label}**:`);
+      } else if (signals?.timingDirectQuery && (domains.includes('marriage') || lower.includes('marry') || lower.includes('marriage') || lower.includes('spouse') || lower.includes('wedding'))) {
+        sections.push(`## 💍 Marriage & Relational Timing Windows`);
+        sections.push(`Regarding your relationship inquiry: operating under your **${lagna} Lagna** and active **${md} Mahadasha – ${ad} Antardasha**, here is your relational timing analysis across **${window.label}**:`);
       } else {
         sections.push(`## 🎯 Astrological Guidance & Timing Breakdown`);
         sections.push(`Regarding your inquiry: under your active **${md} Mahadasha – ${ad} Antardasha** and current Gochara transits across **${window.label}**:`);
@@ -1992,7 +2000,7 @@ According to Sage Parashara (*BPHS Ch. 6*), **D24 (Chaturvimshamsha)** specifica
       sections.push(`- **Jupiter (Guru)**: Transiting **${jupTransit.sign}** (House ${jupTransit.natalLagnaHouse} from Lagna, House ${jupTransit.chandraLagnaHouse} from Moon). This transit lends protective grace and wisdom.`);
     }
     if (satTransit) {
-      sections.push(`- **Saturn (Shani)**: Transiting **${satTransit.sign}** (House ${satTransit.natalLagnaHouse} from Lagna, House ${satTransit.chandraLagnaHouse} from Moon, carrying ${satTransit.ashtakavargaBindus || 28} Ashtakavarga bindus). This transit demands structure, perseverance, and systematic execution.`);
+      sections.push(`- **Saturn (Shani)**: Transiting **${satTransit.sign}** (House ${satTransit.natalLagnaHouse} from Lagna, House ${satTransit.chandraLagnaHouse} from Moon, carrying ${satTransit.ashtakavargaBindus !== undefined ? satTransit.ashtakavargaBindus : "evaluated"} Ashtakavarga bindus). This transit demands structure, perseverance, and systematic execution.`);
     }
 
     // Health Domain
@@ -2045,11 +2053,16 @@ According to Sage Parashara (*BPHS Ch. 6*), **D24 (Chaturvimshamsha)** specifica
       const p2 = bc?.houses?.find((h: any) => h.houseNumber === 2);
       const p11 = bc?.houses?.find((h: any) => h.houseNumber === 11);
       const p12 = bc?.houses?.find((h: any) => h.houseNumber === 12);
-      const sav11 = tools.get_ashtakavarga?.sarvashtakavarga?.[p11?.signIndex ?? 10] ?? 32;
-      const sav12 = tools.get_ashtakavarga?.sarvashtakavarga?.[p12?.signIndex ?? 11] ?? 26;
+      const savArray = tools.get_ashtakavarga?.sarvashtakavarga || tools.get_ashtakavarga?.sav || bc?.ashtakavarga?.sav;
+      const sav11 = (savArray && typeof p11?.signIndex === 'number') ? savArray[p11.signIndex] : undefined;
+      const sav12 = (savArray && typeof p12?.signIndex === 'number') ? savArray[p12.signIndex] : undefined;
       sections.push(`### 💰 Wealth & Financial Trajectory`);
       sections.push(`- **2nd House (Asset Storage)**: In **${p2?.sign || 'the 2nd house'}**, governed by ${p2?.lord || 'the 2nd lord'}.`);
-      sections.push(`- **11th House (Network & Inflow)**: In **${p11?.sign || 'the 11th house'}**, with **${sav11} Sarvashtakavarga bindus** (vs ${sav12} in the 12th house of expenditure).`);
+      if (sav11 !== undefined && sav12 !== undefined) {
+        sections.push(`- **11th House (Network & Inflow)**: In **${p11?.sign || 'the 11th house'}**, with **${sav11} Sarvashtakavarga bindus** (vs ${sav12} in the 12th house of expenditure).`);
+      } else {
+        sections.push(`- **11th House (Network & Inflow)**: In **${p11?.sign || 'the 11th house'}**, governed by ${p11?.lord || 'the 11th lord'}.`);
+      }
       sections.push(`- **Abundance Outlook**: The period through ${window.toIso.slice(0, 10)} under the ${md} Mahadasha favors disciplined asset accumulation, debt reduction, and strategic financial investments.`);
     }
 
@@ -2150,7 +2163,12 @@ According to Sage Parashara (*BPHS Ch. 6*), **D24 (Chaturvimshamsha)** specifica
       const p3 = bc?.houses?.find((h: any) => h.houseNumber === 3);
       const p10 = bc?.houses?.find((h: any) => h.houseNumber === 10);
       sections.push(`### 🌟 Viral Fame, Stardom & Media Virality (Modern Upachaya Dynamics)`);
-      sections.push(`- **The Rahu Accelerator**: Rahu is placed in **House ${rahu?.houseNumber || 11}** (${rahu?.sign || 'its sign'}). In modern digital Jyotish, Rahu in Upachaya houses (3rd, 6th, 10th, 11th) acts as the prime catalyst for explosive public visibility and digital reach.`);
+      if (rahu?.houseNumber) {
+        const isUpachaya = [3, 6, 10, 11].includes(rahu.houseNumber);
+        sections.push(`- **Rahu Accelerator**: Rahu is situated in **House ${rahu.houseNumber}** (${rahu.sign || 'its sign'}). ${isUpachaya ? 'In modern digital Jyotish, Rahu occupying an Upachaya house (3rd, 6th, 10th, 11th) acts as a powerful catalyst for public reach, algorithm-driven visibility, and unconventional authority.' : 'Rahu channels public visibility through its dispositor and incoming aspectual influences.'}`);
+      } else {
+        sections.push(`- **Rahu Accelerator**: Situated in ${rahu?.sign || 'the chart'}, governing unconventional ambition and public reach.`);
+      }
       sections.push(`- **Digital Media & Broadcast (3rd House)**: Situated in **${p3?.sign || 'the 3rd house'}**, ruling digital content, short-form broadcasting, and online reach.`);
       sections.push(`- **Public Prominence & Controversy (Khyati through Vivada)**: In classical research by Sri K.N. Rao, when Rahu connects with the 3rd or 10th house while in contact with Mars or the 6th lord, the native gains immense fame through polarizing discourse, unconventional narratives, or trolling, converting controversy into massive algorithmic spotlight.`);
       sections.push(`- **Sustained Recognition vs 15-Minute Virality**: D10 Dashamsha status confirms whether sudden digital reach translates into an enduring institutional brand or remains a transient flash-in-the-pan.`);
@@ -2181,8 +2199,10 @@ According to Sage Parashara (*BPHS Ch. 6*), **D24 (Chaturvimshamsha)** specifica
 
     // Classical Yogas Mention
 
-    if (yogas?.yogas && yogas.yogas.length > 0) {
-      const yogaList = yogas.yogas.slice(0, 3).map((y: any) => `**${y.name}** (${y.formingPlanets.join(' + ')})`).join(', ');
+    const candidateYogas = (tools.get_active_yogas?.yogas || yogas?.yogas || (Array.isArray(yogas) ? yogas : []))
+      .filter((y: any) => y && (y.present === true || y.present === undefined));
+    if (candidateYogas.length > 0) {
+      const yogaList = candidateYogas.slice(0, 3).map((y: any) => `**${y.name}** (${y.formingPlanets.join(' + ')})`).join(', ');
       sections.push(`### 💎 6. Supporting Natal Yogas\nYour chart carries auspicious yogas including ${yogaList}, which provide sustained resilience and blessings whenever activated by favorable dasha periods.`);
     }
 
