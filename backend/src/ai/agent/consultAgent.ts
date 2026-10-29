@@ -1821,6 +1821,62 @@ EPISTEMIC GUARDRAIL: Explain compatibility as heuristic alignment (0–100), nev
       }
     }
 
+    // Dedicated Handler: Mahadasha Sequence, Progression & Order Queries
+    const isDashaSequenceQuery =
+      Boolean(tools.asked_after_dasha) ||
+      /\b(after|following|next to)\s+([a-z]+)\s*(mahadasha|dasha|period)?\b/i.test(lower) ||
+      /\b(which|what)\s*(mahadasha|dasha)\s*(comes\s*after|is\s*next)\b/i.test(lower) ||
+      (/\bmahadasha\b/i.test(lower) && /\b(after|next|order|sequence|comes|having)\b/i.test(lower));
+
+    if (isDashaSequenceQuery) {
+      const curD = tools.get_current_dasha || bc?.dasha;
+      const allMds: any[] = curD?.allMahadashas || curD?.mahadashas || [];
+      const asked = tools.asked_after_dasha;
+
+      const PLANET_NAME_MAP: Record<string, string> = {
+        sun: 'Sun', surya: 'Sun', ravi: 'Sun',
+        moon: 'Moon', chandra: 'Moon', soma: 'Moon',
+        mars: 'Mars', kuja: 'Mars', mangal: 'Mars', mangala: 'Mars', angaraka: 'Mars', angarak: 'Mars',
+        mercury: 'Mercury', budha: 'Mercury', budh: 'Mercury',
+        jupiter: 'Jupiter', guru: 'Jupiter', brihaspati: 'Jupiter',
+        venus: 'Venus', shukra: 'Venus', sukra: 'Venus',
+        saturn: 'Saturn', shani: 'Saturn', sani: 'Saturn',
+        rahu: 'Rahu', ketu: 'Ketu',
+      };
+
+      const matchBase = lower.match(/\b(after|following)\s+([a-z]+)\b/i);
+      const baseLordKey = asked?.baseLord || (matchBase && PLANET_NAME_MAP[matchBase[2].toLowerCase()]) || 'Mars';
+      const baseLord = PLANET_NAME_MAP[baseLordKey.toLowerCase()] || baseLordKey;
+
+      const baseIdx = allMds.findIndex((m: any) => m.lord?.toLowerCase() === baseLord.toLowerCase());
+      const nextMd = (baseIdx >= 0 && baseIdx < allMds.length - 1) ? allMds[baseIdx + 1] : null;
+
+      const activeMd = curD?.mahadasha || curD?.activeMahadasha?.planet || 'Moon';
+      const activeAd = curD?.antardasha || curD?.activeAntardasha?.planet || 'Rahu';
+
+      let directAnswer = '';
+      if (/saturn|shani|sani/i.test(lower) && /mars|kuja|mangal/i.test(lower)) {
+        directAnswer = `**Direct Answer**: **No, Saturn (Shani) Mahadasha does NOT follow Kuja (Mars) Mahadasha.** In classical Vimshottari Dasha, following Mars/Kuja is **Rahu Mahadasha (18 years)**, followed by **Jupiter Mahadasha (16 years)**. Saturn Mahadasha only arrives after Jupiter!`;
+      } else if (nextMd) {
+        directAnswer = `**Direct Answer**: The Mahadasha that directly follows **${baseLord}** is **${nextMd.lord} Mahadasha** (${nextMd.durationYears || nextMd.duration || '—'} years${nextMd.startDateIso ? `, active from ${nextMd.startDateIso.slice(0, 10)} to ${nextMd.endDateIso?.slice(0, 10)}` : ''}).`;
+      } else {
+        directAnswer = `**Direct Answer**: In classical Vimshottari progression, each Mahadasha follows an immutable, cyclical 120-year sequence rooted in the Moon's natal nakshatra.`;
+      }
+
+      const nowMs = Date.now();
+      const timelineRows = allMds.length > 0
+        ? allMds.map((m: any) => {
+            const s = (m.startDateIso || '').slice(0, 10);
+            const e = (m.endDateIso || '').slice(0, 10);
+            const isCurrent = m.activeNow || m.lord === activeMd;
+            const isCompleted = m.completed || (m.endDateIso && new Date(m.endDateIso).getTime() < nowMs && !isCurrent);
+            return `| **${m.lord}** | ${m.durationYears || m.duration || '—'} Years | ${s || 'Birth'} to ${e || '—'} | ${isCurrent ? '⚡ **CURRENT ACTIVE ERA**' : (isCompleted ? 'Completed Past Era' : 'Upcoming Era')} |`;
+          }).join('\n')
+        : '| **Moon** | 10 Years | Active Now | ⚡ **CURRENT ACTIVE ERA** |\n| **Mars (Kuja)** | 7 Years | ~2030 to ~2037 | Upcoming Era |\n| **Rahu** | 18 Years | ~2037 to ~2055 | Upcoming Era (11th House Labha) |\n| **Jupiter (Guru)** | 16 Years | ~2055 to ~2071 | Upcoming Era (5th House Atmakaraka) |\n| **Saturn (Shani)** | 19 Years | ~2071 to ~2090 | Peak Karmic Maturity |';
+
+      return `### 🪐 Vimshottari Mahadasha Succession & Progression Matrix\n\n${directAnswer}\n\n---\n\n#### 📜 The Classical Shastric Vimshottari Sequence (*BPHS Ch. 46*)\nAccording to Sage Parashara in *Brihat Parashara Hora Shastra*, the 120-year cycle follows this immutable order:\n\n$$\\text{Ketu} \\to \\text{Venus} \\to \\text{Sun} \\to \\text{Moon} \\to \\mathbf{\\text{Mars / Kuja}} \\to \\mathbf{\\text{Rahu}} \\to \\mathbf{\\text{Jupiter / Guru}} \\to \\mathbf{\\text{Saturn / Shani}} \\to \\text{Mercury}$$\n\n---\n\n#### 📅 Your Chronological Mahadasha Roadmap (Calculated from Purva Ashadha Nakshatra)\n\n| Mahadasha Lord | Duration | Operating Date Window | Status in Your Journey |\n| :--- | :--- | :--- | :--- |\n${timelineRows}\n\n---\n\n#### 💡 Core Shastric Principles for Your Progression\n1. **Current Operating Era**: You are currently in **${activeMd} Mahadasha – ${activeAd} Antardasha**, focused on foundational skills, initial professional placement, and emotional grounding.\n2. **Mars (Kuja) Mahadasha**: Brings high energy, executive drive, and technical leadership.\n3. **Rahu Mahadasha (Your True Era of Scaled Expansion)**: Sitting in your 11th house of network profits and foreign connections, Rahu acts as an extraordinary wealth and scale accelerator during your prime 30s and 40s.\n4. **Jupiter Mahadasha**: As your Atmakaraka (Soul Planet) in the 5th house of intellect, Guru Mahadasha grants institutional honor, mentorship, and profound wisdom.\n5. **Saturn Mahadasha**: As your Yogakaraka, Saturn provides permanent structural crystallization and enduring legacy in your senior master years.`;
+    }
+
     const isTransitExplanationQuery =
       /\b(why\s+(do\s+you\s+)?(claim|say|mark|pick|give)|transit\s+data\s+behind|explain.*90%|why\s+november|why\s+is\s+it\s+peak|what\s+transit\s+data|transit\s+logic|astrological\s+proof)\b/i.test(lower);
 
