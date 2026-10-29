@@ -245,9 +245,9 @@ export const aiV2Router = Router();
 
 aiV2Router.get('/status', (_req: Request, res: Response) => {
   res.json({
-    system: 'AstroWorld Unified AI V2 Endpoint',
+    system: 'AstroWorld AI V2',
     status: 'operational',
-    phase: 'unified-architecture',
+    phase: 'production-convergence',
   });
 });
 

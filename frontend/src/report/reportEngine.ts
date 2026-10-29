@@ -59,6 +59,7 @@ export function buildAstroWorldReportDocument(
     yogas,
     jaimini,
     ashtakavarga,
+    transits,
     timingSignals,
   } = context;
 
@@ -492,41 +493,48 @@ export function buildAstroWorldReportDocument(
   };
 
   // -------------------------------------------------------------------------
-  // 12. TRANSITS (GOCHARA)
+  // 12. TRANSITS (GOCHARA) — Dynamically derived from ephemeris
   // -------------------------------------------------------------------------
+  const keyTransitPlanets: Array<{ planet: PlanetName; interpretation: string }> = [
+    {
+      planet: 'Jupiter',
+      interpretation: 'Transiting Jupiter provides expansive grace, intellectual optimism, and protective opportunities in its transit sphere.',
+    },
+    {
+      planet: 'Saturn',
+      interpretation: 'Saturn brings structural focus, disciplined persistence, and karma crystallization in the activated house.',
+    },
+    {
+      planet: 'Rahu',
+      interpretation: 'Rahu creates intense drive, international links, and unconventional expansion.',
+    },
+    {
+      planet: 'Ketu',
+      interpretation: 'Ketu encourages detachment, analytical refinement, and inner spiritual purification.',
+    },
+  ];
+
+  const calculatedTransits = keyTransitPlanets.map(({ planet, interpretation }) => {
+    const liveTransit = transits?.planets?.find((p: any) => p.planet === planet);
+    const currentSign = (liveTransit?.sign || 'Aries') as ZodiacSign;
+    const houseFromLagna = liveTransit?.houseFromLagna ??
+      (((ZODIAC_SIGNS.indexOf(currentSign) - ZODIAC_SIGNS.indexOf(ascendant.sign) + 12) % 12) + 1);
+    const houseFromMoon = liveTransit?.houseFromMoon ??
+      (((ZODIAC_SIGNS.indexOf(currentSign) - ZODIAC_SIGNS.indexOf(moon.sign) + 12) % 12) + 1);
+
+    return {
+      planet,
+      currentSign,
+      houseFromLagna,
+      houseFromMoon,
+      interpretation,
+    };
+  });
+
   const transitsSection: TransitSection = {
     title: '11. Gochara Transits & Spatial Activations',
     subtitle: 'Current planetary transits evaluated against natal Lagna and Janma Rashi.',
-    transits: [
-      {
-        planet: 'Jupiter',
-        currentSign: 'Taurus',
-        houseFromLagna: ((ZODIAC_SIGNS.indexOf('Taurus') - ZODIAC_SIGNS.indexOf(ascendant.sign) + 12) % 12) + 1,
-        houseFromMoon: ((ZODIAC_SIGNS.indexOf('Taurus') - ZODIAC_SIGNS.indexOf(moon.sign) + 12) % 12) + 1,
-        interpretation: 'Transiting Jupiter provides expansive grace, intellectual optimism, and protective opportunities in its transit sphere.',
-      },
-      {
-        planet: 'Saturn',
-        currentSign: 'Aquarius',
-        houseFromLagna: ((ZODIAC_SIGNS.indexOf('Aquarius') - ZODIAC_SIGNS.indexOf(ascendant.sign) + 12) % 12) + 1,
-        houseFromMoon: ((ZODIAC_SIGNS.indexOf('Aquarius') - ZODIAC_SIGNS.indexOf(moon.sign) + 12) % 12) + 1,
-        interpretation: 'Saturn brings structural focus, disciplined persistence, and karma crystallization in the activated house.',
-      },
-      {
-        planet: 'Rahu',
-        currentSign: 'Pisces',
-        houseFromLagna: ((ZODIAC_SIGNS.indexOf('Pisces') - ZODIAC_SIGNS.indexOf(ascendant.sign) + 12) % 12) + 1,
-        houseFromMoon: ((ZODIAC_SIGNS.indexOf('Pisces') - ZODIAC_SIGNS.indexOf(moon.sign) + 12) % 12) + 1,
-        interpretation: 'Rahu creates intense drive, international links, and unconventional expansion.',
-      },
-      {
-        planet: 'Ketu',
-        currentSign: 'Virgo',
-        houseFromLagna: ((ZODIAC_SIGNS.indexOf('Virgo') - ZODIAC_SIGNS.indexOf(ascendant.sign) + 12) % 12) + 1,
-        houseFromMoon: ((ZODIAC_SIGNS.indexOf('Virgo') - ZODIAC_SIGNS.indexOf(moon.sign) + 12) % 12) + 1,
-        interpretation: 'Ketu encourages detachment, analytical refinement, and inner spiritual purification.',
-      },
-    ],
+    transits: calculatedTransits,
   };
 
   // -------------------------------------------------------------------------

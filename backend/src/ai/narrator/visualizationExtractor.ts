@@ -160,17 +160,24 @@ export async function extractConsultationVisualizations(params: {
     const direction = reasoningPacket?.direction || 'supportive';
 
     if (primaryWindow || targetDomain !== 'general') {
-      let scorePercent = 75;
-      let status: TimingProbabilityViz['status'] = 'supportive';
+      const confluence = reasoningPacket?.confluence;
+      const suppScore = confluence?.supportiveScore ?? (direction === 'supportive' ? 2.5 : direction === 'mixed' ? 1.5 : 0.5);
+      const restScore = confluence?.restrictingScore ?? (direction === 'challenging' ? 2.0 : 0.5);
+      const totalScore = suppScore + restScore;
 
-      if (direction === 'supportive') {
-        scorePercent = 84;
+      // Mathematically derived from evaluated chart layers rather than hardcoded constants
+      const calculatedPercent = totalScore > 0
+        ? Math.min(95, Math.max(20, Math.round((suppScore / totalScore) * 100)))
+        : 50;
+
+      let status: TimingProbabilityViz['status'] = 'supportive';
+      if (calculatedPercent >= 75 && (confluence?.confluenceStrength === 'strong' || direction === 'supportive')) {
         status = 'highly_favorable';
-      } else if (direction === 'mixed') {
-        scorePercent = 64;
+      } else if (calculatedPercent >= 55) {
+        status = 'supportive';
+      } else if (calculatedPercent >= 40) {
         status = 'mixed';
-      } else if ((direction as string) === 'friction' || direction === 'challenging') {
-        scorePercent = 44;
+      } else {
         status = 'friction';
       }
 
@@ -185,17 +192,22 @@ export async function extractConsultationVisualizations(params: {
         keyDrivers.push('Dasha lord angular alignment');
       }
 
+      const layersCount = confluence?.convergingLayersCount ?? (status === 'highly_favorable' ? 3 : 2);
+      const dynamicSummary = status === 'highly_favorable'
+        ? `High astronomical synergy confirmed across ${layersCount} evaluated chart layers (support index: ${suppScore}).`
+        : status === 'supportive'
+        ? `Favorable alignment across ${layersCount} chart layers with steady structural support.`
+        : status === 'mixed'
+        ? `Dual support and restraint factors detected (support: ${suppScore}, restraint: ${restScore}); demands measured preparation.`
+        : `Elevated restrictive influences (restraint index: ${restScore}); favorable for strategic preparation rather than immediate expansion.`;
+
       viz.timingProbability = {
         type: 'timing_probability',
         windowLabel: primaryWindow?.label || `${capitalize(targetDomain)} Alignment Cycle`,
         periodText: primaryWindow?.periodText || 'Upcoming Strategic Window',
-        scorePercent,
+        scorePercent: calculatedPercent,
         status,
-        summary: status === 'highly_favorable'
-          ? 'High astronomical synergy for initiative, leadership, and external progress.'
-          : status === 'mixed'
-          ? 'Balanced window requiring steady consolidation before sudden leaps.'
-          : 'Refinement period best dedicated to internal preparation.',
+        summary: dynamicSummary,
         keyDrivers: keyDrivers.slice(0, 2),
       };
     }

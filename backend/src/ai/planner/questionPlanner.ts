@@ -600,9 +600,53 @@ export class QuestionPlanner {
     const targetDatesIso: string[] = [];
     const now = new Date();
     const curYear = now.getUTCFullYear();
+    const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
-    // 1. Explicit multi-year ranges (e.g. "between 2027 and 2030", "2027 to 2030", "2027-2030")
-    const rangeMatch = lower.match(/\b(202[0-9]|203[0-9])\s*(?:to|and|-)\s*(202[0-9]|203[0-9])\b/i);
+    // 0a. Explicit ISO date (e.g. "2026-11-01", "2027/05/15")
+    const isoDateMatch = lower.match(/\b(19\d{2}|20\d{2})[-/](\d{1,2})[-/](\d{1,2})\b/);
+    if (isoDateMatch) {
+      const yr = parseInt(isoDateMatch[1], 10);
+      const mo = parseInt(isoDateMatch[2], 10) - 1;
+      const da = parseInt(isoDateMatch[3], 10);
+      const targetDate = new Date(Date.UTC(yr, mo, da)).toISOString();
+      return {
+        temporalScope: { type: 'specific_date', startIso: targetDate, endIso: targetDate },
+        targetDatesIso: [targetDate],
+      };
+    }
+
+    // 0b. Explicit Day + Month + Year (e.g. "1st November 2026", "15 August 2027")
+    const dmyMatch = lower.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{4})\b/i);
+    if (dmyMatch) {
+      const da = parseInt(dmyMatch[1], 10);
+      const mIdx = monthNames.findIndex(m => dmyMatch[2].toLowerCase().startsWith(m));
+      const yr = parseInt(dmyMatch[3], 10);
+      if (mIdx >= 0) {
+        const targetDate = new Date(Date.UTC(yr, mIdx, da)).toISOString();
+        return {
+          temporalScope: { type: 'specific_date', startIso: targetDate, endIso: targetDate },
+          targetDatesIso: [targetDate],
+        };
+      }
+    }
+
+    // 0c. Explicit Month + Day + Year (e.g. "November 1, 2026", "August 15 2027")
+    const mdyMatch = lower.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?(?:,)?\s+(\d{4})\b/i);
+    if (mdyMatch) {
+      const mIdx = monthNames.findIndex(m => mdyMatch[1].toLowerCase().startsWith(m));
+      const da = parseInt(mdyMatch[2], 10);
+      const yr = parseInt(mdyMatch[3], 10);
+      if (mIdx >= 0) {
+        const targetDate = new Date(Date.UTC(yr, mIdx, da)).toISOString();
+        return {
+          temporalScope: { type: 'specific_date', startIso: targetDate, endIso: targetDate },
+          targetDatesIso: [targetDate],
+        };
+      }
+    }
+
+    // 1. Explicit multi-year ranges (e.g. "between 2027 and 2030", "2027 to 2030", "2027-2030", "1995 to 2005")
+    const rangeMatch = lower.match(/\b(19\d{2}|20\d{2})\s*(?:to|and|-)\s*(19\d{2}|20\d{2})\b/i);
     if (rangeMatch) {
       const startYear = parseInt(rangeMatch[1], 10);
       const endYear = parseInt(rangeMatch[2], 10);
@@ -622,12 +666,11 @@ export class QuestionPlanner {
     // 2. Relative Expressions Anchored to "From Now" / "Until Month Year"
     // e.g. "by Dec 2026 from now", "from now until December 2026", "by December 2026"
     if (
-      (lower.includes('from now') || lower.includes('until') || lower.includes('by')) &&
-      /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(202[0-9]|203[0-9])/i.test(lower)
+      (lower.includes('from now') || lower.includes('until') || lower.includes('by') || lower.includes('upto') || lower.includes('up to')) &&
+      /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(19\d{2}|20\d{2})/i.test(lower)
     ) {
-      const match = lower.match(/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(202[0-9]|203[0-9])/i);
+      const match = lower.match(/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(19\d{2}|20\d{2})/i);
       if (match) {
-        const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
         const mIdx = monthNames.findIndex(m => match[1].toLowerCase().startsWith(m));
         const y = parseInt(match[2], 10);
         // End of that target month
@@ -639,6 +682,22 @@ export class QuestionPlanner {
         return {
           temporalScope: { type: 'upcoming', startIso, endIso },
           targetDatesIso,
+        };
+      }
+    }
+
+    // 2b. Explicit Month + Year query (e.g. "in November 2026", "November 2026", "May 2027")
+    const monthYearMatch = lower.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{4})\b/i);
+    if (monthYearMatch) {
+      const mIdx = monthNames.findIndex(m => monthYearMatch[1].toLowerCase().startsWith(m));
+      const y = parseInt(monthYearMatch[2], 10);
+      if (mIdx >= 0) {
+        const startIso = new Date(Date.UTC(y, mIdx, 1)).toISOString();
+        const endIso = new Date(Date.UTC(y, mIdx + 1, 0, 23, 59, 59, 999)).toISOString();
+        const midIso = new Date(Date.UTC(y, mIdx, 15)).toISOString();
+        return {
+          temporalScope: { type: 'specific_date', startIso, endIso },
+          targetDatesIso: [midIso],
         };
       }
     }
@@ -705,8 +764,8 @@ export class QuestionPlanner {
       };
     }
 
-    // 7. Explicit single 4-digit year (e.g. 2026, 2027, 2028)
-    const yearMatches = lower.match(/\b(202[0-9]|203[0-9])\b/g);
+    // 7. Explicit single 4-digit year (e.g. 1998, 2012, 2026, 2027, 2045)
+    const yearMatches = lower.match(/\b(19\d{2}|20\d{2})\b/g);
     if (yearMatches && yearMatches.length > 0) {
       const year = parseInt(yearMatches[0], 10);
       const targetDate = new Date(Date.UTC(year, 5, 15)).toISOString();

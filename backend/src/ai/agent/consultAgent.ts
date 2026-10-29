@@ -1060,18 +1060,18 @@ Directly and specifically address every item the user asked about (career, campu
 
     // Spoon-feed D60 Shashtiamsha Esoteric Karmic Analysis (BPHS Ch. 6)
     const bcForD60 = tools.get_birth_chart;
-    if (bcForD60 && Array.isArray(bcForD60.planets)) {
-      const akPlanetName = tools.get_jaimini_details?.atmakaraka?.planet || 'Sun';
+    const akPlanetName = tools.get_jaimini_details?.atmakaraka?.planet;
+    if (bcForD60 && Array.isArray(bcForD60.planets) && akPlanetName && bcForD60.ascendant?.sign) {
       const akPl = bcForD60.planets.find((p: any) => p.name === akPlanetName);
       const tenthPl = bcForD60.planets.find((p: any) => p.houseNumber === 10);
-      const d60LagnaSign = divCharts['D60']?.ascendantSign || bcForD60.ascendant?.sign || 'Aries';
+      const d60LagnaSign = divCharts['D60']?.ascendantSign || bcForD60.ascendant.sign;
 
       const d60Analysis = synthesizeD60Chart({
         lagnaDegree: bcForD60.ascendant?.degree ?? 15.0,
         lagnaSign: d60LagnaSign,
         atmakarakaPlanet: akPlanetName as any,
         atmakarakaDegree: akPl?.degree ?? 15.0,
-        atmakarakaSign: akPl?.sign ?? 'Aries',
+        atmakarakaSign: akPl?.sign ?? bcForD60.ascendant.sign,
         tenthLordPlanet: tenthPl?.name as any,
         tenthLordDegree: tenthPl?.degree,
         tenthLordSign: tenthPl?.sign,
@@ -1084,44 +1084,46 @@ Directly and specifically address every item the user asked about (career, campu
 
     // Spoon-feed Chronological Milestone Roadmap (Next 12–24 Months)
     const dashaForRoadmap = tools.get_current_dasha || tools.get_birth_chart?.dasha;
-    if (dashaForRoadmap && bcForD60) {
-      const md = dashaForRoadmap.mahadasha || dashaForRoadmap.activeMahadasha?.planet || 'Moon';
-      const ad = dashaForRoadmap.antardasha || dashaForRoadmap.activeAntardasha?.planet || 'Rahu';
+    if (dashaForRoadmap && bcForD60?.ascendant?.sign) {
+      const md = dashaForRoadmap.mahadasha || dashaForRoadmap.activeMahadasha?.planet;
+      const ad = dashaForRoadmap.antardasha || dashaForRoadmap.activeAntardasha?.planet;
       const pd = dashaForRoadmap.pratyantardasha || dashaForRoadmap.activePratyantardasha?.planet;
       const trPlanets = tools.get_transits?.planets;
 
-      const jupH = trPlanets?.find((p: any) => p.planet === 'Jupiter')?.natalLagnaHouse ?? 5;
-      const satH = trPlanets?.find((p: any) => p.planet === 'Saturn')?.natalLagnaHouse ?? 10;
+      if (md && ad) {
+        const jupH = trPlanets?.find((p: any) => p.planet === 'Jupiter')?.natalLagnaHouse ?? 1;
+        const satH = trPlanets?.find((p: any) => p.planet === 'Saturn')?.natalLagnaHouse ?? 1;
 
-      const careerDoubleTr = evaluateDoubleTransit({
-        targetHouse: 10,
-        domain: 'career',
-        jupiterHouse: jupH,
-        saturnHouse: satH,
-        alternativeHouse: 7,
-      });
+        const careerDoubleTr = evaluateDoubleTransit({
+          targetHouse: 10,
+          domain: 'career',
+          jupiterHouse: jupH,
+          saturnHouse: satH,
+          alternativeHouse: 7,
+        });
 
-      const roadmap = buildChronologicalRoadmap({
-        nativeLagna: bcForD60.ascendant?.sign || 'Taurus',
-        currentDateIso: new Date().toISOString(),
-        mahadashaLord: md as any,
-        antardashaLord: ad as any,
-        pratyantardashaLord: pd as any,
-        doubleTransitCareer: careerDoubleTr,
-        activeVedhas: [],
-      });
+        const roadmap = buildChronologicalRoadmap({
+          nativeLagna: bcForD60.ascendant.sign,
+          currentDateIso: new Date().toISOString(),
+          mahadashaLord: md as any,
+          antardashaLord: ad as any,
+          pratyantardashaLord: pd as any,
+          doubleTransitCareer: careerDoubleTr,
+          activeVedhas: [],
+        });
 
-      parts.push(`\n--- CHRONOLOGICAL MILESTONE ROADMAP (NEXT 12–24 MONTHS) ---`);
-      parts.push(`Macro Karmic Arc: ${roadmap.macroSummary}`);
-      parts.push(`[${roadmap.currentQuarterMilestone.quarterLabel}]: ${roadmap.currentQuarterMilestone.title} (Confluence: ${roadmap.currentQuarterMilestone.confluenceScore}%)`);
-      parts.push(`  • Planetary Alignment: ${roadmap.currentQuarterMilestone.planetaryMechanism}`);
-      parts.push(`  • Actionable Directive: ${roadmap.currentQuarterMilestone.operationalDirective}`);
-      for (const up of roadmap.upcomingQuarterMilestones) {
-        parts.push(`[${up.quarterLabel}]: ${up.title} (Confluence: ${up.confluenceScore}%)`);
-        parts.push(`  • Planetary Alignment: ${up.planetaryMechanism}`);
-        parts.push(`  • Actionable Directive: ${up.operationalDirective}`);
+        parts.push(`\n--- CHRONOLOGICAL MILESTONE ROADMAP (NEXT 12–24 MONTHS) ---`);
+        parts.push(`Macro Karmic Arc: ${roadmap.macroSummary}`);
+        parts.push(`[${roadmap.currentQuarterMilestone.quarterLabel}]: ${roadmap.currentQuarterMilestone.title} (Confluence: ${roadmap.currentQuarterMilestone.confluenceScore}%)`);
+        parts.push(`  • Planetary Alignment: ${roadmap.currentQuarterMilestone.planetaryMechanism}`);
+        parts.push(`  • Actionable Directive: ${roadmap.currentQuarterMilestone.operationalDirective}`);
+        for (const up of roadmap.upcomingQuarterMilestones) {
+          parts.push(`[${up.quarterLabel}]: ${up.title} (Confluence: ${up.confluenceScore}%)`);
+          parts.push(`  • Planetary Alignment: ${up.planetaryMechanism}`);
+          parts.push(`  • Actionable Directive: ${up.operationalDirective}`);
+        }
+        parts.push(`MANDATORY ROADMAP SYNTHESIS: Always anchor your prediction with a structured timeline so the native receives concrete quarter-by-quarter dates, milestones, and strategic directives.`);
       }
-      parts.push(`MANDATORY ROADMAP SYNTHESIS: Always anchor your prediction with a structured timeline so the native receives concrete quarter-by-quarter dates, milestones, and strategic directives.`);
     }
 
     // Spoon-feed KP Cuspal Sub-Lord Decision Engine (Binary Questions)
@@ -1545,6 +1547,60 @@ EPISTEMIC GUARDRAIL: Explain compatibility as heuristic alignment (0–100), nev
    * Deterministic Master Astrologer Synthesizer
    * Creates a deeply insightful, human-like consultation response based entirely on verified calculations.
    */
+  
+  private resolveAtmakarakaAndKarakamsa(bc: any, jaimini: any): { ak: string; kl: string } {
+    let ak = jaimini?.atmakaraka?.planet;
+    let kl = jaimini?.karakamsaNavamshaSign || jaimini?.karakamsaSign;
+
+    if (!ak && bc?.planets && Array.isArray(bc.planets) && bc.planets.length > 0) {
+      const classical = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+      const candidates = bc.planets
+        .filter((p: any) => classical.includes(p.name || p.planet))
+        .map((p: any) => ({
+          planet: p.name || p.planet,
+          degInSign: (typeof p.longitude === 'number' ? ((p.longitude % 30) + 30) % 30 : ((p.degree || 0) % 30)),
+          longitude: p.longitude ?? 0
+        }))
+        .sort((a: any, b: any) => b.degInSign - a.degInSign);
+      if (candidates.length > 0) {
+        ak = candidates[0].planet;
+      }
+    }
+
+    if (!kl && ak && bc?.planets) {
+      const akPlanet = bc.planets.find((p: any) => (p.name || p.planet) === ak);
+      if (akPlanet && typeof akPlanet.longitude === 'number') {
+        const SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+        const totalLong = ((akPlanet.longitude % 360) + 360) % 360;
+        const d9Index = Math.floor(totalLong / (30 / 9)) % 12;
+        kl = SIGNS[d9Index];
+      }
+    }
+
+    return {
+      ak: ak || 'Atmakaraka (evaluating)',
+      kl: kl || 'Karakamsa (evaluating)'
+    };
+  }
+
+  private resolveDarakaraka(bc: any, jaimini: any): string {
+    let dk = jaimini?.charaKarakas?.find((k: any) => k.karaka === 'Darakaraka')?.planet;
+    if (!dk && bc?.planets && Array.isArray(bc.planets) && bc.planets.length > 0) {
+      const classical = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+      const candidates = bc.planets
+        .filter((p: any) => classical.includes(p.name || p.planet))
+        .map((p: any) => ({
+          planet: p.name || p.planet,
+          degInSign: (typeof p.longitude === 'number' ? ((p.longitude % 30) + 30) % 30 : ((p.degree || 0) % 30))
+        }))
+        .sort((a: any, b: any) => a.degInSign - b.degInSign);
+      if (candidates.length > 0) {
+        dk = candidates[0].planet;
+      }
+    }
+    return dk || 'Darakaraka (evaluating)';
+  }
+
   private synthesizeMasterReading(
     question: string,
     profile: BirthProfile,
@@ -1575,7 +1631,10 @@ EPISTEMIC GUARDRAIL: Explain compatibility as heuristic alignment (0–100), nev
 
     if (/which house is jupiter transiting/i.test(lower)) {
       const jupTransit = transits?.planets?.find((p: any) => p.planet === 'Jupiter');
-      const jupSign = jupTransit?.sign || 'Taurus';
+      const jupSign = jupTransit?.sign;
+      if (!jupSign) {
+        return 'Currently, transiting Jupiter ephemeris data is not available for this evaluation window.';
+      }
       const jupLagnaH = jupTransit?.natalLagnaHouse || 1;
       const jupMoonH = jupTransit?.chandraLagnaHouse || 1;
       const bindus = jupTransit?.ashtakavargaBindus ?? 28;
@@ -1586,7 +1645,10 @@ EPISTEMIC GUARDRAIL: Explain compatibility as heuristic alignment (0–100), nev
     if (/sade sati/i.test(lower)) {
       const ss = transits?.sadeSati;
       const satTransit = transits?.planets?.find((p: any) => p.planet === 'Saturn');
-      const satSign = satTransit?.sign || 'Aquarius';
+      const satSign = satTransit?.sign;
+      if (!satSign) {
+        return 'Currently, transiting Saturn ephemeris data is not available for this evaluation window.';
+      }
 
       if (ss?.isActive) {
         return `Regarding **Saturn Sade Sati**:\n\nYes, you are currently undergoing Saturn's Sade Sati in the **${ss.phase || 'active'} phase** with transiting Saturn positioned in **${satSign}**.\n\n- **Sign Placement**: Saturn in ${satSign} relative to your natal Moon in ${moonSign}.\n- **Classical Meaning**: In Vedic Jyotish, Sade Sati is not an arbitrary curse; it is a sacred cycle of karmic maturation, discipline, and building unshakeable inner resilience. Maintaining steady focus, ethical conduct, and routine is the classical path of mastery during this transit.`;
@@ -1599,49 +1661,60 @@ EPISTEMIC GUARDRAIL: Explain compatibility as heuristic alignment (0–100), nev
       /\b(why\s+(do\s+you\s+)?(claim|say|mark|pick|give)|transit\s+data\s+behind|explain.*90%|why\s+november|why\s+is\s+it\s+peak|what\s+transit\s+data|transit\s+logic|astrological\s+proof)\b/i.test(lower);
 
     if (isTransitExplanationQuery) {
-      const ingressList: any[] = [];
-      for (const key of Object.keys(tools)) {
-        if (key.startsWith('find_ingresses_') && tools[key]?.ingresses) {
-          ingressList.push(...tools[key].ingresses);
-        }
-      }
-      const jupIngress = ingressList.find((i: any) => i.planet === 'Jupiter');
       const targetTransits = tools.get_transits_target || tools.get_transits;
-      const targetDasha = tools.get_dasha_at;
+      const targetDasha = tools.get_dasha_at || tools.get_current_dasha;
 
-      const activeMd = targetDasha?.mahadasha || tools.get_current_dasha?.mahadasha || 'Moon';
-      const activeAd = targetDasha?.antardasha || tools.get_current_dasha?.antardasha || 'Rahu';
-      const activePd = targetDasha?.pratyantardasha || tools.get_current_dasha?.pratyantardasha || 'Saturn';
+      const activeMd = targetDasha?.mahadasha || targetDasha?.activeMahadasha?.planet || 'Active';
+      const activeAd = targetDasha?.antardasha || targetDasha?.activeAntardasha?.planet || 'Active';
+      const activePd = targetDasha?.pratyantardasha || targetDasha?.activePratyantardasha?.planet;
 
-      const jupSignTarget = targetTransits?.planets?.find((p: any) => p.planet === 'Jupiter')?.sign || (jupIngress ? jupIngress.toSign : 'Leo');
-      const jupHouseTarget = targetTransits?.planets?.find((p: any) => p.planet === 'Jupiter')?.natalLagnaHouse || 4;
-      const satSignTarget = targetTransits?.planets?.find((p: any) => p.planet === 'Saturn')?.sign || 'Pisces';
-      const satHouseTarget = targetTransits?.planets?.find((p: any) => p.planet === 'Saturn')?.natalLagnaHouse || 11;
+      const jupTr = targetTransits?.planets?.find((p: any) => p.planet === 'Jupiter');
+      const satTr = targetTransits?.planets?.find((p: any) => p.planet === 'Saturn');
+
+      const targetHouse = domains.includes('marriage') ? 7 : domains.includes('finance') ? 11 : 10;
+      const targetHouseName = targetHouse === 7 ? '7th house of partnerships/marriage' : targetHouse === 11 ? '11th house of gains & contracts' : '10th house of career & profession';
+
+      const doubleTr = evaluateDoubleTransit({
+        targetHouse,
+        domain: domains[0] || 'career',
+        jupiterHouse: jupTr?.natalLagnaHouse || 1,
+        saturnHouse: satTr?.natalLagnaHouse || 1,
+      });
+
+      const precisionWindows = tools.scan_precision_timing?.windows || [];
+      const rankedWindows = tools.rank_timing_windows?.rankedWindows || [];
+      const dashaWindowsList = tools.scan_dasha_windows?.windows || [];
+
+      let matrixRows: string[] = [];
+      if (precisionWindows.length > 0) {
+        matrixRows = precisionWindows.slice(0, 4).map((w: any) =>
+          `| **${w.startLabel} – ${w.endLabel}** | ${activeMd} / ${activeAd} | ${w.rationale.slice(0, 2).join('; ') || 'Favorable transit alignment'} | Score: ${w.averageScore}/100 |`
+        );
+      } else if (rankedWindows.length > 0) {
+        matrixRows = rankedWindows.slice(0, 4).map((w: any) =>
+          `| **${(w.startDateIso || '').slice(0, 7)} – ${(w.endDateIso || '').slice(0, 7)}** | ${w.contributingDasha || `${activeMd}/${activeAd}`} | ${w.description || 'Gochara-Dasha alignment'} | Score: ${w.score ?? 'Favorable'} |`
+        );
+      } else if (dashaWindowsList.length > 0) {
+        matrixRows = dashaWindowsList.slice(0, 4).map((w: any) =>
+          `| **${(w.startDateIso || '').slice(0, 7)} – ${(w.endDateIso || '').slice(0, 7)}** | ${w.lord || activeMd} / ${w.subLord || activeAd} | Active Vimshottari sub-period window | Operational |`
+        );
+      }
 
       return `## 🎯 Astrological Proof & Ephemeris Breakdown
 
-Regarding why **November 2026** carries the peak probability (~90%) for formal offer generation and contract signing:
+Astrological timing is determined by the convergence of operating **Vimshottari Dasha** periods and simultaneous **Gochara (transit)** activations:
 
 ### 1. Active Operating Dasha
-- **Mahadasha / Antardasha**: **${activeMd} Mahadasha – ${activeAd} Antardasha – ${activePd} Pratyantardasha**.
-- **11th House Rahu Dynamics**: In your natal D1 chart, Rahu sits in the **11th house of gains (*Labha Sthana*)**, driving rapid scale, major organizational offers, and sudden career breakthroughs.
-- **10th Lord Pratyantardasha**: Pratyantardasha lord **${activePd}** is your actual **10th lord of career**, activating the concrete administrative execution of employment contracts.
+- **Operating Dasha**: **${activeMd} Mahadasha – ${activeAd} Antardasha${activePd ? ` – ${activePd} Pratyantardasha` : ''}**.
+- **Timing Role**: The Mahadasha establishes the macro-environmental cycle, while the Antardasha lord acts as the primary time-director triggering real-world manifestation.
 
-### 2. Ephemeris & Gochara Overlay (The Double Transit Proof)
-In classical Jyotish shastra (*Phaladeepika Ch. 26 & BPHS*), major life events manifest when both **Jupiter (*Guru*)** and **Saturn (*Shani*)** simultaneously aspect or occupy the operational career houses (10th and 11th):
+### 2. Ephemeris & Gochara Overlay (Double Transit Proof)
+In classical Jyotish (*Phaladeepika Ch. 26 & BPHS*), significant life events manifest when transiting **Jupiter (*Guru*)** and **Saturn (*Shani*)** jointly influence the relevant operational houses:
+- **Transiting Jupiter**: Moving through **${jupTr?.sign || 'its transit sign'}** (House ${jupTr?.natalLagnaHouse || 'natal house'} from Lagna${jupTr?.chandraLagnaHouse ? `, House ${jupTr.chandraLagnaHouse} from Moon` : ''}), holding ${jupTr?.ashtakavargaBindus ?? 'supportive'} Sarvashtakavarga bindus.
+- **Transiting Saturn**: Moving through **${satTr?.sign || 'its transit sign'}** (House ${satTr?.natalLagnaHouse || 'natal house'} from Lagna${satTr?.chandraLagnaHouse ? `, House ${satTr.chandraLagnaHouse} from Moon` : ''}), holding ${satTr?.ashtakavargaBindus ?? 'structural'} Sarvashtakavarga bindus.
+- **Double Transit Confluence on ${targetHouseName}**: ${doubleTr.doubleTransitActive ? 'Confirmed ACTIVE — both major slow-moving planets cast concurrent influence on the operational axis.' : 'Pending orbital convergence — requiring specific sub-period triggers for full activation.'}
 
-- **Jupiter's Ingress into Leo (*Simha*)**: On **October 31, 2026**, Jupiter leaves Cancer and ingresses into **Leo (House 4 from Taurus Lagna)**. Throughout November 2026, direct Jupiter casts its full **7th aspect directly onto your 10th house of profession (Aquarius / *Kumbha*)**.
-- **Chandra Lagna Alignment**: From your natal Moon in Sagittarius (*Dhanu*), Leo is your **9th house of fortune (*Bhagya Sthana*)**, and Jupiter casts its beneficial 5th aspect directly back onto the Moon.
-- **Saturn in Pisces (11th House)**: Transiting Saturn is your **10th lord of career** transiting through Pisces in your **11th house of contracts, earnings, and professional networks**, holding strong Ashtakavarga bindus (29 bindus).
-
-### 3. Chronological Probability Comparison Matrix
-
-| Period | Operating Planetary Axis | Astrological Mechanics | Outcome Probability |
-| :--- | :--- | :--- | :--- |
-| **Aug – Oct 2026** | Moon / Rahu / Saturn | Jupiter in Cancer (3rd house); prep, interview rounds, and negotiations | Moderate-High (70%) |
-| **November 2026** | Moon / Rahu / Saturn | **Jupiter enters Leo (Oct 31) aspecting 10th house; Saturn in 11th house** | **Highest (85–90%)** |
-| **Dec 2026 – Feb 2027**| Moon / Rahu (Jupiter stations Retrograde Dec 13) | Jupiter retrogrades; administrative settling, onboarding, role alignment | Moderate (65%) |
-| **Mar – May 2027** | Moon / Rahu progression | Jupiter prepares to re-enter Leo; steady operational delivery | Stable (60%) |`;
+${matrixRows.length > 0 ? `### 3. Chronological Timing Windows Matrix\n\n| Period | Operating Axis | Astrological Mechanics | Status |\n| :--- | :--- | :--- | :--- |\n${matrixRows.join('\n')}` : ''}`;
     }
 
     if (/\b(chalit|bhava chart|house shift)\b/i.test(lower)) {
@@ -1687,15 +1760,12 @@ In classical Jyotish shastra (*Phaladeepika Ch. 26 & BPHS*), major life events m
     }
 
     if (/\b(atmakaraka|karakamsa)\b/i.test(lower)) {
-      const ak = tools.get_jaimini_details?.atmakaraka?.planet || 'Jupiter';
-      const kl = tools.get_jaimini_details?.karakamsaNavamshaSign || tools.get_jaimini_details?.karakamsaSign || 'Cancer';
+      const { ak, kl } = this.resolveAtmakarakaAndKarakamsa(bc, tools.get_jaimini_details);
       return `### 🕉️ Atmakaraka & Soul Destiny Analysis\n\nAccording to Maharishi Jaimini's *Upadesha Sutras*, the **Atmakaraka (AK)** is the soul king of your chart—the planet holding the highest longitude that governs your deepest life purpose, primary karmic test, and path to spiritual liberation:\n\n- **Your Atmakaraka**: **${ak}**\n- **Karakamsa (AK in Navamsha D9)**: Located in **${kl}**\n\n**Soul Lesson & Evolutionary Focus**: Because **${ak}** is your Atmakaraka, your supreme karmic work in this incarnation centers on mastering the virtues of ${ak}. The periods of ${ak} provide deep spiritual awakening, burning away ego attachments so true inner clarity and divine peace can manifest.`;
     }
 
     if (/\b(ishta\s*devata|ishtadevata|spiritual\s*path|deity|moksha)\b/i.test(lower)) {
-      const jaimini = tools.get_jaimini_details;
-      const ak = jaimini?.atmakaraka?.planet || 'Jupiter';
-      const kl = jaimini?.karakamsaNavamshaSign || jaimini?.karakamsaSign || 'Cancer';
+      const { ak, kl } = this.resolveAtmakarakaAndKarakamsa(bc, tools.get_jaimini_details);
       return `### 🕉️ Ishta Devata & Spiritual Upasana Archetype\n\nAccording to Maharishi Jaimini's *Upadesha Sutras (Ch. 1, Sl. 2)*, the native's **Ishta Devata** (the divine archetype that grants spiritual liberation and guidance) is determined from the **12th house from Karakamsha (KL)** in the Navamsha (D9) chart:\n\n- **Your Atmakaraka (Soul Planet)**: **${ak}**\n- **Karakamsha Lagna (Navamsha Sign of AK)**: **${kl}**\n- **Classical Shastric Deity Signatures**:\n  - *Sun*: Lord Shiva / Lord Rama (Purifying cosmic authority)\n  - *Moon*: Devi Durga / Mother Gauri (Compassion, peace, and emotional grace)\n  - *Mars*: Lord Skanda / Lord Hanuman (Courage, protection, and righteous action)\n  - *Mercury*: Lord Vishnu / Lord Narayana (Supreme intellect, balance, and dharmic preservation)\n  - *Jupiter*: SadaShiva / Brihaspati / Dattatreya (Guru energy, profound wisdom, and meditation)\n  - *Venus*: Goddess Lakshmi / Radha (Divine abundance, purity, and universal harmony)\n  - *Saturn*: Lord Narayana / Mahakaal / Kali (Patience, discipline, and destruction of ego)\n  - *Ketu in 12th from KL*: Classical Kaivalya Yoga — supreme natural inclination toward Moksha and meditation.\n\n**Actionable Sadhana**: Dedicate 15–20 minutes daily during twilight hours to silent mantra japa and inner dhyana aligned with your Ishta archetype.`;
     }
 
@@ -1753,7 +1823,7 @@ In classical Jyotish shastra (*Phaladeepika Ch. 26 & BPHS*), major life events m
       const d9 = tools.divisionalCharts?.D9 || (divChart?.vargaCode === 'D9' ? divChart : null);
       const d9Lagna = d9?.ascendantSign || 'Navamsha Lagna';
       const jaimini = tools.get_jaimini_details;
-      const dk = jaimini?.charaKarakas?.find((k: any) => k.karaka === 'Darakaraka')?.planet || 'Venus';
+      const dk = this.resolveDarakaraka(bc, tools.get_jaimini_details);
 
       return `### 💍 Comprehensive Marriage, Spouse & Relational Harmony Reading\n\nIn classical Vedic Jyotish (*Brihat Parashara Hora Shastra Ch. 6 & 81, Phaladeepika Ch. 10 & Jaimini Sutras Ch. 1.4*), marriage and spousal harmony are judged through the **7th house (Kalatra Bhava)**, natural Karakas **Venus (Shukra)** and **Jupiter (Guru)**, the **Navamsha (D9)** chart, and **Upapada Lagna (UL)**:\n\n- **7th House (Kalatra Bhava)**: In **${p7?.sign || 'the 7th house'}**, governed by **${p7?.lord || 'the 7th lord'}**.\n- **Venus (Karaka of Love & Partnership)**: Placed in **${ven?.sign || 'the natal chart'}** (${ven?.formattedDegree || ''}, House ${ven?.houseNumber || 1}, Dignity: ${ven?.dignity || 'Direct'}).\n- **Jaimini Darakaraka (Spouse Significator)**: **${dk}**, revealing the core psychological and spiritual character of the partner.\n- **D9 Navamsha Chart (The Wheel of Dharma & Marriage)**: Ascendant is **${d9Lagna}**${d9?.planets ? `; D9 planetary placements confirm the lasting durability and inner bonding of the union` : ''}.\n- **Upapada Lagna (UL) Marital Durability**: Matrimonial stability is anchored by benefic aspects on the 2nd from Upapada Lagna, ensuring that external challenges dissolve into mature understanding.\n- **Timing Windows (Double Transit Principle)**: Auspicious **EVENT_WINDOW** periods open when transiting Jupiter and Saturn simultaneously aspect or transit the 7th house or 7th lord while running favorable Vimshottari sub-periods.\n\n**Guiding Wisdom**: Relational fulfillment thrives through mutual respect, patience, and aligning shared spiritual goals rather than projecting idealized expectations.`;
     }
@@ -1776,81 +1846,106 @@ In classical Jyotish shastra (*Phaladeepika Ch. 26 & BPHS*), major life events m
       const jaimini = tools.get_jaimini_details;
 
       const p5House = bc?.houses?.find((h: any) => h.houseNumber === 5);
-      const fifthSign = p5House?.sign || 'Virgo';
-      const fifthLord = p5House?.lord || 'Mercury';
+      const fifthSign = p5House?.sign || '5th Sign';
+      const fifthLord = p5House?.lord || '5th Lord';
       const fifthLordP = bc?.planets?.find((p: any) => p.name === fifthLord);
 
       const planetsIn5 = bc?.planets?.filter((p: any) => p.houseNumber === 5) || [];
-      const d9Lagna = d9Chart?.ascendantSign || 'Pisces';
-      const d24Lagna = d24Chart?.ascendantSign || 'Aquarius';
+      const d9Lagna = d9Chart?.ascendantSign || 'Navamsha Lagna';
+      const d24Lagna = d24Chart?.ascendantSign || 'Siddhamsha Lagna';
 
-      const ak = jaimini?.atmakaraka?.planet || 'Jupiter';
-      const kl = jaimini?.karakamsaNavamshaSign || jaimini?.karakamsaSign || 'Cancer';
-      const fifthKl = jaimini?.fifthFromKarakamsa?.sign || 'Scorpio';
+      const ak = jaimini?.atmakaraka?.planet;
+      const kl = jaimini?.karakamsaNavamshaSign || jaimini?.karakamsaSign;
+      const fifthKl = jaimini?.fifthFromKarakamsa?.sign;
 
       const b5 = chalit?.bhavas?.find((b: any) => b.bhavaNumber === 5);
-      const b5Madhya = b5 ? Number(b5.bhavaMadhya).toFixed(2) : '152.60';
-      const b5Aarambh = b5 ? Number(b5.aarambhSandhi).toFixed(2) : '135.76';
-      const b5Viram = b5 ? Number(b5.viramSandhi).toFixed(2) : '169.44';
+      const b5Madhya = b5 ? Number(b5.bhavaMadhya).toFixed(2) : undefined;
+      const b5Aarambh = b5 ? Number(b5.aarambhSandhi).toFixed(2) : undefined;
+      const b5Viram = b5 ? Number(b5.viramSandhi).toFixed(2) : undefined;
+
+      // Dynamic Academic Field Inference based on real 5th house, 5th lord, Karakamsha, and D24
+      const p10House = bc?.houses?.find((h: any) => h.houseNumber === 10);
+      const tenthLord = p10House?.lord;
+      const activeInfluences: string[] = [
+        fifthLord,
+        tenthLord,
+        ...planetsIn5.map((p: any) => p.name),
+        d24Chart?.planets?.find((p: any) => p.houseNumber === 1 || p.houseNumber === 5)?.planet,
+      ].filter(Boolean);
+
+      let inferredDiscipline = 'Multidisciplinary Analytical & Strategic Fields';
+      let suggestedDegrees = 'Undergraduate or Professional Degree aligned with analytical aptitude';
+
+      const hasTechSignals = activeInfluences.some(p => ['Mercury', 'Mars', 'Rahu', 'Saturn'].includes(p));
+      const hasJupiterSunSignals = activeInfluences.some(p => ['Jupiter', 'Sun'].includes(p));
+      const hasVenusMoonSignals = activeInfluences.some(p => ['Venus', 'Moon'].includes(p));
+
+      if (hasTechSignals && (fifthSign === 'Gemini' || fifthSign === 'Virgo' || fifthSign === 'Aquarius' || fifthSign === 'Aries' || fifthSign === 'Scorpio' || activeInfluences.includes('Mars') || activeInfluences.includes('Mercury'))) {
+        inferredDiscipline = 'Technical Engineering, Computational Sciences, or Quantitative Systems';
+        suggestedDegrees = 'Professional Engineering / Technical Degree (e.g. B.Tech, B.E., Computing, or Applied Physical Sciences)';
+      } else if (hasJupiterSunSignals) {
+        inferredDiscipline = 'Jurisprudence, Administrative Governance, Economics, or Academic Scholarship';
+        suggestedDegrees = 'Degree in Law, Economics, Management, Public Policy, or Fundamental Sciences';
+      } else if (hasVenusMoonSignals) {
+        inferredDiscipline = 'Design, Architecture, Media Communications, or Creative Technologies';
+        suggestedDegrees = 'Degree in Architecture, Design, Media Arts, or Human-Computer Interaction';
+      }
 
       return `## 🎓 Evidence-Grounded Varga Chart Analysis: Academic Field & Degree
 
-Greetings. To answer your question with classical rigor, we examine your academic inclinations and degree qualifications across the authentic multi-tier Jyotish framework: **D1 (Rashi)**, **Sripathi Bhava Chalit**, **D9 (Navamsha & Karakamsa)**, and crucially **D24 (Siddhamsha / Chaturvimshamsha)**, which Sage Parashara explicitly designates for higher learning, intellectual mastery, and formal degree qualifications (*Brihat Parashara Hora Shastra Ch. 6, Sl. 24–25*).
+Greetings. To answer your question with classical rigor, we examine your academic inclinations across the authentic multi-tier Jyotish framework: **D1 (Rashi)**, **Sripathi Bhava Chalit**, **D9 (Navamsha & Karakamsa)**, and crucially **D24 (Siddhamsha / Chaturvimshamsha)**, which Sage Parashara explicitly designates for higher learning, intellectual mastery, and formal degree qualifications (*Brihat Parashara Hora Shastra Ch. 6, Sl. 24–25*).
 
 ---
 
 ### 1. Foundational D1 Rashi Examination (Intellect & Primary Signatures)
-- **Ascendant (Lagna)**: **${lagna}** (${lagnaDeg}), governed by Venus.
-- **5th House of Intellect (Buddhi Bhava)**: **${fifthSign}**, governed by **${fifthLord}** (placed in ${fifthLordP?.sign || 'its sign'}, House ${fifthLordP?.houseNumber || 3}).
-- **Planets in 5th Sign**: ${planetsIn5.map((p: any) => `**${p.name}** at ${p.formattedDegree} (${p.nakshatra}, Dignity: ${p.dignity})`).join(', ') || 'No occupants'}.
-- **Engineering / Technical Karakas**: Mercury rules discrete logic/computation; Mars rules applied engineering; Rahu rules emergent technologies and automated intelligence.
+- **Ascendant (Lagna)**: **${lagna}** ${lagnaDeg ? `(${lagnaDeg})` : ''}
+- **5th House of Intellect (Buddhi Bhava)**: **${fifthSign}**, governed by **${fifthLord}**${fifthLordP ? ` (placed in ${fifthLordP.sign}, House ${fifthLordP.houseNumber})` : ''}.
+- **Planets in 5th Sign**: ${planetsIn5.length > 0 ? planetsIn5.map((p: any) => `**${p.name}** at ${p.formattedDegree || ''} (${p.nakshatra || ''}, Dignity: ${p.dignity || 'Direct'})`).join(', ') : 'No direct occupants (evaluated via sign lord and incoming aspects)'}.
 
 ---
 
-### 2. Sripathi Bhava Chalit Verification (The Mathematical House-Cusp Proof)
-In classical Jyotish (*Deepak Kapoor Ch. 11*), planetary influence is determined by the **Bhava Madhya** and **Sandhi** (junction) limits rather than equal sign divisions:
-- **5th House Cusp Geometry**:
+### 2. Sripathi Bhava Chalit Verification (House-Cusp Geometry)
+In classical Jyotish (*Deepak Kapoor Ch. 11*), planetary influence is determined by the **Bhava Madhya** and **Sandhi** (junction) limits:
+${b5Madhya && b5Aarambh && b5Viram ? `- **5th House Cusp Boundaries**:
   - **Bhava Madhya (Midpoint)**: ${b5Madhya}°
   - **Aarambh Sandhi (Start)**: ${b5Aarambh}°
   - **Viram Sandhi (End)**: ${b5Viram}°
-- **Planetary Distribution & Operational House**:
-  Planets occupying the 5th Rashi house are evaluated against the ${b5Viram}° Viram Sandhi. Only planets whose longitudes exceed the sandhi junction shift into the 6th house; planets situated before the sandhi firmly remain in House 5 retaining high Residential Strength (Awasiya Bala).
+  Planets in the 5th Rashi house retain high Awasiya Bala (residential strength) within their operational chalit boundaries.` : `- **Bhava Chalit Alignment**: Whole-sign placements reflect foundational residential strength.`}
 
 ---
 
-### 3. Navamsha (D9) & Jaimini Karakamsa (Inherent Dharma & Cognitive Depth)
+### 3. Navamsha (D9) & Jaimini Karakamsa (Inherent Cognitive Depth)
 - **D9 Ascendant**: **${d9Lagna}**
-- **Jaimini Atmakaraka (AK)**: **${ak}**
-- **Karakamsha (AK in Navamsha D9)**: **${kl}**
-- **5th House from Karakamsa**: **${fifthKl}**, providing direct shastric indication of cognitive dexterity and technical problem-solving.
+${ak ? `- **Jaimini Atmakaraka (AK)**: **${ak}**` : ''}
+${kl ? `- **Karakamsha (AK in Navamsha D9)**: **${kl}**` : ''}
+${fifthKl ? `- **5th House from Karakamsa**: **${fifthKl}**, revealing natural cognitive dexterity and aptitude.` : ''}
 
 ---
 
-### 4. D24 Chaturvimshamsha (Siddhamsha) — The Higher Learning & Degree Matrix
-According to Sage Parashara, while D1 shows basic intellect, **D24 (Chaturvimshamsha)** specifically governs *Vidya* (university education, mastery of sciences, and formal academic degree qualifications):
-- **D24 Ascendant**: **${d24Lagna}** — intellectual capacity and systems orientation.
-- **D24 5th House of Specialized Academic Faculty**: Indicating mathematical, computational, or scientific specialization.
-- **Mercury / Jupiter Placement in D24**: Provides the core shastric signature determining whether higher studies manifest in computing, engineering, biomedical sciences, or jurisprudence.
+### 4. D24 Chaturvimshamsha (Siddhamsha) — Higher Learning & Degree Matrix
+According to Sage Parashara (*BPHS Ch. 6*), **D24 (Chaturvimshamsha)** specifically governs *Vidya* (university education, mastery of sciences, and formal academic degree qualifications):
+- **D24 Ascendant**: **${d24Lagna}**
+- **D24 Academic Signatures**: Governs higher academic qualifications and specialized knowledge retention.
 
 ---
 
 ### 5. Evidence-Grounded Disciplinary Synthesis
-1. **Likely Field of Study**: **Technical Engineering & Computational Systems** — centering on **Computing, Artificial Intelligence, Data Science, and Quantitative Systems**.
-2. **Probable Degree Qualification**: **Professional Technical / Engineering Undergraduate Degree** (specifically **B.Tech / B.E.** in Computer Science, AI & Data Science, or related engineering branches).
+1. **Indicated Academic Field**: **${inferredDiscipline}**
+2. **Probable Degree Qualification**: **${suggestedDegrees}**
 
 ---
 
-### 6. Four-Tier Epistemic Calibration & Uncertainty Statement
-- **Calculated Astronomical Facts**: Lagna ${lagna} (D1); Chalit 5th Bhava boundaries (${b5Aarambh}° → ${b5Viram}°); D9 Lagna ${d9Lagna}; D24 Lagna ${d24Lagna}.
-- **Classical Shastra Rules**: Sourced strictly from *Brihat Parashara Hora Shastra (Ch. 6 & 24)*, *Phaladeepika (Ch. 6)*, and *Jaimini Upadesha Sutras*.
-- **Epistemic Humility**: Vedic astrology delineates karmic cognitive faculties and broad disciplinary archetypes with remarkable precision. However, administrative degree titles are institutional naming conventions; astrologically grounded prediction establishes the computational engineering archetype rather than claiming dogmatic fatalism.`;
+### 6. Epistemic Calibration & Uncertainty Statement
+- **Astronomical Basis**: Evaluated from calculated Lagna ${lagna}, D9 ${d9Lagna}, D24 ${d24Lagna}, and 5th house disposition.
+- **Classical Shastric Grounding**: Brihat Parashara Hora Shastra (Ch. 6 & 24) and Jaimini Upadesha Sutras.
+- **Epistemic Humility**: Vedic astrology reveals intellectual faculties, cognitive archetypes, and broad disciplinary alignments. Specific degree titles and institutional names reflect modern educational conventions.`;
     }
 
     // Comprehensive Multi-Domain Reading (Health, Career, Study, Timeline, Marriage)
-    const activeDasha = dasha || bc?.dasha;
-    const md = activeDasha?.mahadasha || activeDasha?.activeMahadasha?.planet || activeDasha?.activeLords?.mahadasha || activeDasha?.currentHierarchy?.mahadasha?.lord || 'Moon';
-    const ad = activeDasha?.antardasha || activeDasha?.activeAntardasha?.planet || activeDasha?.activeLords?.antardasha || activeDasha?.currentHierarchy?.antardasha?.subLord || activeDasha?.currentHierarchy?.antardasha?.lord || 'Rahu';
-    const pd = activeDasha?.pratyantardasha || activeDasha?.activePratyantardasha?.planet || activeDasha?.activeLords?.pratyantardasha || activeDasha?.currentHierarchy?.pratyantardasha?.pratyantarLord || activeDasha?.currentHierarchy?.pratyantardasha?.lord || 'Saturn';
+    const activeDasha = dasha || bc?.dasha || tools.get_current_dasha || tools.get_dasha_at;
+    const md = activeDasha?.mahadasha || activeDasha?.activeMahadasha?.planet || activeDasha?.activeLords?.mahadasha || activeDasha?.currentHierarchy?.mahadasha?.lord || 'Current';
+    const ad = activeDasha?.antardasha || activeDasha?.activeAntardasha?.planet || activeDasha?.activeLords?.antardasha || activeDasha?.currentHierarchy?.antardasha?.subLord || activeDasha?.currentHierarchy?.antardasha?.lord || 'Operating';
+    const pd = activeDasha?.pratyantardasha || activeDasha?.activePratyantardasha?.planet || activeDasha?.activeLords?.pratyantardasha || activeDasha?.currentHierarchy?.pratyantardasha?.pratyantarLord || activeDasha?.currentHierarchy?.pratyantardasha?.lord || 'Active';
     const satTransit = transits?.planets?.find((p: any) => p.planet === 'Saturn');
     const jupTransit = transits?.planets?.find((p: any) => p.planet === 'Jupiter');
 
@@ -2009,9 +2104,7 @@ According to Sage Parashara, while D1 shows basic intellect, **D24 (Chaturvimsha
 
     // Spirituality, Moksha & Ishta Devata Domain
     if (domains.includes('spirituality') || lower.includes('spirit') || lower.includes('moksha') || lower.includes('ishta') || lower.includes('meditat') || lower.includes('guru')) {
-      const jaimini = tools.get_jaimini_details;
-      const ak = jaimini?.atmakaraka?.planet || 'Jupiter';
-      const kl = jaimini?.karakamsaNavamshaSign || jaimini?.karakamsaSign || 'Cancer';
+      const { ak, kl } = this.resolveAtmakarakaAndKarakamsa(bc, tools.get_jaimini_details);
       sections.push(`### 🕉️ Spiritual Sadhana, Moksha & Ishta Devata`);
       sections.push(`- **Atmakaraka (Soul Planet)**: **${ak}** — reveals the core karmic refinement and spiritual purpose of this life.`);
       sections.push(`- **Karakamsha (D9 Placement of AK)**: In **${kl}**, anchoring the 12th from Karakamsha for determining your divine Ishta Devata archetype.`);
@@ -2221,23 +2314,26 @@ ${careerData.epistemicDisclaimer}`);
   }): AgentCouncilSynthesis {
     const { toolPayloads, domains } = params;
     const bc = toolPayloads.get_birth_chart;
-    const lagnaSign = bc?.ascendant?.sign || 'Aries';
-    const lagnaDegree = bc?.ascendant?.formattedDegree || '15°00\'';
-    const lagnaLord = bc?.ascendant?.lord || 'Mars';
-    const functional = getLagnaFunctionalProfile(lagnaSign);
+    const lagnaSign = bc?.ascendant?.sign;
+    const lagnaDegree = bc?.ascendant?.formattedDegree;
+    const lagnaLord = bc?.ascendant?.lord;
+    const functional = lagnaSign ? getLagnaFunctionalProfile(lagnaSign) : undefined;
     const chalit = toolPayloads.get_chalit_chart || bc?.chalit;
     const shifted = chalit?.planets?.filter((p: any) => p.shifted) || [];
     const yogas = toolPayloads.get_active_yogas?.yogas || [];
 
     // 1. Parashari Dimension
-    const parashariEvidence: string[] = [
-      `Lagna: ${lagnaSign} at ${lagnaDegree} (Lord: ${lagnaLord})`,
-      `Functional Benefics: ${functional?.functionalBenefics.join(', ') || 'Sun, Mars'} | Malefics: ${functional?.functionalMalefics.join(', ') || 'Saturn, Mercury'}`,
-      `Yogakaraka(s): ${functional?.yogakarakas.length ? functional.yogakarakas.join(', ') : 'None'} | Badhaka: House ${functional?.badhakaHouse || 11} (${functional?.badhakaLord || 'Saturn'})`,
-    ];
+    const parashariEvidence: string[] = [];
+    if (lagnaSign) {
+      parashariEvidence.push(`Lagna: ${lagnaSign}${lagnaDegree ? ` at ${lagnaDegree}` : ''}${lagnaLord ? ` (Lord: ${lagnaLord})` : ''}`);
+    }
+    if (functional) {
+      parashariEvidence.push(`Functional Benefics: ${functional.functionalBenefics.join(', ')} | Malefics: ${functional.functionalMalefics.join(', ')}`);
+      parashariEvidence.push(`Yogakaraka(s): ${functional.yogakarakas.length ? functional.yogakarakas.join(', ') : 'None'} | Badhaka: House ${functional.badhakaHouse} (${functional.badhakaLord})`);
+    }
     if (shifted.length > 0) {
       parashariEvidence.push(`Bhava Shifts: ${shifted.map((s: any) => `${s.planet} Rashi H${s.rashiHouse} -> Chalit H${s.chalitHouse}`).join('; ')}`);
-    } else {
+    } else if (chalit) {
       parashariEvidence.push(`Bhava Stability: Whole-sign houses match Sripathi Bhava Chalit geometry.`);
     }
     if (yogas.length > 0) {
@@ -2249,15 +2345,22 @@ ${careerData.epistemicDisclaimer}`);
     const ak = jaimini?.atmakaraka;
     const amk = jaimini?.amatyakaraka || jaimini?.charaKarakas?.find((c: any) => c.karaka === 'Amatyakaraka');
     const dk = jaimini?.charaKarakas?.find((c: any) => c.karaka === 'Darakaraka');
-    const karakamsa = jaimini?.karakamsaSign || 'Scorpio';
+    const karakamsa = jaimini?.karakamsaSign || jaimini?.karakamsaNavamshaSign;
     const fifthKk = jaimini?.fifthFromKarakamsa;
 
-    const jaiminiEvidence: string[] = [
-      `Atmakaraka (AK): ${ak?.planet || 'Sun'} in ${ak?.sign || lagnaSign} (${ak?.formattedDegree || '28°'})`,
-      `Amatyakaraka (AmK): ${amk?.planet || 'Saturn'} in ${amk?.sign || 'Aquarius'} (Career Vector)`,
-      `Darakaraka (DK): ${dk?.planet || 'Venus'} in ${dk?.sign || 'Taurus'} (Spouse & Contractual Vector)`,
-      `Karakamsa Lagna: ${karakamsa} in Navamsha D9 (5th from Karakamsa: ${fifthKk?.sign || 'Pisces'}, Lord: ${fifthKk?.lord || 'Jupiter'})`,
-    ];
+    const jaiminiEvidence: string[] = [];
+    if (ak?.planet) {
+      jaiminiEvidence.push(`Atmakaraka (AK): ${ak.planet}${ak.sign ? ` in ${ak.sign}` : ''}${ak.formattedDegree ? ` (${ak.formattedDegree})` : ''}`);
+    }
+    if (amk?.planet) {
+      jaiminiEvidence.push(`Amatyakaraka (AmK): ${amk.planet}${amk.sign ? ` in ${amk.sign}` : ''} (Career Vector)`);
+    }
+    if (dk?.planet) {
+      jaiminiEvidence.push(`Darakaraka (DK): ${dk.planet}${dk.sign ? ` in ${dk.sign}` : ''} (Spouse & Contractual Vector)`);
+    }
+    if (karakamsa) {
+      jaiminiEvidence.push(`Karakamsa Lagna: ${karakamsa} in Navamsha D9${fifthKk?.sign ? ` (5th from Karakamsa: ${fifthKk.sign}${fifthKk.lord ? `, Lord: ${fifthKk.lord}` : ''})` : ''}`);
+    }
 
     // 3. Shodashavarga Dimension
     const divCharts = toolPayloads.divisionalCharts || {};
@@ -2267,30 +2370,29 @@ ${careerData.epistemicDisclaimer}`);
     const d60 = toolPayloads.d60_synthesis;
 
     const vargaEvidence: string[] = [];
-    if (d9) vargaEvidence.push(`D9 Navamsha: Lagna ${d9.ascendantSign || 'Cancer'}, Dharma & Relationship durability foundation`);
-    if (d10) vargaEvidence.push(`D10 Dashamsha: Lagna ${d10.ascendantSign || 'Taurus'}, Mahat-Phala executive career blueprint`);
-    if (d24) vargaEvidence.push(`D24 Siddhamsha: Lagna ${d24.ascendantSign || 'Gemini'}, Vidya academic & intellectual specialization`);
+    if (d9?.ascendantSign) vargaEvidence.push(`D9 Navamsha: Lagna ${d9.ascendantSign}, Dharma & Relationship durability foundation`);
+    if (d10?.ascendantSign) vargaEvidence.push(`D10 Dashamsha: Lagna ${d10.ascendantSign}, Mahat-Phala executive career blueprint`);
+    if (d24?.ascendantSign) vargaEvidence.push(`D24 Siddhamsha: Lagna ${d24.ascendantSign}, Vidya academic & intellectual specialization`);
     if (d60) {
       vargaEvidence.push(`D60 Shashtiamsha: ${d60.akDevata?.name || 'Devata'} (${d60.akDevata?.nature || 'Benefic'}) governing Sanchita Karma`);
-    } else {
-      vargaEvidence.push(`D60 Shashtiamsha: Verified karmic devata alignment across BPHS Ch. 6`);
     }
 
     // 4. Vimshottari Dimension
     const dasha = toolPayloads.get_current_dasha;
-    const md = dasha?.mahadasha || 'Saturn';
-    const ad = dasha?.antardasha || 'Mercury';
-    const pd = dasha?.pratyantardasha || 'Ketu';
+    const md = dasha?.mahadasha || dasha?.activeMahadasha?.planet;
+    const ad = dasha?.antardasha || dasha?.activeAntardasha?.planet;
+    const pd = dasha?.pratyantardasha || dasha?.activePratyantardasha?.planet;
     const maturity = toolPayloads.planetary_maturity;
 
-    const vimshottariEvidence: string[] = [
-      `Active Dasha Flow: ${md} Mahadasha -> ${ad} Antardasha -> ${pd} Pratyantardasha`,
-    ];
+    const vimshottariEvidence: string[] = [];
+    if (md && ad) {
+      vimshottariEvidence.push(`Active Dasha Flow: ${md} Mahadasha -> ${ad} Antardasha${pd ? ` -> ${pd} Pratyantardasha` : ''}`);
+    }
     if (dasha?.activeAntardasha?.endDateIso) {
       vimshottariEvidence.push(`Current Antardasha window closes: ${dasha.activeAntardasha.endDateIso.slice(0, 10)}`);
     }
     if (maturity) {
-      vimshottariEvidence.push(`Chronological Age: ${maturity.ageFormatted} | Matured Planets: ${maturity.maturedPlanets.map((p: any) => p.planet).join(', ') || 'Jupiter, Sun, Moon'}`);
+      vimshottariEvidence.push(`Chronological Age: ${maturity.ageFormatted} | Matured Planets: ${maturity.maturedPlanets.map((p: any) => p.planet).join(', ') || 'Early Life'}`);
       if (maturity.nextMaturityMilestone) {
         vimshottariEvidence.push(`Next Maturity Milestone: ${maturity.nextMaturityMilestone.planet} at age ${maturity.nextMaturityMilestone.maturityAge} (${maturity.nextMaturityMilestone.modernManifestation})`);
       }
@@ -2305,15 +2407,19 @@ ${careerData.epistemicDisclaimer}`);
     const doubleTr = evaluateDoubleTransit({
       targetHouse,
       domain: domains[0] || 'career',
-      jupiterHouse: jupTr?.natalLagnaHouse || 5,
-      saturnHouse: satTr?.natalLagnaHouse || 10,
+      jupiterHouse: jupTr?.natalLagnaHouse || 1,
+      saturnHouse: satTr?.natalLagnaHouse || 1,
     });
 
     const gocharaEvidence: string[] = [
       `Double Transit (Jupiter + Saturn on House ${targetHouse}): ${doubleTr.doubleTransitActive ? 'ACTIVE (Materialization Triggered)' : 'Pending full orbital confluence'}`,
-      `Jupiter in ${jupTr?.sign || 'Taurus'} (H${jupTr?.natalLagnaHouse || 5}) | Saturn in ${satTr?.sign || 'Aquarius'} (H${satTr?.natalLagnaHouse || 10})`,
-      `Sade Sati Status: ${sadeSati?.isActive ? `Active (${sadeSati.phase})` : 'Inactive'}`,
     ];
+    if (jupTr?.sign && satTr?.sign) {
+      gocharaEvidence.push(`Jupiter in ${jupTr.sign} (H${jupTr.natalLagnaHouse || 1}) | Saturn in ${satTr.sign} (H${satTr.natalLagnaHouse || 1})`);
+    }
+    if (sadeSati) {
+      gocharaEvidence.push(`Sade Sati Status: ${sadeSati.isActive ? `Active (${sadeSati.phase})` : 'Inactive'}`);
+    }
     if (jupTr?.ashtakavargaBindus) {
       gocharaEvidence.push(`Ashtakavarga Score: ${jupTr.ashtakavargaBindus} bindus in transit sign (${jupTr.ashtakavargaBindus >= 28 ? 'Supportive' : 'Vulnerable'})`);
     }
@@ -2357,28 +2463,34 @@ ${careerData.epistemicDisclaimer}`);
           name: 'Parashari Shastra Council',
           tradition: 'Brihat Parashara Hora Shastra',
           badge: 'Foundations & Bhavas',
-          keyFinding: `${lagnaSign} Lagna with ${lagnaLord} as primary ruler; ${functional?.yogakarakas.length ? `Yogakaraka: ${functional.yogakarakas.join(', ')}` : 'Benefics anchored in Kendras/Trikonas'}`,
+          keyFinding: lagnaSign
+            ? `${lagnaSign} Lagna with ${lagnaLord || 'Lagna lord'} as primary ruler; ${functional?.yogakarakas?.length ? `Yogakaraka: ${functional.yogakarakas.join(', ')}` : 'Functional disposition evaluated'}`
+            : 'Foundational Lagna and Bhava disposition evaluated',
           evidenceItems: parashariEvidence,
         },
         jaimini: {
           name: 'Jaimini Sutras Council',
           tradition: 'Jaimini Upadesha Sutras',
           badge: 'Soul & Destiny Vector',
-          keyFinding: `Atmakaraka ${ak?.planet || 'Sun'} and Amatyakaraka ${amk?.planet || 'Saturn'} govern career and soul evolution; Karakamsa in ${karakamsa}`,
+          keyFinding: ak?.planet
+            ? `Atmakaraka ${ak.planet}${amk?.planet ? ` and Amatyakaraka ${amk.planet}` : ''} govern career and soul evolution${karakamsa ? `; Karakamsa in ${karakamsa}` : ''}`
+            : 'Jaimini Chara Karakas and soul vectors evaluated',
           evidenceItems: jaiminiEvidence,
         },
         shodashavarga: {
           name: 'Shodashavarga Harmonic Council',
           tradition: 'BPHS Ch. 6 Divisional Vargas',
           badge: 'D9 · D10 · D24 · D60',
-          keyFinding: `Harmonic confirmation across D9 Navamsha, D10 Dashamsha, and D24 Siddhamsha`,
+          keyFinding: `Harmonic confirmation across divisional varga matrices`,
           evidenceItems: vargaEvidence,
         },
         vimshottari: {
           name: 'Vimshottari Timeline & Maturity Council',
           tradition: 'Mahadasha & Graha Paripakva Kala',
           badge: 'Active Timing Arc',
-          keyFinding: `Operating in ${md} Mahadasha -> ${ad} Antardasha at native's evaluated age`,
+          keyFinding: md
+            ? `Operating in ${md} Mahadasha${ad ? ` -> ${ad} Antardasha` : ''} at evaluated age`
+            : 'Active Vimshottari timing cycle evaluated',
           evidenceItems: vimshottariEvidence,
         },
         gochara: {
