@@ -6,6 +6,8 @@
  * cache for sub-10ms consultation lookups, with persistent PostgreSQL sync.
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
 import { AstrologicalCaseStudyRecord, CaseDomain, CaseStudyMatchResult, CaseStudyQueryFilter } from './caseStudyTypes.ts';
 import { INITIAL_GOLD_CASE_STUDIES } from './seedCaseStudies.ts';
 import { NormalizedChartFingerprint, generateChartFingerprintVector } from './chartFingerprint.ts';
@@ -29,6 +31,27 @@ export class CaseStudyRepository {
       }
       this.cases.set(c.id, c);
     }
+
+    // Auto-load mass systematic empirical case corpus if available on disk
+    try {
+      const candidatePaths = [
+        path.resolve(process.cwd(), 'backend', 'datasets', 'case_bank', 'astroworld_empirical_cases_500.json'),
+        path.resolve(process.cwd(), 'datasets', 'case_bank', 'astroworld_empirical_cases_500.json'),
+      ];
+      for (const p of candidatePaths) {
+        if (fs.existsSync(p)) {
+          const raw = fs.readFileSync(p, 'utf8');
+          const massCases: AstrologicalCaseStudyRecord[] = JSON.parse(raw);
+          for (const mc of massCases) {
+            this.cases.set(mc.id, mc);
+          }
+          break;
+        }
+      }
+    } catch {
+      // Non-blocking fallback to initial gold seed
+    }
+
     this.initialized = true;
   }
 
