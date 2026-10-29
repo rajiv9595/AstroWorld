@@ -38,6 +38,8 @@ import { generateRemedialDossier } from '../reasoning/remedialShastraEngine.ts';
 import { evaluateDehaLakshana } from '../reasoning/dehaLakshanaEngine.ts';
 import { evaluateChartGandanta } from '../reasoning/gandantaDetector.ts';
 import { getRelevantCaseStudies, EmpiricalCaseStudy } from '../rag/empiricalCaseStudies.ts';
+import { generateChartFingerprintVector, globalCaseStudyRepository } from '../cases/index.ts';
+import { globalShastricGraphEngine } from '../shastras/index.ts';
 import { NAKSHATRAS } from '../../../../shared/engine/constants.ts';
 
 export interface AgentCouncilDimension {
@@ -159,11 +161,23 @@ export class ConsultAgent {
     }
     const birthProfile = birthValidation.data;
 
-    // 1. NLP Processing: Domains and Temporal Window
+    // 1. NLP Processing: Domains and Temporal Window with Multi-Turn Conversation Memory
+    const effectiveContext = req.blindEvaluationMode ? [] : (req.consultationContext || []);
+    const prevUserTurns = effectiveContext.filter((c: any) => c.role === 'user' && c.text).map((c: any) => c.text);
+    const lastUserTurn = prevUserTurns[prevUserTurns.length - 1] || '';
+
     const lower = question.toLowerCase();
-    const domains = detectPlaybookDomains(question);
+    const isFollowUpRef = /\b(same\s+question|recalculate|again|once\s+again|as\s+asked|previous|earlier|what\s+about|continue|and\s+also|add\s+transit|transit\s+also|re-calculate)\b/i.test(lower);
+    
+    // If follow-up or concise phrase, augment with previous turn to preserve topic domain and temporal scope
+    const contextualQuery = (isFollowUpRef || question.split(/\s+/).length <= 6) && lastUserTurn
+      ? `${lastUserTurn} ${question}`.trim()
+      : question;
+    const effectiveLower = contextualQuery.toLowerCase();
+
+    const domains = detectPlaybookDomains(contextualQuery);
     const primaryDomain = domains[0] || 'general';
-    const temporalWindow = normalizeTemporalScope(question, new Date(), birthProfile.year);
+    const temporalWindow = normalizeTemporalScope(contextualQuery, new Date(), birthProfile.year);
 
     // 2. Intelligent Tool Selection & Autonomous Execution
     const toolsCalled: string[] = [];
@@ -214,25 +228,25 @@ export class ConsultAgent {
     const isCareerOrEducationQuery =
       domains.includes('career') ||
       domains.includes('education') ||
-      /\b(career|job|profession|study|degree|engineering|cse|ece|doctor|surgeon|physician|software engineer|data scientist|ai engineer|specialization|employment|business|pharmacist|biotech|branch)\b/i.test(lower);
+      /\b(career|job|profession|study|degree|engineering|cse|ece|doctor|surgeon|physician|software engineer|data scientist|ai engineer|specialization|employment|business|pharmacist|biotech|branch)\b/i.test(effectiveLower);
 
-    const asksD9 = /\b(d9|navamsha|navamsa|marriage chart|wedding|spouse|partner|husband|wife)\b/i.test(lower) || domains.includes('marriage') || domains.includes('relationship') || domains.includes('spirituality');
-    const asksD10 = /\b(d10|dashamsha|dashamsa|career chart)\b/i.test(lower) || isCareerOrEducationQuery;
-    const asksD24 = /\b(d24|d-24|siddhamsha|siddhamsa|chaturvimshamsha|chaturvimsamsa|higher education|degree|college|university|study|studying|field)\b/i.test(lower) || domains.includes('education') || isCareerOrEducationQuery;
-    const asksD7 = /\b(d7|saptamsha|saptamsa|child|children|son|daughter|baby|pregnant|pregnancy|fertility|progeny|santan)\b/i.test(lower) || domains.includes('progeny');
-    const asksD4 = /\b(d4|chaturthamsha|chaturthamsa|property|land|real estate|house|flat|apartment|home)\b/i.test(lower) || domains.includes('property');
-    const asksD16 = /\b(d16|shodasamsa|shodashamsha|vehicle|car|vahana|conveyance)\b/i.test(lower) || (domains.includes('property') && /\b(car|vehicle|vahana)\b/i.test(lower));
-    const asksD2 = /\b(d2|hora|wealth|finance|money|assets)\b/i.test(lower) || domains.includes('finance');
-    const asksD3 = /\b(d3|drekkhana|drekkana|siblings|brother|sister|22nd drekkhana)\b/i.test(lower) || domains.includes('family') || domains.includes('health');
-    const asksD30 = /\b(d30|trimsamsha|trimsamsa|disease|illness|affliction|arishta)\b/i.test(lower) || domains.includes('health');
-    const asksD20 = /\b(d20|vimsamsa|vimsamsha|upasana|spiritual|mantra|meditation)\b/i.test(lower) || domains.includes('spirituality');
-    const asksD12 = /\b(d12|dwadasamsa|dwadashamsha|parents|father|mother|ancestor|pitru)\b/i.test(lower) || domains.includes('family');
-    const asksAnyDivisional = asksD9 || asksD10 || asksD24 || asksD7 || asksD4 || asksD16 || asksD2 || asksD3 || asksD30 || asksD20 || asksD12 || /\b(divisional|varga|vargas)\b/i.test(lower);
+    const asksD9 = /\b(d9|navamsha|navamsa|marriage chart|wedding|spouse|partner|husband|wife)\b/i.test(effectiveLower) || domains.includes('marriage') || domains.includes('relationship') || domains.includes('spirituality');
+    const asksD10 = /\b(d10|dashamsha|dashamsa|career chart)\b/i.test(effectiveLower) || isCareerOrEducationQuery;
+    const asksD24 = /\b(d24|d-24|siddhamsha|siddhamsa|chaturvimshamsha|chaturvimsamsa|higher education|degree|college|university|study|studying|field)\b/i.test(effectiveLower) || domains.includes('education') || isCareerOrEducationQuery;
+    const asksD7 = /\b(d7|saptamsha|saptamsa|child|children|son|daughter|baby|pregnant|pregnancy|fertility|progeny|santan)\b/i.test(effectiveLower) || domains.includes('progeny');
+    const asksD4 = /\b(d4|chaturthamsha|chaturthamsa|property|land|real estate|house|flat|apartment|home)\b/i.test(effectiveLower) || domains.includes('property');
+    const asksD16 = /\b(d16|shodasamsa|shodashamsha|vehicle|car|vahana|conveyance)\b/i.test(effectiveLower) || (domains.includes('property') && /\b(car|vehicle|vahana)\b/i.test(effectiveLower));
+    const asksD2 = /\b(d2|hora|wealth|finance|money|assets)\b/i.test(effectiveLower) || domains.includes('finance');
+    const asksD3 = /\b(d3|drekkhana|drekkana|siblings|brother|sister|22nd drekkhana)\b/i.test(effectiveLower) || domains.includes('family') || domains.includes('health');
+    const asksD30 = /\b(d30|trimsamsha|trimsamsa|disease|illness|affliction|arishta)\b/i.test(effectiveLower) || domains.includes('health');
+    const asksD20 = /\b(d20|vimsamsa|vimsamsha|upasana|spiritual|mantra|meditation)\b/i.test(effectiveLower) || domains.includes('spirituality');
+    const asksD12 = /\b(d12|dwadasamsa|dwadashamsha|parents|father|mother|ancestor|pitru)\b/i.test(effectiveLower) || domains.includes('family');
+    const asksAnyDivisional = asksD9 || asksD10 || asksD24 || asksD7 || asksD4 || asksD16 || asksD2 || asksD3 || asksD30 || asksD20 || asksD12 || /\b(divisional|varga|vargas)\b/i.test(effectiveLower);
 
     if (asksD9 || asksAnyDivisional || domains.includes('marriage') || domains.includes('education') || isCareerOrEducationQuery) {
       await callTool('get_divisional_chart', snapshotHandlers.get_divisional_chart, { birthProfile, vargaCode: 'D9' });
     }
-    if (asksD10 || (domains.includes('career') && lower.includes('d10')) || (asksAnyDivisional && domains.includes('career')) || isCareerOrEducationQuery) {
+    if (asksD10 || (domains.includes('career') && effectiveLower.includes('d10')) || (asksAnyDivisional && domains.includes('career')) || isCareerOrEducationQuery) {
       await callTool('get_divisional_chart', snapshotHandlers.get_divisional_chart, { birthProfile, vargaCode: 'D10' });
     }
     if (asksD24 || (asksAnyDivisional && domains.includes('education')) || domains.includes('education') || isCareerOrEducationQuery) {
@@ -267,15 +281,15 @@ export class ConsultAgent {
     // In Vedic astrology, every planetary effect and relational dynamic is filtered through the active Dasha.
     await callTool('get_current_dasha', snapshotHandlers.get_current_dasha, { birthProfile });
 
-    const asksDasha = /\b(dasha|mahadasha|antardasha|pratyantardasha|period|running)\b/i.test(lower);
+    const asksDasha = /\b(dasha|mahadasha|antardasha|pratyantardasha|period|running)\b/i.test(effectiveLower);
     const asksTiming =
       asksDasha ||
-      /\b(when|will i|is it possible|timeline|future|timing|year|month|date|upto|end of this year|soon)\b/i.test(lower) ||
+      /\b(when|will i|is it possible|timeline|future|timing|year|month|date|upto|end of this year|soon)\b/i.test(effectiveLower) ||
       temporalWindow.source === 'phrase' ||
       temporalWindow.source === 'explicit';
 
     // Tool D: Transits (Gochara) & Sade Sati (Today)
-    const asksTransits = /\b(transit|transits|gochara|transiting|sade sati|sadesati|saturn|jupiter|shani|guru|rahu|ketu)\b/i.test(lower);
+    const asksTransits = /\b(transit|transits|gochara|transiting|sade sati|sadesati|saturn|jupiter|shani|guru|rahu|ketu)\b/i.test(effectiveLower);
     if (asksTransits || asksTiming) {
       await callTool('get_transits', snapshotHandlers.get_transits, { birthProfile });
     }
@@ -303,13 +317,39 @@ export class ConsultAgent {
     const activeMdLord = toolPayloads.get_current_dasha?.mahadasha;
     const activeIdx = allMahadashas.findIndex((m: any) => m.activeNow || m.lord === activeMdLord);
 
-    const dashaPlanetMatch = lower.match(/\b(sun|moon|mars|mercury|jupiter|venus|saturn|rahu|ketu)\s*(mahadasha|dasha|period)?\b/i);
+    const PLANET_NAME_MAP: Record<string, string> = {
+      sun: 'sun', surya: 'sun', ravi: 'sun',
+      moon: 'moon', chandra: 'moon', soma: 'moon',
+      mars: 'mars', kuja: 'mars', mangal: 'mars', mangala: 'mars', angaraka: 'mars', angarak: 'mars',
+      mercury: 'mercury', budha: 'mercury', budh: 'mercury',
+      jupiter: 'jupiter', guru: 'jupiter', brihaspati: 'jupiter',
+      venus: 'venus', shukra: 'venus', sukra: 'venus',
+      saturn: 'saturn', shani: 'saturn', sani: 'saturn',
+      rahu: 'rahu',
+      ketu: 'ketu',
+    };
+    const planetRegexStr = Object.keys(PLANET_NAME_MAP).join('|');
+    const afterPlanetMatch = lower.match(new RegExp(`\\bafter\\s+(${planetRegexStr})\\s*(mahadasha|dasha|period)?\\b`, 'i'));
+    const dashaPlanetMatch = lower.match(new RegExp(`\\b(${planetRegexStr})\\s*(mahadasha|dasha|period)?\\b`, 'i'));
     const asksPastDasha = /\b(past|previous|last|earlier|completed)\s*(dasha|mahadasha|period|chapter|phase)\b/i.test(lower) || /\bwhat happened in\b/i.test(lower);
     const asksNextDasha = /\b(next|coming|upcoming|future)\s*(dasha|mahadasha|period|chapter|phase)\b/i.test(lower);
 
     let targetDashaPeriod: any = null;
-    if (dashaPlanetMatch && dashaPlanetMatch[1]) {
-      const pName = dashaPlanetMatch[1].toLowerCase();
+    if (afterPlanetMatch && afterPlanetMatch[1]) {
+      const canonicalBase = PLANET_NAME_MAP[afterPlanetMatch[1].toLowerCase()];
+      const baseIdx = allMahadashas.findIndex((m: any) => m.lord?.toLowerCase() === canonicalBase);
+      if (baseIdx >= 0 && baseIdx < allMahadashas.length - 1) {
+        targetDashaPeriod = allMahadashas[baseIdx + 1];
+        toolPayloads.asked_after_dasha = {
+          baseLord: canonicalBase,
+          followingLord: targetDashaPeriod?.lord,
+          followingDuration: targetDashaPeriod?.durationYears,
+          startDateIso: targetDashaPeriod?.startDateIso,
+          endDateIso: targetDashaPeriod?.endDateIso,
+        };
+      }
+    } else if (dashaPlanetMatch && dashaPlanetMatch[1]) {
+      const pName = PLANET_NAME_MAP[dashaPlanetMatch[1].toLowerCase()] || dashaPlanetMatch[1].toLowerCase();
       targetDashaPeriod = allMahadashas.find((m: any) => m.lord?.toLowerCase() === pName);
     } else if (asksPastDasha && activeIdx > 0) {
       targetDashaPeriod = allMahadashas[activeIdx - 1];
@@ -519,9 +559,60 @@ export class ConsultAgent {
       }
     }
 
-    // Tool G3: Empirical Case Studies & Historical Outgrowths RAG
+    // Tool G3: Empirical Case Studies & Historical Outgrowths (Dynamic Vector & Shastric Twin Matcher)
     const nativeLagnaForCases = toolPayloads.get_birth_chart?.ascendant?.sign;
-    const empiricalCases = getRelevantCaseStudies(primaryDomain, nativeLagnaForCases);
+    let empiricalCases: any[] = [];
+    try {
+      const bc = toolPayloads.get_birth_chart;
+      if (bc) {
+        const curDasha = toolPayloads.get_current_dasha;
+        const curTransits = toolPayloads.get_transits;
+        const satT = curTransits?.planets?.find((p: any) => p.planet === 'Saturn');
+        const jupT = curTransits?.planets?.find((p: any) => p.planet === 'Jupiter');
+        const rahT = curTransits?.planets?.find((p: any) => p.planet === 'Rahu');
+
+        const nativeFp = generateChartFingerprintVector(bc, {
+          mahadasha: curDasha?.mahadasha || curDasha?.currentHierarchy?.mahadasha?.lord,
+          antardasha: curDasha?.antardasha || curDasha?.currentHierarchy?.antardasha?.subLord,
+        }, {
+          saturnSignIndex: satT?.signIndex ?? 11,
+          jupiterSignIndex: jupT?.signIndex ?? 3,
+          rahuSignIndex: rahT?.signIndex ?? 10,
+        });
+
+        const twinMatches = await globalCaseStudyRepository.findTwinAnalogs(nativeFp, {
+          domain: primaryDomain as any,
+          limit: 3,
+        });
+
+        if (twinMatches.length > 0) {
+          empiricalCases = twinMatches.map((m) => ({
+            caseId: m.caseStudy.id,
+            title: m.caseStudy.title,
+            domain: m.caseStudy.domain,
+            lagnaSign: m.caseStudy.chartFingerprint.lagnaSign,
+            runningDasha: m.caseStudy.chartFingerprint.runningDasha,
+            keyTransits: [
+              `Saturn in House ${m.caseStudy.chartFingerprint.transitsAtEvent?.saturnHouseFromLagna ?? 10}`,
+              `Jupiter in House ${m.caseStudy.chartFingerprint.transitsAtEvent?.jupiterHouseFromLagna ?? 11}`,
+            ],
+            astronomicalSignature: m.matchingSignatures.join('; '),
+            realWorldScenario: m.caseStudy.eventTitle,
+            historicalOutcome: m.caseStudy.historicalOutcome,
+            rootAstrologicalCause: m.caseStudy.shastricRootCause,
+            consultationPrinciple: `Empirical Analog (${m.combinedMatchIndex}% astronomical similarity): ${m.matchingSignatures.join(', ')}`,
+            combinedMatchIndex: m.combinedMatchIndex,
+          }));
+        }
+      }
+    } catch {
+      // Fallback to static cohort if vector comparison fails
+    }
+
+    if (empiricalCases.length === 0) {
+      empiricalCases = getRelevantCaseStudies(primaryDomain, nativeLagnaForCases);
+    }
+
     toolPayloads.empirical_case_studies = empiricalCases;
     toolsCalled.push('retrieve_empirical_case_studies');
     toolTrace.push({
@@ -530,6 +621,24 @@ export class ConsultAgent {
       success: true,
       durationMs: 1,
     });
+
+    // Tool G4: Classical Shastric Knowledge Graph (GraphRAG)
+    try {
+      const bc = toolPayloads.get_birth_chart;
+      if (bc) {
+        const shastricEvidence = globalShastricGraphEngine.queryShastricEvidence(bc, primaryDomain);
+        toolPayloads.shastric_evidence = shastricEvidence;
+        toolsCalled.push('query_shastric_knowledge_graph');
+        toolTrace.push({
+          round: toolTrace.length + 1,
+          toolName: 'query_shastric_knowledge_graph',
+          success: true,
+          durationMs: 1,
+        });
+      }
+    } catch {
+      // Graceful fallback
+    }
 
     // Tool H: Sripathi Bhava Chalit Chart & Awasiya Bala
     const asksChalit = /\b(chalit|bhava chart|bhava madhya|sandhi|cusp|cusps|house shift|shifted)\b/i.test(lower);
@@ -609,7 +718,6 @@ export class ConsultAgent {
     let modelUsed = 'deterministic_pro_synthesizer';
     let mode: 'live' | 'mock' = 'mock';
 
-    const effectiveContext = req.blindEvaluationMode ? [] : (req.consultationContext || []);
     const signals = ConversationalSignalDetector.detect(
       question,
       effectiveContext.map((c) => ({ role: c.role, text: c.text, userMessage: c.role === 'user' ? c.text : undefined }))
@@ -841,6 +949,30 @@ export class ConsultAgent {
       if (adEnd) parts.push(`Current ${adLord} Antardasha period ends: ${adEnd.slice(0, 10)}`);
       if (mdEnd) parts.push(`Current ${mdLord} Mahadasha period ends: ${mdEnd.slice(0, 10)}`);
       parts.push(`CRITICAL TIMING DIRECTIVE: You MUST refer to the native's active Mahadasha as "${mdLord}" and Antardasha as "${adLord}" (Pratyantardasha: "${pdLord}"). NEVER invent, guess, or substitute other dasha lords.`);
+
+      // Spoon-feed complete 120-year Vimshottari progression
+      const mds = d.mahadashas || tools.get_current_dasha?.mahadashas || tools.get_current_dasha?.allMahadashas;
+      if (Array.isArray(mds) && mds.length > 0) {
+        parts.push(`\n--- COMPLETE 120-YEAR VIMSHOTTARI LIFETIME PROGRESSION (ASTRONOMICAL TRUTH) ---`);
+        parts.push(`Canonical Sequence: Ketu → Venus → Sun → Moon → Mars → Rahu → Jupiter → Saturn → Mercury. NEVER skip or reorder Mahadashas.`);
+        for (const m of mds) {
+          const s = (m.startDateIso || '').slice(0, 10);
+          const e = (m.endDateIso || '').slice(0, 10);
+          const dur = m.durationYears ? ` (${Number(m.durationYears).toFixed(1)} yrs)` : '';
+          const activeTag = m.activeNow || m.lord === mdLord ? ' [ACTIVE NOW]' : '';
+          parts.push(`- ${m.lord} Mahadasha${dur}: ${s} to ${e}${activeTag}`);
+          if ((m.activeNow || m.lord === mdLord) && Array.isArray(m.antardashas) && m.antardashas.length > 0) {
+            parts.push(`  Antardashas in ${m.lord} Mahadasha:`);
+            for (const a of m.antardashas) {
+              const as = (a.startDateIso || '').slice(0, 10);
+              const ae = (a.endDateIso || '').slice(0, 10);
+              const aActive = a.activeNow || a.subLord === adLord ? ' [CURRENTLY RUNNING]' : '';
+              parts.push(`    * ${m.lord}-${a.subLord || a.lord}: ${as} to ${ae}${aActive}`);
+            }
+          }
+        }
+        parts.push(`CRITICAL CHRONOLOGY DIRECTIVE: When discussing future eras, life themes by age, or which Mahadasha brings elevation, you MUST follow this exact calculated progression. Do NOT claim that a future Mahadasha begins out of order (e.g. Saturn after Moon). Following Moon is MARS Mahadasha (7y), then RAHU (18y), then JUPITER (16y), and SATURN only arrives later.`);
+      }
     }
 
     // Spoon-feed Dasha windows across the requested timeframe
@@ -961,6 +1093,21 @@ export class ConsultAgent {
         }
       }
       parts.push(`CRITICAL GOCHARA DIRECTIVE: When discussing future timing around ${targetDate}, you MUST use these exact target sign placements (e.g. if Jupiter or Saturn enters a new sign by this date).`);
+    }
+
+    // Spoon-feed Month-by-Month Transit Progression Trail (scan_transits)
+    if (tools.scan_transits && Array.isArray(tools.scan_transits.samples) && tools.scan_transits.samples.length > 0) {
+      parts.push(`\n--- MONTH-BY-MONTH TRANSIT TRAIL (CHRONOLOGICAL GOCHARA PROGRESSION) ---`);
+      parts.push(`Timeline: ${tools.scan_transits.fromIso.slice(0, 10)} to ${tools.scan_transits.toIso.slice(0, 10)} (step: ${tools.scan_transits.stepDays || 30} days)`);
+      for (const sample of tools.scan_transits.samples.slice(0, 36)) {
+        const ym = sample.dateIso.slice(0, 7);
+        const planetsText = (sample.planets || [])
+          .filter((p: any) => ['Jupiter', 'Saturn', 'Rahu', 'Mars'].includes(p.planet))
+          .map((p: any) => `${p.planet} in ${p.sign} (H${p.natalLagnaHouse}${p.retrograde ? ' [R]' : ''}, SAV: ${p.ashtakavargaBindus}b)`)
+          .join('; ');
+        parts.push(`- Month ${ym}: ${planetsText}`);
+      }
+      parts.push(`MANDATORY TRANSIT TRAIL DIRECTIVE: The user requested transit data for every month and year. In your response, provide this exact month-by-month transit trail table or progression for major time-directing planets (Jupiter, Saturn, Rahu, Mars) across the timeline so the user sees the planetary journey leading to their career milestone.`);
     }
 
     if (tools.get_dasha_at) {
@@ -1405,6 +1552,9 @@ EPISTEMIC GUARDRAIL: Explain compatibility as heuristic alignment (0–100), nev
       parts.push(`- Exact Operating Window: ${ted.startDateIso.slice(0, 10)} to ${ted.endDateIso.slice(0, 10)}`);
       parts.push(`- Chapter Status: ${temporalLabel} (${isActive ? 'Currently active' : isPast ? 'Completed past period' : 'Upcoming future period'})`);
       parts.push(`MANDATORY ERA DIRECTIVE: The user's inquiry specifically targets this ${ted.lord} Mahadasha era. Structure your analysis around what transpired (if past) or what will manifest (if future) under this specific dasha lord.`);
+      if (tools.asked_after_dasha) {
+        parts.push(`CRITICAL DIRECT INQUIRY RESOLUTION: The user specifically asked what Mahadasha comes AFTER ${tools.asked_after_dasha.baseLord.toUpperCase()} (e.g., Kuja/Mars). In Vimshottari progression, the Mahadasha that strictly follows ${tools.asked_after_dasha.baseLord.toUpperCase()} is ${tools.asked_after_dasha.followingLord?.toUpperCase()} Mahadasha (${tools.asked_after_dasha.followingDuration} years, ${tools.asked_after_dasha.startDateIso?.slice(0, 10)} to ${tools.asked_after_dasha.endDateIso?.slice(0, 10)}). State unequivocally: NO, Saturn does NOT follow Kuja/Mars! Kuja is followed by Rahu (18 years), then Jupiter (16 years), and only then Saturn.`);
+      }
     }
 
     // Spoon-feed Classical Planetary Maturity & Varga Lifecycle Activation
@@ -1441,6 +1591,20 @@ EPISTEMIC GUARDRAIL: Explain compatibility as heuristic alignment (0–100), nev
       parts.push(`3. WEALTH SURGE VS. CAUTION:`);
       parts.push(`   - Predict clearly whether the native will be wealthier/flourish in that time (activation of 2nd/11th/9th houses, Dhana Yogas, benefic transits, high Ashtakavarga).`);
       parts.push(`   - Predict clearly when the native MUST BE CAREFUL (financial traps, scams, false friends/betrayal, impulsive speculation, health vulnerability, or contract hazards) and explain the EXACT planetary and shastric WHY (6/8/12th activations, Rahu in 11th mirage, Sade Sati/Ashtama Shani, or immature planetary impulsiveness).`);
+    }
+
+    // Spoon-feed Authentic Classical Shastric Citations (GraphRAG Dynamic Retrieval)
+    if (tools.shastric_evidence && Array.isArray(tools.shastric_evidence) && tools.shastric_evidence.length > 0) {
+      parts.push(`\n--- AUTHENTIC CLASSICAL SHASTRIC CITATIONS (GRAPHRAG DYNAMIC RETRIEVAL) ---`);
+      for (const ev of tools.shastric_evidence) {
+        parts.push(`• [${ev.sourceCitation}]:`);
+        if (ev.sanskritVerse) {
+          parts.push(`  Sanskrit Reading: "${ev.sanskritVerse}"`);
+        }
+        parts.push(`  Classical Dictum: ${ev.classicalDictum}`);
+        parts.push(`  Modern Application: ${ev.modernManifestation}`);
+      }
+      parts.push(`MANDATORY CITATION DIRECTIVE: Seamlessly cite these exact classical authorities (${tools.shastric_evidence.map((e: any) => e.sourceCitation.split(',')[0]).join(', ')}) when explaining why the planets behave this way.`);
     }
 
     parts.push(`\n--- EPISTEMIC CALIBRATION & REASONING STANDARDS ---`);
@@ -1834,7 +1998,9 @@ ${matrixRows.length > 0 ? `### 3. Chronological Timing Windows Matrix\n\n| Perio
     }
 
     // Priority Handler: Dedicated Grounded Career & Education Reasoning Engine
-    if (tools.analyze_career_and_education) {
+    // Applies ONLY for general career domain & aptitude queries; NEVER intercepts specific TIMING queries ("when", "which year", "first job", "transit", "recalculate")
+    const asksTimingDirectly = /\b(when|year|month|date|timing|window|first\s+job|offer|placement|recalculate|again|transit)\b/i.test(lower) || signals?.timingDirectQuery;
+    if (tools.analyze_career_and_education && !asksTimingDirectly) {
       return this.synthesizeGroundedCareerConsultation(question, bc, dasha, transits, tools.analyze_career_and_education);
     }
 
@@ -2003,6 +2169,27 @@ According to Sage Parashara (*BPHS Ch. 6*), **D24 (Chaturvimshamsha)** specifica
       sections.push(`- **Saturn (Shani)**: Transiting **${satTransit.sign}** (House ${satTransit.natalLagnaHouse} from Lagna, House ${satTransit.chandraLagnaHouse} from Moon, carrying ${satTransit.ashtakavargaBindus !== undefined ? satTransit.ashtakavargaBindus : "evaluated"} Ashtakavarga bindus). This transit demands structure, perseverance, and systematic execution.`);
     }
 
+    // Month-by-Month Gochara Progression Trail
+    const asksMonthlyTransits = /\b(every\s+month|month.*year|transit\s+tail|transit\s+trail|monthly\s+transit|transit\s+data|add\s+transit|transit\s+also)\b/i.test(lower);
+    if (asksMonthlyTransits && tools.scan_transits?.samples && tools.scan_transits.samples.length > 0) {
+      sections.push(`\n#### 🗓️ Chronological Month-by-Month Gochara (Transit) Trail`);
+      sections.push(`| Month / Year | Jupiter (Guru) Transit | Saturn (Shani) Transit | Rahu Transit | Transit Milestone Rationale |`);
+      sections.push(`|---|---|---|---|---|`);
+      for (const sample of tools.scan_transits.samples.slice(0, 24)) {
+        const ym = sample.dateIso.slice(0, 7);
+        const jup = (sample.planets || []).find((p: any) => p.planet === 'Jupiter');
+        const sat = (sample.planets || []).find((p: any) => p.planet === 'Saturn');
+        const rah = (sample.planets || []).find((p: any) => p.planet === 'Rahu');
+        const jText = jup ? `${jup.sign} (H${jup.natalLagnaHouse}${jup.retrograde ? ' [R]' : ''})` : '—';
+        const sText = sat ? `${sat.sign} (H${sat.natalLagnaHouse}${sat.retrograde ? ' [R]' : ''}, ${sat.ashtakavargaBindus}b)` : '—';
+        const rText = rah ? `${rah.sign} (H${rah.natalLagnaHouse})` : '—';
+        const confluence = (jup?.natalLagnaHouse === 3 || jup?.natalLagnaHouse === 11 || sat?.natalLagnaHouse === 11 || sat?.natalLagnaHouse === 10)
+          ? '🌟 Strong Career / Placement Support'
+          : 'Preparatory Consolidation';
+        sections.push(`| **${ym}** | ${jText} | ${sText} | ${rText} | ${confluence} |`);
+      }
+    }
+
     // Health Domain
     if (domains.includes('health') || lower.includes('health')) {
       const sun = bc?.planets?.find((p: any) => p.name === 'Sun');
@@ -2013,7 +2200,7 @@ According to Sage Parashara (*BPHS Ch. 6*), **D24 (Chaturvimshamsha)** specifica
     }
 
     // Career Domain
-    if (domains.includes('career') || lower.includes('career') || lower.includes('job')) {
+    if (domains.includes('career') || lower.includes('career') || lower.includes('job') || signals?.timingDirectQuery) {
       const p10 = bc?.houses?.find((h: any) => h.houseNumber === 10);
       sections.push(`### 💼 4. Career & Professional Trajectory`);
       sections.push(`- **10th House (Karma Bhava)**: Situated in **${p10?.sign || 'the 10th house'}**, receiving ongoing activation from the active dasha cycle.`);

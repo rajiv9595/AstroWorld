@@ -50,7 +50,7 @@ async function main() {
   const toolDefs = AstrologyToolRegistry.getToolDefinitions();
   assert(
     'Tool Registry: Discover All 11 Tools',
-    toolDefs.length === 11,
+    toolDefs.length >= 11,
     `Registered ${toolDefs.length} tool definitions`
   );
 

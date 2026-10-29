@@ -58,7 +58,26 @@ export async function executeGetBirthChart(args: any): Promise<ToolExecutionResu
           mahadasha: chart.dasha.currentHierarchy.mahadasha?.lord,
           antardasha: chart.dasha.currentHierarchy.antardasha?.subLord || chart.dasha.currentHierarchy.antardasha?.lord,
           pratyantardasha: chart.dasha.currentHierarchy.pratyantardasha?.pratyantarLord || chart.dasha.currentHierarchy.pratyantardasha?.lord,
+          balanceAtBirth: chart.dasha.balanceAtBirth,
           currentHierarchy: chart.dasha.currentHierarchy,
+          mahadashas: Array.isArray(chart.dasha.mahadashas)
+            ? chart.dasha.mahadashas.map((m: any) => ({
+                lord: m.period?.lord || m.lord,
+                startDateIso: m.period?.startDateIso || m.startDateIso,
+                endDateIso: m.period?.endDateIso || m.endDateIso,
+                durationYears: m.period?.durationYears || m.durationYears,
+                activeNow: m.period?.activeNow ?? m.activeNow ?? false,
+                antardashas: Array.isArray(m.antardashas)
+                  ? m.antardashas.map((a: any) => ({
+                      subLord: a.period?.subLord || a.subLord || a.period?.lord,
+                      startDateIso: a.period?.startDateIso || a.startDateIso,
+                      endDateIso: a.period?.endDateIso || a.endDateIso,
+                      durationYears: a.period?.durationYears || a.durationYears,
+                      activeNow: a.period?.activeNow ?? a.activeNow ?? false,
+                    }))
+                  : [],
+              }))
+            : [],
         },
       },
       provenance: {
@@ -285,13 +304,31 @@ export async function executeGetCurrentDasha(args: any): Promise<ToolExecutionRe
           antardasha: ad,
           pratyantardasha: pd,
         },
+        mahadashas: Array.isArray(chart.dasha.mahadashas)
+          ? chart.dasha.mahadashas.map((m: any) => ({
+              lord: m.period?.lord || m.lord,
+              startDateIso: m.period?.startDateIso || m.startDateIso,
+              endDateIso: m.period?.endDateIso || m.endDateIso,
+              durationYears: m.period?.durationYears || m.durationYears,
+              activeNow: m.period?.activeNow ?? m.activeNow ?? false,
+              antardashas: Array.isArray(m.antardashas)
+                ? m.antardashas.map((a: any) => ({
+                    subLord: a.period?.subLord || a.subLord || a.period?.lord,
+                    startDateIso: a.period?.startDateIso || a.startDateIso,
+                    endDateIso: a.period?.endDateIso || a.endDateIso,
+                    durationYears: a.period?.durationYears || a.durationYears,
+                    activeNow: a.period?.activeNow ?? a.activeNow ?? false,
+                  }))
+                : [],
+            }))
+          : [],
         allMahadashas: Array.isArray(chart.dasha.mahadashas)
           ? chart.dasha.mahadashas.map((m: any) => ({
-              lord: m.lord,
-              startDateIso: m.startDateIso,
-              endDateIso: m.endDateIso,
-              durationYears: m.durationYears,
-              activeNow: m.activeNow,
+              lord: m.period?.lord || m.lord,
+              startDateIso: m.period?.startDateIso || m.startDateIso,
+              endDateIso: m.period?.endDateIso || m.endDateIso,
+              durationYears: m.period?.durationYears || m.durationYears,
+              activeNow: m.period?.activeNow ?? m.activeNow ?? false,
             }))
           : [],
       },
