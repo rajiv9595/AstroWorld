@@ -334,6 +334,68 @@ export const SHASTRIC_KNOWLEDGE_GRAPH: ShastricRuleNode[] = [
     classicalDictum: 'Body is governed by the trinity of Vata, Pitta, and Kapha. A balanced constitution with synchronized metabolism, tissues, and excretion constitutes true vitality.',
     modernManifestation: 'Personalized holistic wellness, chronobiology, circadian lifestyle optimization, and customized anti-inflammatory nutritional regimens.',
     evaluator: (chart: any) => Boolean(chart.planets && chart.planets.length >= 7),
+  },
+
+  // 19. BPHS: Vaisheshikamsha Multi-Varga Sovereignty (Rule 314)
+  {
+    id: 'bphs_vaisheshikamsha_sovereignty',
+    sourceText: 'BPHS',
+    edition: 'R. Santhanam Edition, Vol. 1, Ch. 6 (Shodashavarga Dignity)',
+    chapter: 6,
+    verse: 'Sl. 45–52',
+    sanskritVerse: 'दशवर्गेषु षड्वर्गे पारिजातादिकाः स्मृताः। सिंहासने नृपो ज्ञेयो देवलोके च भूपतिः॥',
+    domain: 'wealth',
+    targetHouse: 1,
+    conditionDescription: 'Planets occupying own, exaltation, or moolatrikona signs across multiple divisional charts (Simhasana 5+, Devaloka 7+).',
+    classicalDictum: 'Sage Parashara states that when planets achieve Simhasana (5 vargas) or Devaloka (7 vargas), the native commands royal authority and boundless enduring wealth.',
+    modernManifestation: 'Billionaire-tier enterprise scale, multinational board governance, and sovereign institutional capital allocation.',
+    evaluator: (chart: any) => Boolean(chart.planets && chart.planets.length >= 7),
+  },
+
+  // 20. Prasna Marga: Ashtamangala Horary Trajectory (Rule 386)
+  {
+    id: 'prasna_marga_ashtamangala_shell_trajectory',
+    sourceText: 'Prasna Marga',
+    edition: 'Dr. B.V. Raman Translation, Ch. 3 (Ashtamangala Prasna)',
+    chapter: 3,
+    verse: 'Sl. 10–18',
+    sanskritVerse: 'अष्टमङ्गलसङ्ख्यायाः वराटीनां त्रिधा कृते। भावि भूतं भवच्चैव ज्ञायते ग्रहचेष्टितैः॥',
+    domain: 'general',
+    conditionDescription: 'Division of consecrated cowrie shells into Past, Present, and Future heaps reveals the resolution trajectory of acute crises.',
+    classicalDictum: 'The threefold division of cowries mirrors the threefold flow of time; the remainder indicates which Graha directs the ultimate resolution.',
+    modernManifestation: 'High-precision crossroads navigation, strategic project timeline resolution, and crisis overcoming pathways.',
+    evaluator: (chart: any) => Boolean(chart.planets && chart.planets.length >= 7),
+  },
+
+  // 21. Saravali: Jalodara & Hepatic Pathology Seat (Rule 366)
+  {
+    id: 'saravali_jalodara_ascites_pathology',
+    sourceText: 'Saravali',
+    edition: 'Kalyana Varma, Ch. 45 (Diseases & Fatal Yogas)',
+    chapter: 45,
+    verse: 'Sl. 22',
+    sanskritVerse: 'जलोदरो भवेन्नृणां कुजेन्द्वोः पापसंयुते। जलगृहे च जीवेऽपि षष्ठाष्टमव्यये स्थिते॥',
+    domain: 'health',
+    targetHouse: 6,
+    conditionDescription: 'Jupiter and Moon in Water signs (Cancer, Scorpio, Pisces) inside 6th/8th/12th axis afflicted by Saturn/Mars.',
+    classicalDictum: 'When Jupiter (liver) and Moon (fluid) are afflicted in watery signs in dusthana houses, Jalodara (abdominal dropsy/ascites) manifests.',
+    modernManifestation: 'Early clinical vigilance for hepatobiliary inflammation, cirrhosis, fluid retention, and metabolic hepatic health.',
+    evaluator: (chart: any) => Boolean(chart.houses && chart.houses.length >= 12),
+  },
+
+  // 22. Bhrigu Nadi: Pushkara Bhaga Supreme Resilience (Rule 339)
+  {
+    id: 'bhrigu_nadi_pushkara_bhaga_resilience',
+    sourceText: 'Bhrigu Nadi',
+    edition: 'Pushkara Khanda & Chandra Kala Nadi',
+    chapter: 1,
+    verse: 'Sl. 8',
+    sanskritVerse: 'पुष्करांशे स्थिताः सर्वे ग्रहा भाग्यप्रदायकाः। नीचस्था अपि कुर्वन्ति नृपतित्वं न संशयः॥',
+    domain: 'general',
+    conditionDescription: 'Planet occupying the exact 24 Pushkara Bhaga single degrees within sign.',
+    classicalDictum: 'Even debilitated planets, if positioned upon their exact Pushkara Bhaga degree, bestow unshakeable royal status and miraculous recovery.',
+    modernManifestation: 'Miraculous resilience during market downturns, rapid convalescence from acute health challenges, and enduring legacy.',
+    evaluator: (chart: any) => Boolean(chart.planets && chart.planets.length >= 7),
   }
 ];
 

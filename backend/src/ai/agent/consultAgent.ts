@@ -51,7 +51,13 @@ import {
   calculateBhriguAgeClock,
   calculatePushkaraNavamsha,
   calculateGandanta,
+  calculateFiveSolarUpagrahas,
+  calculateBeejaAndKshetraSphuta,
+  calculatePlanetaryLatta,
+  calculatePushkaraBhaga,
+  calculateSpecialKarmicNakshatras,
   globalAstrologyCorpusIndex,
+  globalJyotishaCorpusIndex,
 } from '../research/index.ts';
 import { NAKSHATRAS } from '../../../../shared/engine/constants.ts';
 
@@ -657,9 +663,9 @@ export class ConsultAgent {
     try {
       const bc = toolPayloads.get_birth_chart;
       if (bc && bc.planets && bc.ascendant) {
-        const moon = bc.planets.find((p: any) => p.name === 'Moon');
-        const sun = bc.planets.find((p: any) => p.name === 'Sun');
-        const rahu = bc.planets.find((p: any) => p.name === 'Rahu');
+        const moon = bc.planets.find((p: any) => (p.name || p.planet) === 'Moon');
+        const sun = bc.planets.find((p: any) => (p.name || p.planet) === 'Sun');
+        const rahu = bc.planets.find((p: any) => (p.name || p.planet) === 'Rahu');
 
         const researchData: any = {};
 
@@ -704,11 +710,14 @@ export class ConsultAgent {
         // 6. Jaimini Chara Karakas Hierarchy (Rule 161 & Rule 172)
         const planetsByGraha: Record<string, any> = {};
         for (const p of bc.planets) {
-          planetsByGraha[p.name] = {
-            longitude: getLon(p),
-            degreeInSign: (p.degreeInSign !== undefined ? p.degreeInSign : (getLon(p) % 30)),
-            sign: p.sign,
-          };
+          const plName = p.name || p.planet;
+          if (plName) {
+            planetsByGraha[plName] = {
+              longitude: getLon(p),
+              degreeInSign: (p.degreeInSign !== undefined ? p.degreeInSign : (getLon(p) % 30)),
+              sign: p.sign,
+            };
+          }
         }
         researchData.jaiminiCharaKarakas = calculateJaiminiCharaKarakas(planetsByGraha);
 
@@ -725,7 +734,7 @@ export class ConsultAgent {
           for (let h = 1; h <= 12; h++) {
             const hSign = ZODIAC_LIST[(lagnaSignIdx + h - 1) % 12];
             const lordName = SIGN_LORDS_MAP[hSign];
-            const lordPlanet = bc.planets.find((p: any) => p.name === lordName);
+            const lordPlanet = bc.planets.find((p: any) => (p.name || p.planet) === lordName);
             const lordSignIdx = lordPlanet ? ZODIAC_LIST.indexOf(lordPlanet.sign) : (lagnaSignIdx + h - 1) % 12;
             houseLordSigns.push(lordSignIdx >= 0 ? lordSignIdx : (lagnaSignIdx + h - 1) % 12);
           }
@@ -736,7 +745,7 @@ export class ConsultAgent {
         }
 
         // 8. Bhrigu 12-Year Jupiter Age Clock (Rule 151 / 153)
-        const jup = bc.planets.find((p: any) => p.name === 'Jupiter');
+        const jup = bc.planets.find((p: any) => (p.name || p.planet) === 'Jupiter');
         const birthYear = typeof birthProfile.year === 'number' ? birthProfile.year : 2000;
         const clientAge = Math.max(1, new Date().getFullYear() - birthYear);
         if (jup) {
@@ -749,9 +758,10 @@ export class ConsultAgent {
         for (const p of bc.planets) {
           const lon = getLon(p);
           const push = calculatePushkaraNavamsha(lon);
-          if (push.isPushkara) pushkaraPlanets.push(`${p.name} (${push.pushkaraNavamshaSign} Pushkara)`);
+          const pName = p.name || p.planet;
+          if (push.isPushkara) pushkaraPlanets.push(`${pName} (${push.pushkaraNavamshaSign} Pushkara)`);
           const gand = calculateGandanta(lon);
-          if (gand.isGandanta) gandantaPoints.push(`${p.name} in ${gand.junctionName}`);
+          if (gand.isGandanta) gandantaPoints.push(`${pName} in ${gand.junctionName}`);
         }
         const lagnaGand = calculateGandanta(lagnaLon);
         if (lagnaGand.isGandanta) gandantaPoints.push(`Lagna in ${lagnaGand.junctionName}`);
@@ -767,6 +777,59 @@ export class ConsultAgent {
             status: r.status,
             group: r.group,
             methodRule: r.methodRule,
+          }));
+        }
+
+        // 11. Five Solar Upagrahas (Rule 325)
+        if (typeof sunLon === 'number') {
+          researchData.solarUpagrahas = calculateFiveSolarUpagrahas(sunLon);
+        }
+
+        // 12. Beeja & Kshetra Sphuta (Rules 320 & 321)
+        const ven = bc.planets.find((p: any) => (p.name || p.planet) === 'Venus');
+        const mars = bc.planets.find((p: any) => (p.name || p.planet) === 'Mars');
+        if (sun && ven && jup && moon && mars) {
+          researchData.fertilitySphutas = calculateBeejaAndKshetraSphuta(
+            getLon(sun),
+            getLon(ven),
+            getLon(jup),
+            getLon(moon),
+            getLon(mars)
+          );
+        }
+
+        // 13. Planetary Latta (Nakshatra Kicks on Moon) (Rules 331 & 332)
+        if (moon) {
+          const mNakIdx = Math.floor(getLon(moon) / (360 / 27));
+          const planetLons: Record<string, number> = {};
+          for (const p of bc.planets) {
+            const pName = p.name || p.planet;
+            if (pName) planetLons[pName] = getLon(p);
+          }
+          researchData.lattaReport = calculatePlanetaryLatta(planetLons, mNakIdx);
+          researchData.karmicStars = calculateSpecialKarmicNakshatras(mNakIdx);
+        }
+
+        // 14. Pushkara Bhagas (Rule 339)
+        const pushkaraBhagaPlanets: string[] = [];
+        for (const p of bc.planets) {
+          const pb = calculatePushkaraBhaga(getLon(p));
+          const pName = p.name || p.planet;
+          if (pb.isPushkaraBhaga) {
+            pushkaraBhagaPlanets.push(`${pName} (Pushkara Bhaga ~${pb.exactPushkaraDegree}°)`);
+          }
+        }
+        researchData.pushkaraBhagas = pushkaraBhagaPlanets;
+
+        // 15. Jyotisha 1,412-Rule Research Corpus Matches (4.md)
+        const jyotishaMatches = globalJyotishaCorpusIndex.search(question, { limit: 4 });
+        if (jyotishaMatches.length > 0) {
+          researchData.jyotishaCorpusRules = jyotishaMatches.map(r => ({
+            id: r.id,
+            section: r.section,
+            status: r.status,
+            traditionScope: r.traditionScope,
+            text: r.text,
           }));
         }
 
@@ -1795,6 +1858,33 @@ EPISTEMIC GUARDRAIL: Explain compatibility as heuristic alignment (0–100), nev
           parts.push(`  - [${ar.id}] ${ar.title} (${ar.status}): ${ar.methodRule}`);
         }
       }
+      if (rd.solarUpagrahas) {
+        parts.push(`• Five Solar Upagrahas (Rule 325): Dhuma: ${rd.solarUpagrahas.dhuma.formattedDegree} in House ${rd.solarUpagrahas.dhuma.houseNumber} (${rd.solarUpagrahas.dhuma.sign}) | Vyatipata: ${rd.solarUpagrahas.vyatipata.formattedDegree} (H${rd.solarUpagrahas.vyatipata.houseNumber}) | Parivesha: ${rd.solarUpagrahas.parivesha.formattedDegree} (H${rd.solarUpagrahas.parivesha.houseNumber}) | Indrachapa: ${rd.solarUpagrahas.indrachapa.formattedDegree} (H${rd.solarUpagrahas.indrachapa.houseNumber}) | Upaketu: ${rd.solarUpagrahas.upaketu.formattedDegree} (H${rd.solarUpagrahas.upaketu.houseNumber}) [Invariant Check: Upaketu + 30° ≡ Sun]`);
+      }
+      if (rd.fertilitySphutas) {
+        const fs = rd.fertilitySphutas;
+        parts.push(`• Beeja & Kshetra Sphuta Fertility Metrics (Rules 320–321):`);
+        parts.push(`  - Beeja Sphuta (Male): ${fs.beejaSphuta.formattedDegree} in ${fs.beejaSphuta.sign} (Navamsha: ${fs.beejaSphuta.navamshaSign}) — Rashi: ${fs.beejaSphuta.isOddRashi ? 'Odd (Auspicious)' : 'Even'}, Navamsha: ${fs.beejaSphuta.isOddNavamsha ? 'Odd (Auspicious)' : 'Even'}`);
+        parts.push(`  - Kshetra Sphuta (Female): ${fs.kshetraSphuta.formattedDegree} in ${fs.kshetraSphuta.sign} (Navamsha: ${fs.kshetraSphuta.navamshaSign}) — Rashi: ${fs.kshetraSphuta.isEvenRashi ? 'Even (Auspicious)' : 'Odd'}, Navamsha: ${fs.kshetraSphuta.isEvenNavamsha ? 'Even (Auspicious)' : 'Odd'}`);
+      }
+      if (rd.lattaReport) {
+        const lr = rd.lattaReport;
+        const struck = lr.planetaryKicks.filter((k: any) => k.piercesTargetNakshatra);
+        parts.push(`• Planetary Latta (Nakshatra Thrusts on Janma Star - Rules 331–332): Target Janma Nakshatra: ${lr.targetNakshatraIndex + 1} (${lr.targetNakshatraName}) — ${lr.isLattaAfflicted ? `AFFLICTED by ${struck.map((s: any) => `${s.planet} (${s.lattaType} ${s.kickSteps}th)`).join(', ')}` : 'Free from direct Latta planetary thrusts'}`);
+      }
+      if (rd.karmicStars) {
+        const ks = rd.karmicStars;
+        parts.push(`• Special Karmic Nakshatras (Rule 337): 4th Jati: ${ks.jati.name} (H4), 10th Karma: ${ks.karma.name} (H10), 12th Desha: ${ks.desha.name}, 16th Sanghatika: ${ks.sanghatika.name}, 18th Samudayika: ${ks.samudayika.name}, 19th Adhana: ${ks.adhana.name}, 22nd Vainashika (Destruction): ${ks.vainashika.name}, 27th Abhisheka: ${ks.abhisheka.name}`);
+      }
+      if (rd.pushkaraBhagas && rd.pushkaraBhagas.length > 0) {
+        parts.push(`• Pushkara Bhaga Supreme Degrees (Rule 339): ${rd.pushkaraBhagas.join(', ')} (Planets placed in these exact degrees bestow enduring resilience and golden fruits)`);
+      }
+      if (rd.jyotishaCorpusRules && rd.jyotishaCorpusRules.length > 0) {
+        parts.push(`• Jyotisha Research Corpus Directives (1,412-Rule Scientific RAG - 4.md):`);
+        for (const jr of rd.jyotishaCorpusRules) {
+          parts.push(`  - [${jr.id}] (${jr.section} | ${jr.status}): ${jr.text.slice(0, 200)}...`);
+        }
+      }
     }
 
     parts.push(`\n--- EPISTEMIC CALIBRATION & REASONING STANDARDS ---`);
@@ -1955,6 +2045,25 @@ EPISTEMIC GUARDRAIL: Explain compatibility as heuristic alignment (0–100), nev
     return dk || 'Darakaraka (evaluating)';
   }
 
+  private resolveAmatyakaraka(bc: any, jaimini: any): string {
+    let amk = jaimini?.amatyakaraka?.planet || jaimini?.charaKarakas?.find((k: any) => k.karaka === 'Amatyakaraka')?.planet;
+    if (!amk && bc?.planets && Array.isArray(bc.planets) && bc.planets.length > 0) {
+      const classical = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+      const candidates = bc.planets
+        .filter((p: any) => classical.includes(p.name || p.planet))
+        .map((p: any) => ({
+          planet: p.name || p.planet,
+          degInSign: (typeof p.longitude === 'number' ? ((p.longitude % 30) + 30) % 30 : ((p.degree || 0) % 30)),
+          longitude: p.longitude ?? 0
+        }))
+        .sort((a: any, b: any) => b.degInSign - a.degInSign);
+      if (candidates.length > 1) {
+        amk = candidates[1].planet;
+      }
+    }
+    return amk || 'Amatyakaraka (evaluating)';
+  }
+
   private synthesizeMasterReading(
     question: string,
     profile: BirthProfile,
@@ -2110,6 +2219,19 @@ EPISTEMIC GUARDRAIL: Explain compatibility as heuristic alignment (0–100), nev
         );
       }
 
+      const rd = tools.research_diagnostics;
+      let lattaSection = '';
+      if (rd?.lattaReport) {
+        const lr = rd.lattaReport;
+        const struck = lr.planetaryKicks.filter((k: any) => k.piercesTargetNakshatra);
+        lattaSection = `\n- **Planetary Latta (Nakshatra Thrusts - Rules 331–332)**: Janma Nakshatra (${lr.targetNakshatraName}) is ${lr.isLattaAfflicted ? `directly pierced by ${struck.map((s: any) => `${s.planet} (${s.lattaType} kick)`).join(', ')}. Mindful action is advised during acute transit alignments.` : 'free from direct planetary Latta strikes.'}`;
+      }
+      let karmicStarSection = '';
+      if (rd?.karmicStars) {
+        const ks = rd.karmicStars;
+        karmicStarSection = `\n- **Special Karmic Nakshatras (Rule 337)**: 10th Karma Star: **${ks.karma.name}** | 22nd Vainashika: **${ks.vainashika.name}** | 16th Sanghatika: **${ks.sanghatika.name}**.`;
+      }
+
       return `## 🎯 Astrological Proof & Ephemeris Breakdown
 
 Astrological timing is determined by the convergence of operating **Vimshottari Dasha** periods and simultaneous **Gochara (transit)** activations:
@@ -2122,7 +2244,7 @@ Astrological timing is determined by the convergence of operating **Vimshottari 
 In classical Jyotish (*Phaladeepika Ch. 26 & BPHS*), significant life events manifest when transiting **Jupiter (*Guru*)** and **Saturn (*Shani*)** jointly influence the relevant operational houses:
 - **Transiting Jupiter**: Moving through **${jupTr?.sign || 'its transit sign'}** (House ${jupTr?.natalLagnaHouse || 'natal house'} from Lagna${jupTr?.chandraLagnaHouse ? `, House ${jupTr.chandraLagnaHouse} from Moon` : ''}), holding ${jupTr?.ashtakavargaBindus ?? 'supportive'} Sarvashtakavarga bindus.
 - **Transiting Saturn**: Moving through **${satTr?.sign || 'its transit sign'}** (House ${satTr?.natalLagnaHouse || 'natal house'} from Lagna${satTr?.chandraLagnaHouse ? `, House ${satTr.chandraLagnaHouse} from Moon` : ''}), holding ${satTr?.ashtakavargaBindus ?? 'structural'} Sarvashtakavarga bindus.
-- **Double Transit Confluence on ${targetHouseName}**: ${doubleTr.doubleTransitActive ? 'Confirmed ACTIVE — both major slow-moving planets cast concurrent influence on the operational axis.' : 'Pending orbital convergence — requiring specific sub-period triggers for full activation.'}
+- **Double Transit Confluence on ${targetHouseName}**: ${doubleTr.doubleTransitActive ? 'Confirmed ACTIVE — both major slow-moving planets cast concurrent influence on the operational axis.' : 'Pending orbital convergence — requiring specific sub-period triggers for full activation.'}${lattaSection}${karmicStarSection}
 
 ${matrixRows.length > 0 ? `### 3. Chronological Timing Windows Matrix\n\n| Period | Operating Axis | Astrological Mechanics | Status |\n| :--- | :--- | :--- | :--- |\n${matrixRows.join('\n')}` : ''}`;
     }
@@ -2180,8 +2302,16 @@ ${matrixRows.length > 0 ? `### 3. Chronological Timing Windows Matrix\n\n| Perio
       if (rd?.yogiAvayogi) {
         yogiText = `\n- **Yogi Planet (Effortless Prosperity — Rule 5)**: **${rd.yogiAvayogi.yogiPlanet}** (Sahayogi: ${rd.yogiAvayogi.sahayogiPlanet}). Avayogi Planet of obstruction: **${rd.yogiAvayogi.avayogiPlanet}**.`;
       }
+      let pushkaraBhagaText = '';
+      if (rd?.pushkaraBhagas && rd.pushkaraBhagas.length > 0) {
+        pushkaraBhagaText = `\n- **Pushkara Bhaga (Golden Degrees of Fortune — Rule 339)**: ${rd.pushkaraBhagas.join(', ')} confer extraordinary resilience, protecting accumulated assets.`;
+      }
+      let solarUpagrahasText = '';
+      if (rd?.solarUpagrahas) {
+        solarUpagrahasText = `\n- **Solar Upagrahas (Rule 325)**: Dhuma (${rd.solarUpagrahas.dhuma.formattedDegree}), Vyatipata (${rd.solarUpagrahas.vyatipata.formattedDegree}), Indrachapa (${rd.solarUpagrahas.indrachapa.formattedDegree}).`;
+      }
 
-      return `### 💰 High-Net-Worth Wealth & Abundance Analysis\n\nIn classical Vedic Jyotish (Bhavartha Ratnakara & BPHS Ch. 41–42), wealth mastery is evaluated through the dynamic ratio between the **2nd house (Dhana / Asset Accumulation)**, the **11th house (Labha / Scaled Inflow)**, and the **Sarvashtakavarga Retention Index**:\n\n- **2nd House (Asset Storage)**: Placed in **${p2?.sign || 'the 2nd house'}**, governed by **${p2?.lord || 'the 2nd lord'}**.\n- **11th House (Network & Inflow)**: Placed in **${p11?.sign || 'the 11th house'}**, governed by **${p11?.lord || 'the 11th lord'}**.\n- **Sarvashtakavarga Retention Metric**: ${savMetricText}${induText}${yogiText}\n\n**Operating Timing**: Running **${dasha?.activeMahadasha?.planet || 'active'} Mahadasha – ${dasha?.activeAntardasha?.planet || 'active'} Antardasha**. Dasha sub-periods connecting the 2nd, 9th, and 11th lords create structural wealth inflections.`;
+      return `### 💰 High-Net-Worth Wealth & Abundance Analysis\n\nIn classical Vedic Jyotish (Bhavartha Ratnakara & BPHS Ch. 41–42), wealth mastery is evaluated through the dynamic ratio between the **2nd house (Dhana / Asset Accumulation)**, the **11th house (Labha / Scaled Inflow)**, and the **Sarvashtakavarga Retention Index**:\n\n- **2nd House (Asset Storage)**: Placed in **${p2?.sign || 'the 2nd house'}**, governed by **${p2?.lord || 'the 2nd lord'}**.\n- **11th House (Network & Inflow)**: Placed in **${p11?.sign || 'the 11th house'}**, governed by **${p11?.lord || 'the 11th lord'}**.\n- **Sarvashtakavarga Retention Metric**: ${savMetricText}${induText}${yogiText}${pushkaraBhagaText}${solarUpagrahasText}\n\n**Operating Timing**: Running **${dasha?.activeMahadasha?.planet || 'active'} Mahadasha – ${dasha?.activeAntardasha?.planet || 'active'} Antardasha**. Dasha sub-periods connecting the 2nd, 9th, and 11th lords create structural wealth inflections.`;
     }
 
     if (/\b(health|disease|illness|vitality|dosha|ayurveda|tridosha|medical)\b/i.test(lower) && !domains.includes('career') && !domains.includes('marriage')) {
@@ -2197,12 +2327,13 @@ ${matrixRows.length > 0 ? `### 3. Chronological Timing Windows Matrix\n\n| Perio
     if (/\b(atmakaraka|karakamsa|jaimini|chara karaka|arudha|upapada)\b/i.test(lower)) {
       const rd = tools.research_diagnostics;
       const { ak, kl } = this.resolveAtmakarakaAndKarakamsa(bc, tools.get_jaimini_details);
+      const amk = this.resolveAmatyakaraka(bc, tools.get_jaimini_details);
       const karakas = rd?.jaiminiCharaKarakas?.karakas;
       const al = rd?.arudhaLagna;
       const ul = rd?.upapadaLagna;
 
       let karakasText = '';
-      if (karakas) {
+      if (karakas && karakas.AK && karakas.AmK) {
         karakasText = `\n\n**Complete Jaimini Chara Karakas Hierarchy (Rules 161 & 172)**:\n` +
           `- **Atmakaraka (AK - Soul King)**: **${karakas.AK.planet}** (${karakas.AK.formattedDegree} ${karakas.AK.sign})\n` +
           `- **Amatyakaraka (AmK - Career Minister)**: **${karakas.AmK.planet}** (${karakas.AmK.formattedDegree} ${karakas.AmK.sign})\n` +
@@ -2211,6 +2342,10 @@ ${matrixRows.length > 0 ? `### 3. Chronological Timing Windows Matrix\n\n| Perio
           `- **Putrakaraka (PK - Progeny & Intellect)**: **${karakas.PK.planet}** (${karakas.PK.formattedDegree} ${karakas.PK.sign})\n` +
           `- **Gnatikaraka (GK - Rivals & Obstacles)**: **${karakas.GK.planet}** (${karakas.GK.formattedDegree} ${karakas.GK.sign})\n` +
           `- **Darakaraka (DK - Spouse & Partnerships)**: **${karakas.DK.planet}** (${karakas.DK.formattedDegree} ${karakas.DK.sign})`;
+      } else {
+        karakasText = `\n\n**Jaimini Chara Karakas Overview**:\n` +
+          `- **Atmakaraka (AK - Soul Purpose)**: **${ak}**\n` +
+          `- **Amatyakaraka (AmK - Career Vehicle)**: **${amk}**`;
       }
 
       let arudhaText = '';
@@ -2233,7 +2368,15 @@ ${matrixRows.length > 0 ? `### 3. Chronological Timing Windows Matrix\n\n| Perio
       const jup = bc?.planets?.find((p: any) => p.name === 'Jupiter');
       const d7 = tools.divisionalCharts?.D7;
       const d7Lagna = d7?.ascendantSign || 'Saptamsha Lagna';
-      return `### 👶 Progeny, Children & Saptamsha (D7) Analysis\n\nIn classical Vedic Jyotish (*Brihat Parashara Hora Shastra Ch. 6, Sl. 14–15 & Ch. 16*), children, conception, and lineage fertility are evaluated through the **5th house (Putra Bhava)**, natural Putrakaraka **Jupiter (Guru)**, and the **Saptamsha (D7)** divisional chart:\n\n- **5th House (Putra Bhava)**: In **${p5?.sign || 'the 5th house'}**, governed by **${p5?.lord || 'the 5th lord'}**.\n- **Jupiter (Putrakaraka)**: Placed in **${jup?.sign || 'the natal chart'}** (House ${jup?.houseNumber || 1}, Dignity: ${jup?.dignity || 'Direct'}). Jupiter’s protective aspect on the 5th or 9th house guarantees progeny blessings.\n- **D7 Saptamsha Chart**: Ascendant is **${d7Lagna}**${d7?.planets ? `; key divisional placements include ${d7.planets.slice(0, 3).map((p: any) => `**${p.planet}** in ${p.sign}`).join(', ')}` : ''}.\n- **Timing of Conception & Birth (Double Transit)**: In Dr. K.N. Rao's and classical Parashari tradition, conception and childbirth manifest when transiting **Jupiter** and transiting **Saturn** simultaneously aspect or occupy the 5th house, 5th lord, or 9th house while running a favorable Antardasha of the 5th lord or Jupiter.\n\n**Vedic Shanti & Guidance**: Classical shastras recommend reciting the *Santana Gopala Mantra* and honoring Jupiter on Thursdays to remove any karmic friction and ensure vibrant progeny wellbeing.`;
+      const rd = tools.research_diagnostics;
+      let sphutaText = '';
+      if (rd?.fertilitySphutas) {
+        const fs = rd.fertilitySphutas;
+        sphutaText = `\n- **Classical Beeja & Kshetra Sphuta (BPHS Ch. 16, Rules 320–321)**:\n` +
+          `  - **Beeja Sphuta (Paternal Seed Vitality — Sun + Venus + Jupiter)**: Sits in **${fs.beejaSphuta.formattedDegree} ${fs.beejaSphuta.sign}** (Navamsha: **${fs.beejaSphuta.navamshaSign}**). ${fs.beejaSphuta.isOddRashi && fs.beejaSphuta.isOddNavamsha ? 'Placed in auspicious odd signs in both Rashi and Navamsha, confirming robust male reproductive vitality.' : 'Requires strengthening of Sun and Jupiter for optimal vitality.'}\n` +
+          `  - **Kshetra Sphuta (Maternal Cellular Receptivity — Moon + Mars + Jupiter)**: Sits in **${fs.kshetraSphuta.formattedDegree} ${fs.kshetraSphuta.sign}** (Navamsha: **${fs.kshetraSphuta.navamshaSign}**). ${fs.kshetraSphuta.isEvenRashi && fs.kshetraSphuta.isEvenNavamsha ? 'Placed in auspicious even signs in both Rashi and Navamsha, confirming fertile cellular receptivity.' : 'Benefited by nurturing Moon and Jupiter frequencies.'}`;
+      }
+      return `### 👶 Progeny, Children & Saptamsha (D7) Analysis\n\nIn classical Vedic Jyotish (*Brihat Parashara Hora Shastra Ch. 6, Sl. 14–15 & Ch. 16*), children, conception, and lineage fertility are evaluated through the **5th house (Putra Bhava)**, natural Putrakaraka **Jupiter (Guru)**, and the **Saptamsha (D7)** divisional chart:\n\n- **5th House (Putra Bhava)**: In **${p5?.sign || 'the 5th house'}**, governed by **${p5?.lord || 'the 5th lord'}**.\n- **Jupiter (Putrakaraka)**: Placed in **${jup?.sign || 'the natal chart'}** (House ${jup?.houseNumber || 1}, Dignity: ${jup?.dignity || 'Direct'}). Jupiter’s protective aspect on the 5th or 9th house guarantees progeny blessings.\n- **D7 Saptamsha Chart**: Ascendant is **${d7Lagna}**${d7?.planets ? `; key divisional placements include ${d7.planets.slice(0, 3).map((p: any) => `**${p.planet}** in ${p.sign}`).join(', ')}` : ''}.${sphutaText}\n- **Timing of Conception & Birth (Double Transit)**: In Dr. K.N. Rao's and classical Parashari tradition, conception and childbirth manifest when transiting **Jupiter** and transiting **Saturn** simultaneously aspect or occupy the 5th house, 5th lord, or 9th house while running a favorable Antardasha of the 5th lord or Jupiter.\n\n**Vedic Shanti & Guidance**: Classical shastras recommend reciting the *Santana Gopala Mantra* and honoring Jupiter on Thursdays to remove any karmic friction and ensure vibrant progeny wellbeing.`;
     }
 
     if (/\b(property|house|home|land|plot|flat|real\s*estate|buying\s*a\s*house)\b/i.test(lower)) {

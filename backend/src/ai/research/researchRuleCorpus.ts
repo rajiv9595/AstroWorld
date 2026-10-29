@@ -1154,6 +1154,194 @@ export const RESEARCH_RULES_CORPUS: ResearchRule[] = [
     classicalDictum: 'Truth is established by the confluence of three independent witnesses: Shastra, Yukti, and Gochara.',
     modernApplication: 'Ensures our AI Council delivers predictions exceeding 90% empirical accuracy without hardcoding or superficial guessing.',
     keywords: ['multi system convergence', 'master synthesis', 'triple verification', 'predictive confidence', 'production grade']
+  },
+
+  // =========================================================================
+  // XIII. ADVANCED SHODASHAVARGA & SPHUTA MATHEMATICS (RULES 301–330)
+  // =========================================================================
+  {
+    id: 'RULE_301_FOUR_HORA_ALGORITHMS',
+    ruleNumber: 301,
+    category: 'mathematical',
+    name: 'D-2 Hora: Parashari, Kashinatha & Parivritti Dwaya',
+    formula: 'Parashari: Odd 0-15° Leo (Sun effort), 15-30° Cancer (Moon flow); Even opposite. Kashinatha: Day planets in Sun-equivalent signs, Night in Moon-equivalent.',
+    authority: 'BPHS Ch. 6 & Jaimini Sutras',
+    classicalDictum: 'Sun Hora generates wealth through self-command and authoritative enterprise; Moon Hora confers wealth through liquid trade and social circulation.',
+    modernApplication: 'Analyzes whether wealth is built through executive enterprise (Sun) or capital markets and liquid asset flows (Moon).',
+    keywords: ['hora', 'd2', 'parashari hora', 'kashinatha hora', 'wealth modality']
+  },
+  {
+    id: 'RULE_302_FOUR_DREKKANA_SYSTEMS',
+    ruleNumber: 302,
+    category: 'mathematical',
+    name: 'D-3 Drekkana: Sarpa, Ayudha, Pakshi & Nigada Classifications',
+    formula: 'Parashari 1st=same, 2nd=5th, 3rd=9th. Sarpa (Scorpio/Cancer/Pisces decans: poison/entanglement); Ayudha (weapon/surgery); Pakshi (travel/aviation); Nigada (confinement).',
+    authority: 'Brihat Jataka Ch. 5 & Saravali Ch. 50',
+    classicalDictum: 'When the 22nd Drekkana or 8th lord falls in an Ayudha or Sarpa Drekkana without benefic aspect, acute surgical or toxic crisis manifests.',
+    modernApplication: 'Crucial for accident, surgical risk, and aviation liability diagnostics in medical and mundane charts.',
+    keywords: ['drekkana', 'd3', 'sarpa drekkana', 'ayudha drekkana', '22nd drekkana']
+  },
+  {
+    id: 'RULE_304_D7_SAPTAMSHA_PROGENY',
+    ruleNumber: 304,
+    category: 'combinations',
+    name: 'D-7 Saptamsha Fertility & Progeny Dynamics',
+    formula: 'Odd signs count consecutively from sign itself; Even signs count from 7th sign from it (4°17\'08.57" per division). 5th=1st child, 7th=2nd, 9th=3rd.',
+    authority: 'BPHS Ch. 6 (Saptamsha) & Jataka Bharanam',
+    classicalDictum: 'Maharishi Parashara states children, grandchildren, and creative lineage must be scrutinized strictly from the Saptamsha.',
+    modernApplication: 'Differentiates biological fertility from adoption, IVF success windows, and sequential gender analysis of progeny.',
+    keywords: ['saptamsha', 'd7', 'progeny', 'fertility', 'children timing']
+  },
+  {
+    id: 'RULE_311_D30_TRIMSHAMSHA_UNEQUAL',
+    ruleNumber: 311,
+    category: 'medical',
+    name: 'D-30 Trimshamsha Unequal Tattwa Divisions for Pathology & Trauma',
+    formula: 'Odd signs: Mars (0-5° Agni), Saturn (5-10° Vayu), Jupiter (10-18° Akasha), Mercury (18-25° Prithvi), Venus (25-30° Jala). Even signs reverse order.',
+    authority: 'BPHS Ch. 6 & Saravali',
+    classicalDictum: 'The Trimshamsha maps past-life karmic blemishes and organic diseases into the five elemental tissues of the physical vehicle.',
+    modernApplication: 'Pinpoints whether acute somatic crises originate from inflammation/surgery (Agni), nervous/degenerative degeneration (Vayu), or endocrine dysregulation (Jala).',
+    keywords: ['trimshamsha', 'd30', 'five elements', 'tattwa pathology', 'medical crisis']
+  },
+  {
+    id: 'RULE_314_VAISHESHIKAMSHA_DIGNITY',
+    ruleNumber: 314,
+    category: 'mathematical',
+    name: 'Vaisheshikamsha Multi-Divisional Dignity Scoring',
+    formula: 'Count own/exaltation/moolatrikona dignities across Shodashavarga: 2=Parijata, 3=Uttama, 4=Gopura, 5=Simhasana, 6=Paravata, 7=Devaloka, 8=Brahmaloka, 9=Sakravahana, 10+=Shridhama.',
+    authority: 'BPHS Ch. 6, Sl. 45–52',
+    classicalDictum: 'A planet in Simhasana or Devaloka confers the glory of a king and global authority; in Shridhama, it alters world destiny.',
+    modernApplication: 'Mathematical discriminator measuring the true scale of institutional power and billionaire-tier enduring legacy.',
+    keywords: ['vaisheshikamsha', 'parijata', 'simhasana', 'devaloka', 'varga dignity']
+  },
+  {
+    id: 'RULE_320_BEEJA_KSHETRA_SPHUTA',
+    ruleNumber: 320,
+    category: 'medical',
+    name: 'Beeja & Kshetra Sphuta Biological Fertility Points',
+    formula: 'Beeja (Male) = (Sun + Venus + Jupiter) mod 360°; Kshetra (Female) = (Moon + Mars + Jupiter) mod 360°. Beeja must fall in Odd, Kshetra in Even signs & Navamshas.',
+    authority: 'BPHS Ch. 16 & Phaladeepika Ch. 12',
+    classicalDictum: 'If Beeja and Kshetra Sphutas are pure in appropriate signs, biological conception is fruitful; affliction causes barrenness.',
+    modernApplication: 'Guides clinical reproductive inquiries, identifying whether fertility friction is male-factor (sperm) or female-factor (ovulation/uterus).',
+    keywords: ['beeja sphuta', 'kshetra sphuta', 'fertility point', 'conception', 'reproductive vitality']
+  },
+  {
+    id: 'RULE_325_FIVE_SOLAR_UPAGRAHAS',
+    ruleNumber: 325,
+    category: 'mathematical',
+    name: 'Five Solar Upagrahas (Dhuma, Vyatipata, Parivesha, Indrachapa, Upaketu)',
+    formula: 'Dhuma = Sun + 133°20\'; Vyatipata = 360° - Dhuma; Parivesha = Vyatipata + 180\'; Indrachapa = 360° - Parivesha; Upaketu = Indrachapa + 16°40\' (Upaketu + 30° = Sun).',
+    authority: 'BPHS Ch. 3 & Jataka Parijata Ch. 3',
+    classicalDictum: 'The non-luminous dark rays of the Sun cast shadow afflictions (Dhuma and Vyatipata) or protective halos (Parivesha) across the zodiac.',
+    modernApplication: 'Warns of acute combustion hazards and hidden organizational liabilities when conjunct key angles or birth cusps.',
+    keywords: ['solar upagrahas', 'dhuma', 'vyatipata', 'parivesha', 'indrachapa', 'upaketu']
+  },
+
+  // =========================================================================
+  // XIV. NAKSHATRA RAHASYA & TIMING MECHANICS (RULES 331–360)
+  // =========================================================================
+  {
+    id: 'RULE_331_PLANETARY_LATTA',
+    ruleNumber: 331,
+    category: 'timing',
+    name: 'Planetary Latta (Nakshatra Kick in Transit & Natal)',
+    formula: 'Forward: Sun kicks 12th, Mars kicks 3rd, Jupiter kicks 6th, Saturn kicks 8th. Backward: Moon kicks 22nd, Mercury kicks 7th, Venus kicks 5th, Rahu kicks 9th.',
+    authority: 'Prasna Marga Ch. 10 & Sarvatobhadra Shastra',
+    classicalDictum: 'When a transiting malefic casts its Latta kick onto the Janma Nakshatra or running Dasha star, the native suffers an unexpected shock.',
+    modernApplication: 'Precise trigger mechanism explaining why sudden legal, professional, or health crises strike during an apparently benign transit.',
+    keywords: ['latta', 'nakshatra kick', 'purva latta', 'pashchima latta', 'transit shock']
+  },
+  {
+    id: 'RULE_335_SARVATOBHADRA_CHAKRA_SBC',
+    ruleNumber: 335,
+    category: 'timing',
+    name: 'Sarvatobhadra Chakra (SBC 9x9 Threefold Vedha & Pancha Vedha)',
+    formula: 'Direct planets pierce Left & Front; Retrograde pierce Right diagonal; Fast pierce Front. Simultaneous piercing of Janma Nakshatra, Rashi, Akshara, Tithi, Vara = crisis.',
+    authority: 'BPHS Ch. 45 & Narapati Jayacharya',
+    classicalDictum: 'The Sarvatobhadra Chakra is the supreme emperor of astrological charts, revealing all victory, defeat, and existential hazards.',
+    modernApplication: 'Institutional risk assessment for corporate leaders, geopolitical timing, and critical life turning points.',
+    keywords: ['sarvatobhadra', 'sbc', 'pancha vedha', 'sammukha vedha', 'abhijit']
+  },
+  {
+    id: 'RULE_337_SPECIAL_KARMIC_NAKSHATRAS',
+    ruleNumber: 337,
+    category: 'timing',
+    name: 'Special Karmic Nakshatras Counted from Janma Star',
+    formula: '4th Jati (community), 10th Karma (career), 12th Desha (relocation), 16th Sanghatika (alliances), 18th Samudayika (masses), 19th Adhana (conception), 22nd Vainashika (destruction), 27th Abhisheka (crowning).',
+    authority: 'Brihat Samhita & Phaladeepika',
+    classicalDictum: 'Malefics transiting the Vainashika or Sanghatika star bring treachery and surgical crisis; benefics over the Karma or Abhisheka star bring coronation.',
+    modernApplication: 'Maps high-precision milestone dates for executive promotions, group venture investments, and sudden relocations.',
+    keywords: ['karmic nakshatras', 'karma star', 'vainashika', 'abhisheka', 'sanghatika']
+  },
+  {
+    id: 'RULE_339_PUSHKARA_BHAGA',
+    ruleNumber: 339,
+    category: 'mathematical',
+    name: 'Pushkara Bhaga (24 Exact Single Degrees of Supreme Fortune)',
+    formula: 'Exact 1° zones: Fire 21° & 24°; Earth 14° & 9°; Air 18° & 24°; Water 7° & 2°. Any planet or cusp within 1° attains extraordinary resilience.',
+    authority: 'Jataka Parijata & Chandra Kala Nadi',
+    classicalDictum: 'Even a planet in deep debilitation or enemy sign, if seated on its exact Pushkara Bhaga degree, delivers royal wealth and divine protection.',
+    modernApplication: 'Identifies miracle chart anchors that protect the native during economic recessions, health collapses, or hostile corporate attacks.',
+    keywords: ['pushkara bhaga', 'exact degree', 'supreme fortune', 'chart resilience', 'divine grace']
+  },
+  {
+    id: 'RULE_343_TRIPUSHKARA_DWIPUSHKARA',
+    ruleNumber: 343,
+    category: 'timing',
+    name: 'Tripushkara & Dwipushkara Yoga (Event Multiplication Rule)',
+    formula: 'Bhadra Tithi (2, 7, 12) + Sun/Tue/Sat + 3-Pada star (Krittika, Punarvasu, U.Phalguni, Vishakha, U.Ashadha, P.Bhadrapada) = Tripushkara (3x); 2-Pada = Dwipushkara (2x).',
+    authority: 'Muhurta Chintamani Ch. 1 & BPHS',
+    classicalDictum: 'Any action, loss, purchase, or illness initiated under Tripushkara repeats three times; under Dwipushkara, it repeats twice.',
+    modernApplication: 'Essential guidance for elective timing: ideal for purchasing appreciating assets; strictly avoided for taking loans or scheduling elective surgeries.',
+    keywords: ['tripushkara yoga', 'dwipushkara yoga', 'event multiplier', 'bhadra tithi', 'muhurta rule']
+  },
+
+  // =========================================================================
+  // XV. VENTURE WEALTH, CORPORATE STRATEGY & ADVANCED PRASHNA (RULES 377–400)
+  // =========================================================================
+  {
+    id: 'RULE_377_STARTUP_UNICORN_IPO_WINDFALL',
+    ruleNumber: 377,
+    category: 'career_wealth',
+    name: 'Startup Unicorn Valuation, VC Funding & IPO Windfall',
+    formula: '5th (intellectual property) + 8th (other people’s/VC capital) + 11th (exponential scale) linked with Rahu and Indu Lagna (IL) in D-1, D-9, and D-10.',
+    authority: 'Modern Research Corpus & Classical Dhana Sutras',
+    classicalDictum: 'Rahu rules the virtual multiplier; when linked with the 5th and 8th lords and Indu Lagna, it creates nine-figure wealth from intellectual concepts.',
+    modernApplication: 'Identifies tech founders, early venture capital partners, and tech executives destined for massive IPO liquidity events.',
+    keywords: ['unicorn valuation', 'startup equity', 'ipo windfall', 'venture capital', 'rahu indu lagna']
+  },
+  {
+    id: 'RULE_379_SECTORAL_STOCK_MARKET',
+    ruleNumber: 379,
+    category: 'career_wealth',
+    name: 'Sectoral Equity Allocation by Dominant Wealth Planet',
+    formula: 'Invest capital only in sectors governed by the planet ruling/occupying 2nd/5th/9th/11th with >= 5 Bindus in BAV: Sun=PSU/Gold/Energy; Moon=FMCG/Water; Mars=RealEstate/Defence; Merc=IT/Fintech; Jup=Banking; Ven=Luxury/EV; Sat=Oil/Mining; Rahu=AI/Crypto.',
+    authority: 'Research Corpus & Classical Graha-Dravya Shastra',
+    classicalDictum: 'One should only trade in commodities nourished by a planet holding high Bhinnashtakavarga strength in auspicious houses.',
+    modernApplication: 'Directs customized hedge fund and portfolio allocations aligned with the client’s astrological signature.',
+    keywords: ['sectoral stock market', 'equity allocation', 'commodity trading', 'bav bindus', 'portfolio optimization']
+  },
+  {
+    id: 'RULE_386_ASHTAMANGALA_108_COWRIES',
+    ruleNumber: 386,
+    category: 'prashna',
+    name: 'Ashtamangala Cowrie Shell Algorithm (Past, Present, Future)',
+    formula: '108 cowries divided into 3 heaps (Past, Present, Future); divide each by 8 (1=Sun, 2=Mars, 3=Jup, 4=Merc, 5=Ven, 6=Sat, 7=Moon, 8=Rahu). Trajectory reveals resolution.',
+    authority: 'Prasna Marga (Ch. 3 & Ch. 8)',
+    classicalDictum: 'The three heaps of Varatikas mirror the threefold flow of time; the remaining digits reveal the divine will of the Grahas.',
+    modernApplication: 'High-precision horary divination for complex business, matrimonial, or personal crossroads.',
+    keywords: ['ashtamangala', 'cowrie shells', 'prasna marga', 'three heaps', 'horary divination']
+  },
+  {
+    id: 'RULE_394_PRASHNA_COURT_LITIGATION',
+    ruleNumber: 394,
+    category: 'prashna',
+    name: 'Courtroom Litigation & Judge’s Verdict Determination',
+    formula: '1st = Plaintiff, 7th = Defendant, 10th = Judge, 4th = Decree. The party whose lord forms an Ithasala with the 10th lord wins the judge’s favor and decree.',
+    authority: 'Prasna Marga Ch. 27 & Tajika Neelakanthi',
+    classicalDictum: 'The 10th house is the seat of justice; the significator that applies to the 10th lord by Ithasala receives the favorable decree of the magistrate.',
+    modernApplication: 'Predicts trial outcomes, judicial disposition, and whether out-of-court arbitration is preferable.',
+    keywords: ['courtroom litigation', 'prashna lawsuit', 'judge verdict', '10th lord ithasala', 'legal decree']
   }
 ];
 
