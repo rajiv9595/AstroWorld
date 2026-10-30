@@ -214,6 +214,33 @@ async function main() {
       'Active Ashraya: ' + (sp?.nabhasaYogas.activeAshrayaYoga?.name || 'Mixed Modality') + ', Active Dala: ' + (sp?.nabhasaYogas.activeDalaYoga?.name || 'Mixed Kendras') + ', All Nabhasa Yogas: [' + (sp?.nabhasaYogas.allYogasFound.join(', ') || 'Standard') + ']'
     );
 
+    // Test 19: Tajika Sahams Sensitive Lots (Rules 917–925)
+    assert(
+      'Tajika Sahams Sensitive Lots (Rules 917–925)',
+      Boolean(
+        sp?.tajikaSahams &&
+        sp.tajikaSahams.punyaSaham &&
+        sp.tajikaSahams.vidyaSaham &&
+        sp.tajikaSahams.yashasSaham &&
+        sp.tajikaSahams.karmaSaham &&
+        sp.tajikaSahams.vivahaSaham &&
+        sp.tajikaSahams.putraSaham &&
+        sp.tajikaSahams.rogaSaham
+      ),
+      'Punya: ' + sp?.tajikaSahams.punyaSaham.sign + ' (' + sp?.tajikaSahams.punyaSaham.formattedDegree + '), Vidya: ' + sp?.tajikaSahams.vidyaSaham.sign + ', Karma: ' + sp?.tajikaSahams.karmaSaham.sign + ' (DayBirth: ' + sp?.tajikaSahams.isDayBirth + ')'
+    );
+
+    // Test 20: Academic Stream & D-24 Siddhamsha Engine (Rules 1006–1015)
+    assert(
+      'Academic Stream & D-24 Siddhamsha Engine (Rules 1006–1015)',
+      Boolean(
+        sp?.academicStream &&
+        sp.academicStream.primaryStream &&
+        sp.academicStream.evaluatedTracks.length >= 6
+      ),
+      'Primary Stream: ' + sp?.academicStream.primaryStream + ' (' + sp?.academicStream.primaryStreamScore + '% Compatibility), Secondary: ' + sp?.academicStream.secondaryStream
+    );
+
 
 
     console.log(`ASTROLOGY ENGINE INTEGRITY: ${passed} PASSED | ${failed} FAILED`);

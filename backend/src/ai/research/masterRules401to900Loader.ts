@@ -65,7 +65,7 @@ export class MasterRules401to900Index {
   public ensureLoaded(): void {
     if (this.isLoaded) return;
 
-    const files = ['6.md', '7.md', '8.md', '9.md', '10.md'];
+    const files = ['6.md', '7.md', '8.md', '9.md', '10.md', '11.md', '12.md'];
     for (const file of files) {
       const filePath = this.resolveFilePath(file);
       if (!fs.existsSync(filePath)) {
@@ -108,6 +108,16 @@ export class MasterRules401to900Index {
     if (ruleNum >= 826 && ruleNum <= 850) return 'lal_kitab_mechanics';
     if (ruleNum >= 851 && ruleNum <= 875) return 'meena2_nadi_pathology';
     if (ruleNum >= 876 && ruleNum <= 900) return 'neurosymbolic_ai_diagnostics';
+
+    if (ruleNum >= 901 && ruleNum <= 925) return 'tajika_yogas_and_sahams';
+    if (ruleNum >= 926 && ruleNum <= 950) return 'mantra_shastra_remedies';
+    if (ruleNum >= 951 && ruleNum <= 975) return 'biochemical_pathology';
+    if (ruleNum >= 976 && ruleNum <= 1005) return 'swara_shastra_horary';
+
+    if (ruleNum >= 1006 && ruleNum <= 1035) return 'academic_stream_d24';
+    if (ruleNum >= 1036 && ruleNum <= 1055) return 'education_career_divergence';
+    if (ruleNum >= 1056 && ruleNum <= 1075) return 'socioeconomic_tiering';
+    if (ruleNum >= 1076 && ruleNum <= 1100) return 'modern_sector_ai_recommender';
 
     if (lowerTitle.includes('kota') || lowerText.includes('kota chakra')) return 'kota_chakra';
     if (lowerTitle.includes('lajjitadi') || lowerText.includes('lajjita')) return 'lajjitadi_avasthas';
@@ -155,7 +165,7 @@ export class MasterRules401to900Index {
       }
 
       // Check for rule line: "401. **Formula (Baladi Avasthas — Five Age States & Result Multipliers):**"
-      const ruleMatch = line.match(/^(\d{3})\.\s+\*\*(.*?)\*\*(.*)$/);
+      const ruleMatch = line.match(/^(\d{3,4})\.\s+\*\*(.*?)\*\*(.*)$/);
       if (ruleMatch) {
         if (curRule) {
           pendingRules.push(curRule);
@@ -319,3 +329,5 @@ export class MasterRules401to900Index {
 }
 
 export const globalMasterRules401to900Index = new MasterRules401to900Index();
+
+export const globalMasterRulesIndex = globalMasterRules401to900Index;

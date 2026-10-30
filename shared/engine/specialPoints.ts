@@ -1468,6 +1468,298 @@ export function calculateNabhasaYogasFacts(
 }
 
 // =========================================================================
+// 15. TAJIKA SAHAMS (SENSITIVE MATHEMATICAL LOTS - RULES 917–925)
+// =========================================================================
+
+export interface SahamPoint {
+  name: string;
+  sanskritName: string;
+  longitude: number;
+  sign: ZodiacSign;
+  degreeInSign: number;
+  formattedDegree: string;
+  houseFromLagna: number;
+  signLord: PlanetName;
+  shastricSignificance: string;
+}
+
+export interface TajikaSahamsFacts {
+  isDayBirth: boolean;
+  punyaSaham: SahamPoint;
+  vidyaSaham: SahamPoint;
+  yashasSaham: SahamPoint;
+  karmaSaham: SahamPoint;
+  vivahaSaham: SahamPoint;
+  putraSaham: SahamPoint;
+  rogaSaham: SahamPoint;
+}
+
+function buildSahamPoint(
+  name: string,
+  sanskritName: string,
+  rawLong: number,
+  lagnaSignIndex: number,
+  significance: string
+): SahamPoint {
+  const norm = ((rawLong % 360) + 360) % 360;
+  const sIdx = Math.floor(norm / 30);
+  const deg = norm % 30;
+  const sign = ZODIAC_SIGNS[sIdx];
+  const house = ((sIdx - lagnaSignIndex + 12) % 12) + 1;
+  const signLord = SIGN_LORDS[sign];
+
+  return {
+    name,
+    sanskritName,
+    longitude: Number(norm.toFixed(4)),
+    sign,
+    degreeInSign: Number(deg.toFixed(4)),
+    formattedDegree: formatDMS(deg),
+    houseFromLagna: house,
+    signLord,
+    shastricSignificance: `${sanskritName} Saham sits at ${formatDMS(deg)} ${sign} in House ${house} (Lord: ${signLord}). ${significance}`,
+  };
+}
+
+export function calculateTajikaSahamsFacts(
+  sunLong: number,
+  moonLong: number,
+  lagnaLong: number,
+  lagnaSignIndex: number,
+  planets: PlanetPosition[]
+): TajikaSahamsFacts {
+  const sunHouse = Math.floor((((sunLong - lagnaLong + 360) % 360) / 30)) + 1;
+  const isDayBirth = sunHouse >= 7 && sunHouse <= 12;
+
+  const jup = planets.find((p) => p.name === 'Jupiter')?.siderealLongitude ?? 0;
+  const mars = planets.find((p) => p.name === 'Mars')?.siderealLongitude ?? 0;
+  const merc = planets.find((p) => p.name === 'Mercury')?.siderealLongitude ?? 0;
+  const ven = planets.find((p) => p.name === 'Venus')?.siderealLongitude ?? 0;
+  const sat = planets.find((p) => p.name === 'Saturn')?.siderealLongitude ?? 0;
+
+  const punyaLong = isDayBirth
+    ? moonLong - sunLong + lagnaLong
+    : sunLong - moonLong + lagnaLong;
+  const punyaSaham = buildSahamPoint(
+    'Fortune & Merit',
+    'Punya',
+    punyaLong,
+    lagnaSignIndex,
+    'Governs accumulated karmic fortune, divine blessings, and spontaneous prosperity (Rule 917).'
+  );
+
+  const vidyaLong = isDayBirth
+    ? sunLong - moonLong + lagnaLong
+    : moonLong - sunLong + lagnaLong;
+  const vidyaSaham = buildSahamPoint(
+    'Education & Intellect',
+    'Vidya',
+    vidyaLong,
+    lagnaSignIndex,
+    'Anchors formal degrees, academic retention, scientific learning, and scholarly distinctions (Rule 918).'
+  );
+
+  const yashasLong = jup - punyaSaham.longitude + lagnaLong;
+  const yashasSaham = buildSahamPoint(
+    'Fame & Public Renown',
+    'Yashas',
+    yashasLong,
+    lagnaSignIndex,
+    'Controls public recognition, viral reach, institutional honors, and professional stature (Rule 919).'
+  );
+
+  const karmaLong = mars - merc + lagnaLong;
+  const karmaSaham = buildSahamPoint(
+    'Career & Authority',
+    'Karma',
+    karmaLong,
+    lagnaSignIndex,
+    'Dictates executive command, professional autonomy, and corporate leadership impact (Rule 920).'
+  );
+
+  const vivahaLong = ven - sat + lagnaLong;
+  const vivahaSaham = buildSahamPoint(
+    'Marriage & Alliance',
+    'Vivaha',
+    vivahaLong,
+    lagnaSignIndex,
+    'Governs marital timing, spousal harmony, and strategic contractual partnerships (Rule 921).'
+  );
+
+  const putraLong = jup - mars + lagnaLong;
+  const putraSaham = buildSahamPoint(
+    'Progeny & Offspring',
+    'Putra',
+    putraLong,
+    lagnaSignIndex,
+    'Governs biological fertility, auspicious progeny, and creative intellectual offspring (Rule 922).'
+  );
+
+  const rogaLong = isDayBirth
+    ? lagnaLong - moonLong + lagnaLong
+    : moonLong - lagnaLong + lagnaLong;
+  const rogaSaham = buildSahamPoint(
+    'Health Vulnerability & Immunity',
+    'Roga',
+    rogaLong,
+    lagnaSignIndex,
+    'Pinpoints subtle bodily vulnerabilities, acute inflammation triggers, and immune resilience (Rule 923).'
+  );
+
+  return {
+    isDayBirth,
+    punyaSaham,
+    vidyaSaham,
+    yashasSaham,
+    karmaSaham,
+    vivahaSaham,
+    putraSaham,
+    rogaSaham,
+  };
+}
+
+// =========================================================================
+// 16. ACADEMIC STREAM & D-24 SIDDHAMSHA ENGINE (RULES 1006–1015)
+// =========================================================================
+
+export interface AcademicStreamTrack {
+  trackName: string;
+  compatibilityScore: number;
+  dominantPlanets: PlanetName[];
+  astrologicalRationale: string;
+}
+
+export interface AcademicStreamFacts {
+  primaryStream: string;
+  primaryStreamScore: number;
+  secondaryStream: string;
+  d24FifthHouseLord?: PlanetName;
+  d24NinthHouseLord?: PlanetName;
+  evaluatedTracks: AcademicStreamTrack[];
+  dashaOverrideNote: string;
+  shastricSignificance: string;
+}
+
+export function calculateAcademicStreamFacts(
+  ascendant: AscendantInfo,
+  planets: PlanetPosition[],
+  houses: HouseInfo[],
+  vargas?: Record<VargaCode, VargaChart>
+): AcademicStreamFacts {
+  const merc = planets.find((p) => p.name === 'Mercury');
+  const jup = planets.find((p) => p.name === 'Jupiter');
+  const sat = planets.find((p) => p.name === 'Saturn');
+  const mars = planets.find((p) => p.name === 'Mars');
+  const rahu = planets.find((p) => p.name === 'Rahu');
+  const sun = planets.find((p) => p.name === 'Sun');
+  const ven = planets.find((p) => p.name === 'Venus');
+
+  const lagnaSignIdx = ascendant.signIndex;
+
+  let d24H5Lord: PlanetName | undefined;
+  let d24H9Lord: PlanetName | undefined;
+  if (vargas?.D24) {
+    const d24LagnaSignIdx = vargas.D24.ascendantSignIndex;
+    if (typeof d24LagnaSignIdx === 'number' && d24LagnaSignIdx >= 0) {
+      d24H5Lord = SIGN_LORDS[ZODIAC_SIGNS[(d24LagnaSignIdx + 4) % 12]];
+      d24H9Lord = SIGN_LORDS[ZODIAC_SIGNS[(d24LagnaSignIdx + 8) % 12]];
+    }
+  }
+
+  const isAiryOrDual = (signIdx: number) => [1, 2, 5, 6, 8, 10, 11].includes(signIdx);
+  const mercAiryDual = merc ? isAiryOrDual(merc.signIndex) : false;
+
+  let aiScore = 70;
+  if (mercAiryDual) aiScore += 10;
+  if (jup && (jup.sign === 'Sagittarius' || jup.sign === 'Pisces' || jup.sign === 'Cancer')) aiScore += 8;
+  if (rahu && [2, 5, 10].includes(rahu.signIndex)) aiScore += 4;
+  aiScore = Math.min(96, Math.max(50, aiScore));
+
+  let dataScore = 70;
+  if (merc) dataScore += 10;
+  if (sat && [9, 10, 6].includes(sat.signIndex)) dataScore += 6;
+  if (rahu) dataScore += 6;
+  dataScore = Math.min(95, Math.max(50, dataScore));
+
+  let backendScore = 68;
+  if (sat) backendScore += 12;
+  if (merc) backendScore += 8;
+  if (mars && [0, 9].includes(mars.signIndex)) backendScore += 4;
+  backendScore = Math.min(94, Math.max(50, backendScore));
+
+  let bioScore = 60;
+  const h6SignIdx = (lagnaSignIdx + 5) % 12;
+  if (sun && sun.signIndex === h6SignIdx) bioScore += 12;
+  if (merc && jup) bioScore += 10;
+  if (mars && mars.signIndex === h6SignIdx) bioScore += 8;
+  bioScore = Math.min(92, Math.max(45, bioScore));
+
+  let vlsiScore = 62;
+  if (sun && mars) vlsiScore += 12;
+  if (sat) vlsiScore += 8;
+  vlsiScore = Math.min(90, Math.max(45, vlsiScore));
+
+  let finScore = 65;
+  if (merc && ven) finScore += 12;
+  if (jup) finScore += 8;
+  finScore = Math.min(91, Math.max(45, finScore));
+
+  const evaluatedTracks: AcademicStreamTrack[] = [
+    {
+      trackName: 'AI / Machine Learning Engineer',
+      compatibilityScore: aiScore,
+      dominantPlanets: ['Mercury', 'Rahu', 'Jupiter'],
+      astrologicalRationale: 'Mercury-Jupiter cognitive axis in D-1/D-24 paired with Rahu network amplification; mastery over algorithmic computation and statistical modeling (Rule 1010).',
+    },
+    {
+      trackName: 'Data Scientist & Data Intelligence Specialist',
+      compatibilityScore: dataScore,
+      dominantPlanets: ['Mercury', 'Jupiter', 'Saturn'],
+      astrologicalRationale: 'Analytical intellect in intellectual houses combined with deep structural data sorting; statistical inference and scalable datasets (Rule 1010).',
+    },
+    {
+      trackName: 'Backend & Distributed Systems Engineer',
+      compatibilityScore: backendScore,
+      dominantPlanets: ['Saturn', 'Mercury', 'Mars'],
+      astrologicalRationale: 'Saturnian infrastructure stability combined with Mercurial logic; scalable database systems, concurrency, and robust server reliability (Rule 1010/1011).',
+    },
+    {
+      trackName: 'Biomedical & Clinical Trial Researcher',
+      compatibilityScore: bioScore,
+      dominantPlanets: ['Sun', 'Mercury', 'Jupiter'],
+      astrologicalRationale: 'Clinical 6th/8th house service signatures intersecting with analytical research intelligence (Rule 1015).',
+    },
+    {
+      trackName: 'Electrical, Electronics & VLSI Engineering',
+      compatibilityScore: vlsiScore,
+      dominantPlanets: ['Sun', 'Mars', 'Saturn'],
+      astrologicalRationale: 'Solar energy and Martian circuitry dynamics applied to hardware architecture and microelectronics (Rule 1013).',
+    },
+    {
+      trackName: 'Corporate Finance & FinTech Specialist',
+      compatibilityScore: finScore,
+      dominantPlanets: ['Mercury', 'Venus', 'Jupiter'],
+      astrologicalRationale: '2nd and 11th wealth houses connecting with commercial Mercurial calculation and financial expansion (Rule 1020).',
+    },
+  ];
+
+  evaluatedTracks.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
+  const primary = evaluatedTracks[0];
+  const secondary = evaluatedTracks[1];
+
+  return {
+    primaryStream: primary.trackName,
+    primaryStreamScore: primary.compatibilityScore,
+    secondaryStream: secondary.trackName,
+    d24FifthHouseLord: d24H5Lord,
+    d24NinthHouseLord: d24H9Lord,
+    evaluatedTracks,
+    dashaOverrideNote: 'Age 16–21 Dasha-Stream Override Trick (Rule 1006): Academic stream selection is actively channeled through the running Mahadasha/Antardasha sub-period and its Nakshatra dispositor during the undergraduate entry window.',
+    shastricSignificance: `Highest Academic Alignment: ${primary.trackName} (${primary.compatibilityScore}% compatibility). Grounded in BPHS Ch. 6 (Siddhamsha D-24) & Research Corpus Rules 1006–1015.`,
+  };
+}
+
+// =========================================================================
 // MASTER ORCHESTRATOR: SPECIAL POINTS FACTS
 // =========================================================================
 
@@ -1491,6 +1783,8 @@ export interface SpecialPointsFacts {
   lajjitadiAvasthas: Record<PlanetName, LajjitadiAnalysis>;
   lalKitabTevas: LalKitabTevaFacts;
   nabhasaYogas: NabhasaYogaFacts;
+  tajikaSahams: TajikaSahamsFacts;
+  academicStream: AcademicStreamFacts;
 }
 
 export function calculateAllSpecialPoints(
@@ -1551,6 +1845,8 @@ export function calculateAllSpecialPoints(
   const lajjitadiAvasthas = calculateLajjitadiFacts(planets, houses, ascendant.signIndex);
   const lalKitabTevas = calculateLalKitabTevasFacts(planets, ascendant.signIndex);
   const nabhasaYogas = calculateNabhasaYogasFacts(planets, ascendant.signIndex);
+  const tajikaSahams = calculateTajikaSahamsFacts(sun.siderealLongitude, moon.siderealLongitude, ascendant.siderealLongitude, ascendant.signIndex, planets);
+  const academicStream = calculateAcademicStreamFacts(ascendant, planets, houses, vargas);
 
   return {
     induLagna,
@@ -1572,5 +1868,7 @@ export function calculateAllSpecialPoints(
     lajjitadiAvasthas,
     lalKitabTevas,
     nabhasaYogas,
+    tajikaSahams,
+    academicStream,
   };
 }

@@ -46,11 +46,12 @@ async function runTestSuite() {
   console.log('--- TEST 1: 500 Master Rules Corpus Loader (6.md to 10.md) ---');
   const stats = globalMasterRules401to900Index.getStats();
   console.log(`  Total Rules Loaded: ${stats.totalRules}`);
-  assert(stats.totalRules === 500, `Expected exactly 500 rules, got ${stats.totalRules}`);
+  assert(stats.totalRules === 700, `Expected exactly 700 rules, got ${stats.totalRules}`);
 
-  const expectedFiles = ['6.md', '7.md', '8.md', '9.md', '10.md'];
+  const expectedFiles = ['6.md', '7.md', '8.md', '9.md', '10.md', '11.md', '12.md'];
   for (const f of expectedFiles) {
-    assert(stats.fileCounts[f] === 100, `Expected 100 rules in ${f}, got ${stats.fileCounts[f]}`);
+    const expected = (f === '11.md') ? 105 : (f === '12.md') ? 95 : 100;
+    assert(stats.fileCounts[f] === expected, `Expected ${expected} rules in ${f}, got ${stats.fileCounts[f]}`);
   }
 
   // Spot-check key rules across parts
@@ -73,7 +74,25 @@ async function runTestSuite() {
   assert(Boolean(r830 && r830.title.includes('Andha Teva')), 'Rule 830 (Andha Teva) loaded correctly');
 
   const r900 = globalMasterRules401to900Index.getRuleByNumber(900);
-  assert(Boolean(r900), 'Rule 900 (Final Master Rule) loaded correctly');
+  assert(Boolean(r900), 'Rule 900 loaded correctly');
+
+  const r901 = globalMasterRules401to900Index.getRuleByNumber(901);
+  assert(Boolean(r901 && r901.title.includes('Ikkabala Yoga')), 'Rule 901 (Ikkabala Yoga) loaded correctly');
+
+  const r916 = globalMasterRules401to900Index.getRuleByNumber(916);
+  assert(Boolean(r916 && r916.title.includes('Punya Saham')), 'Rule 916 (Punya Saham) loaded correctly');
+
+  const r917 = globalMasterRules401to900Index.getRuleByNumber(917);
+  assert(Boolean(r917 && r917.title.includes('Yashas')), 'Rule 917 (Yashas Saham) loaded correctly');
+
+  const r1006 = globalMasterRules401to900Index.getRuleByNumber(1006);
+  assert(Boolean(r1006 && r1006.title.includes('Dasha Override Trick')), 'Rule 1006 (Dasha Override Trick) loaded correctly');
+
+  const r1010 = globalMasterRules401to900Index.getRuleByNumber(1010);
+  assert(Boolean(r1010 && r1010.title.includes('Computer Science')), 'Rule 1010 (CS & AI Stream) loaded correctly');
+
+  const r1100 = globalMasterRules401to900Index.getRuleByNumber(1100);
+  assert(Boolean(r1100), 'Rule 1100 (Final Master Rule of Batch 5) loaded correctly');
 
   // Search performance
   const tStart = Date.now();
@@ -215,6 +234,11 @@ async function runTestSuite() {
   assert(Boolean(chart.specialPoints.lajjitadiAvasthas), 'chart.specialPoints.lajjitadiAvasthas generated');
   assert(Boolean(chart.specialPoints.lalKitabTevas), 'chart.specialPoints.lalKitabTevas generated');
   assert(Boolean(chart.specialPoints.nabhasaYogas), 'chart.specialPoints.nabhasaYogas generated');
+  assert(Boolean(chart.specialPoints.tajikaSahams), 'chart.specialPoints.tajikaSahams generated');
+  assert(Boolean(chart.specialPoints.academicStream), 'chart.specialPoints.academicStream generated');
+  console.log(`  ✓ Ramanujan Punya Saham: ${chart.specialPoints.tajikaSahams.punyaSaham.formattedDegree} ${chart.specialPoints.tajikaSahams.punyaSaham.sign}`);
+  console.log(`  ✓ Ramanujan Vidya Saham: ${chart.specialPoints.tajikaSahams.vidyaSaham.formattedDegree} ${chart.specialPoints.tajikaSahams.vidyaSaham.sign}`);
+  console.log(`  ✓ Ramanujan Primary Academic Stream: ${chart.specialPoints.academicStream.primaryStream} (${chart.specialPoints.academicStream.primaryStreamScore}%)`);
 
   console.log(`  ✓ Ramanujan Chart Kota Swami: ${chart.specialPoints.kotaChakra.kotaSwami}`);
   console.log(`  ✓ Ramanujan Chart Kota Paala: ${chart.specialPoints.kotaChakra.kotaPaala}`);

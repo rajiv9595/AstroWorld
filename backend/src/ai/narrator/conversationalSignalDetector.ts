@@ -242,7 +242,7 @@ export class ConversationalSignalDetector {
 
     // 12. Conversational Register
     let conversationalRegister: ConversationalSignals['conversationalRegister'] = 'balanced_mentor';
-    if (/\b(hey|buddy|bro|dude|wassup|tell me straight|no bs|plain words|casually|yo)\b/i.test(lower) || (lower.length < 45 && !isScholar)) {
+    if (/\b(informally|in plain slang|casually|super casual)\b/i.test(lower)) {
       conversationalRegister = 'casual_direct';
     } else if (isScholar || intendedOutcome === 'technical_audit') {
       conversationalRegister = 'scholarly_technical';
