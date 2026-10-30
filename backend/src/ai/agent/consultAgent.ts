@@ -2629,7 +2629,11 @@ ${fifthKl ? `- **5th House from Karakamsha**: **${fifthKl}**, revealing natural 
 ### 5. Intent-Aligned Summary Verdict
 1. **Primary Enrolled Undergraduate Discipline**: **${enrolledField}**
 2. **Applied Professional Specialization**: **${careerField}**
-3. **Core Astrological Basis**: Dual convergence of 5th-house physical/energy indicators and 10th-house analytical/computational indicators across D-1, D-24, and Vimshottari life chapters.`;
+3. **Core Astrological Basis**: Dual convergence of 5th-house physical/energy indicators and 10th-house analytical/computational indicators across D-1, D-24, and Vimshottari life chapters.
+
+---
+
+### 6. Epistemic Calibration & Uncertainty Statement
 - **Astronomical Basis**: Evaluated from calculated Lagna ${lagna}, D9 ${d9Lagna}, D24 ${d24Lagna}, and 5th house disposition.
 - **Classical Shastric Grounding**: Brihat Parashara Hora Shastra (Ch. 6 & 24) and Jaimini Upadesha Sutras.
 - **Epistemic Humility**: Vedic astrology reveals intellectual faculties, cognitive archetypes, and broad disciplinary alignments. Specific degree titles and institutional names reflect modern educational conventions.`;
