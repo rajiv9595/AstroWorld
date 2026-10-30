@@ -1,13 +1,16 @@
 /**
- * ASTROWORLD — Master Rules 401–900 Corpus Loader (6.md to 10.md)
+ * ASTROWORLD — Master Rules 401–1200 Corpus Loader (6.md to 13.md)
  * 
  * Ingests, parses, and provides in-memory indexing and ultra-fast (<2ms) multi-index search
- * across all 500 classical and neuro-symbolic astrological rules (Rules 401–900):
+ * across all 800 classical and neuro-symbolic astrological rules (Rules 401–1200):
  * - 6.md: Rules 401–500 (Avasthas, Shadbala equations, 108 Navamsas, Jaimini/Tajika)
  * - 7.md: Rules 501–600 (32 Nabhasa Yogas, Panchanga/Muhurta, Clinical Pathology)
  * - 8.md: Rules 601–700 (12-Ascendant Functional Matrices, Kota Chakra Fortress, Kalachakra Dasha)
  * - 9.md: Rules 701–800 (27 Nakshatras Shaktis/Medical, Bhinnashtakavarga Bindu Triggers)
  * - 10.md: Rules 801–900 (60 Shashtiamsha D-60, Lal Kitab Mechanics & Pitri Rina, Meena-2 Nadi)
+ * - 11.md: Rules 901–1005 (16 Tajika Yogas, Sahams Formulas, Mantra Shastra, Biochemical Pathology)
+ * - 12.md: Rules 1006–1100 (D-24 Academic Streams, Socio-Economic Tiering, Modern Livelihood Models)
+ * - 13.md: Rules 1101–1200 (Temporal Lookback, ECE vs CSE Discriminator, All 12 Lagna Templates)
  */
 
 import * as fs from 'fs';
@@ -65,7 +68,7 @@ export class MasterRules401to900Index {
   public ensureLoaded(): void {
     if (this.isLoaded) return;
 
-    const files = ['6.md', '7.md', '8.md', '9.md', '10.md', '11.md', '12.md'];
+    const files = ['6.md', '7.md', '8.md', '9.md', '10.md', '11.md', '12.md', '13.md'];
     for (const file of files) {
       const filePath = this.resolveFilePath(file);
       if (!fs.existsSync(filePath)) {
@@ -118,6 +121,11 @@ export class MasterRules401to900Index {
     if (ruleNum >= 1036 && ruleNum <= 1055) return 'education_career_divergence';
     if (ruleNum >= 1056 && ruleNum <= 1075) return 'socioeconomic_tiering';
     if (ruleNum >= 1076 && ruleNum <= 1100) return 'modern_sector_ai_recommender';
+
+    if (ruleNum >= 1101 && ruleNum <= 1125) return 'temporal_dasha_lookback_ai_bugfix';
+    if (ruleNum >= 1126 && ruleNum <= 1155) return 'hypergranular_engineering_disambiguation';
+    if (ruleNum >= 1156 && ruleNum <= 1180) return 'medical_commerce_law_vocational_microstreams';
+    if (ruleNum >= 1181 && ruleNum <= 1200) return 'ascendant_academic_templates_and_guardrails';
 
     if (lowerTitle.includes('kota') || lowerText.includes('kota chakra')) return 'kota_chakra';
     if (lowerTitle.includes('lajjitadi') || lowerText.includes('lajjita')) return 'lajjitadi_avasthas';

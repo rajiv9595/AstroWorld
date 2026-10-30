@@ -1910,15 +1910,24 @@ EPISTEMIC GUARDRAIL: Explain compatibility as heuristic alignment (0–100), nev
         }
       }
       if (rd.masterRules401to900 && rd.masterRules401to900.length > 0) {
-        parts.push(`• Master Astrological Corpus Directives (Rules 401–1100 RAG):`);
+        parts.push(`• Master Astrological Corpus Directives (Rules 401–1200 RAG):`);
         for (const mr of rd.masterRules401to900) {
           parts.push(`  - [Rule ${mr.ruleNumber}] ${mr.title} (${mr.part} | ${mr.category}): ${mr.text.slice(0, 280)}...`);
         }
       }
       if (rd.academicStream) {
         const as = rd.academicStream;
-        parts.push(`• Academic & Livelihood Intelligence (Rules 1006–1070):`);
+        parts.push(`• Academic & Livelihood Intelligence (Rules 1006–1200):`);
         parts.push(`  - Primary Stream: ${as.primaryStream} (${as.primaryStreamScore}% Compatibility) | Secondary: ${as.secondaryStream}`);
+        if (as.hardwareToLogicRatio) {
+          parts.push(`  - Hardware-to-Logic Ratio (Rule 1193): Classification: ${as.hardwareToLogicRatio.classification} (Ratio: ${as.hardwareToLogicRatio.ratio}) — ${as.hardwareToLogicRatio.rationale}`);
+        }
+        if (as.enrolledVsCareer) {
+          parts.push(`  - Enrolled Degree vs Career Focus (Rule 1102 & 1200): Enrolled: ${as.enrolledVsCareer.enrolledDegreeBranch} -> Career: ${as.enrolledVsCareer.appliedCareerDomain} (Hybrid Pivot: ${as.enrolledVsCareer.isHybridPivot}) — ${as.enrolledVsCareer.synthesisNarrative}`);
+        }
+        if (as.temporalLookback) {
+          parts.push(`  - Temporal Dasha Lookback (Rule 1101): Inter Age: ${as.temporalLookback.interAdmissionAge}, UG Admission Age: ${as.temporalLookback.ugAdmissionAge}, First Job: ${as.temporalLookback.careerTransitionAge} — ${as.temporalLookback.shastricRule}`);
+        }
         if (as.jobVsBusiness) {
           parts.push(`  - Job vs Business Equation (Rule 1037): Job Score: ${as.jobVsBusiness.jobScore}, Business Score: ${as.jobVsBusiness.businessScore} -> Decision: ${as.jobVsBusiness.decision} (${as.jobVsBusiness.rationale})`);
         }

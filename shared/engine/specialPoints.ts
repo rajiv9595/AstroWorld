@@ -1629,6 +1629,28 @@ export interface AcademicStreamTrack {
   astrologicalRationale: string;
 }
 
+export interface HardwareToLogicRatioFacts {
+  hardwareScore: number;
+  logicScore: number;
+  ratio: number;
+  classification: 'PURE_CSE_IT' | 'ECE_HARDWARE_SOFTWARE_HYBRID' | 'CORE_EEE_MECHANICAL';
+  rationale: string;
+}
+
+export interface TemporalLookbackFacts {
+  interAdmissionAge: number; // 15.5 (Rule 1101)
+  ugAdmissionAge: number;    // 17.5 (Rule 1101)
+  careerTransitionAge: number; // 21.5 (Rule 1101)
+  shastricRule: string;
+}
+
+export interface EnrolledVsCareerFacts {
+  enrolledDegreeBranch: string;
+  appliedCareerDomain: string;
+  isHybridPivot: boolean;
+  synthesisNarrative: string;
+}
+
 export interface AcademicStreamFacts {
   primaryStream: string;
   primaryStreamScore: number;
@@ -1636,6 +1658,9 @@ export interface AcademicStreamFacts {
   d24FifthHouseLord?: PlanetName;
   d24NinthHouseLord?: PlanetName;
   evaluatedTracks: AcademicStreamTrack[];
+  hardwareToLogicRatio: HardwareToLogicRatioFacts;
+  temporalLookback: TemporalLookbackFacts;
+  enrolledVsCareer: EnrolledVsCareerFacts;
   jobVsBusiness: {
     jobScore: number;
     businessScore: number;
@@ -1653,6 +1678,26 @@ export interface AcademicStreamFacts {
   };
   dashaOverrideNote: string;
   shastricSignificance: string;
+}
+
+/**
+ * Deterministic Varga House Indexing Checksum (Rule 1103)
+ * Hp = ((Sp - SAsc) mod 12 + 12) mod 12 + 1
+ */
+export function computeVargaHousePlacements(
+  ascendantSignIdx: number,
+  planets: PlanetPosition[]
+): Record<string, { houseNumber: number; signIndex: number; sign: string }> {
+  const result: Record<string, { houseNumber: number; signIndex: number; sign: string }> = {};
+  for (const p of planets) {
+    const houseNumber = (((p.signIndex - ascendantSignIdx) % 12 + 12) % 12) + 1;
+    result[p.name] = {
+      houseNumber,
+      signIndex: p.signIndex,
+      sign: ZODIAC_SIGNS[p.signIndex],
+    };
+  }
+  return result;
 }
 
 export function calculateAcademicStreamFacts(
@@ -1719,12 +1764,59 @@ export function calculateAcademicStreamFacts(
   if (jup) finScore += 8;
   finScore = Math.min(91, Math.max(45, finScore));
 
+  // Hardware-to-Logic Disambiguation (Rule 1193 & Rule 1128)
+  const h4SignIdx = (lagnaSignIdx + 3) % 12;
+  const h5SignIdx = (lagnaSignIdx + 4) % 12;
+  const h9SignIdx = (lagnaSignIdx + 8) % 12;
+  const h10SignIdx = (lagnaSignIdx + 9) % 12;
+
+  let hardwareScore = 50;
+  if (mars && [h4SignIdx, h5SignIdx, h9SignIdx, h10SignIdx, lagnaSignIdx].includes(mars.signIndex)) hardwareScore += 20;
+  if (sun && [h4SignIdx, h5SignIdx, h9SignIdx, h10SignIdx].includes(sun.signIndex)) hardwareScore += 14;
+  if (sat && [h4SignIdx, h5SignIdx, h10SignIdx].includes(sat.signIndex)) hardwareScore += 10;
+
+  let logicScore = 50;
+  if (merc && [h4SignIdx, h5SignIdx, h10SignIdx, lagnaSignIdx, (lagnaSignIdx + 2) % 12].includes(merc.signIndex)) logicScore += 20;
+  if (rahu && [2, 5, 10].includes(rahu.signIndex)) logicScore += 12;
+  if (mercAiryDual) logicScore += 8;
+
+  const ratio = Math.round((hardwareScore / logicScore) * 100) / 100;
+  let classification: 'PURE_CSE_IT' | 'ECE_HARDWARE_SOFTWARE_HYBRID' | 'CORE_EEE_MECHANICAL' = 'ECE_HARDWARE_SOFTWARE_HYBRID';
+  let ratioRationale = '';
+  if (ratio > 1.6) {
+    classification = 'CORE_EEE_MECHANICAL';
+    ratioRationale = `Hardware/Circuitry vector (${hardwareScore}) significantly outweighs Software/Logic (${logicScore}) with ratio ${ratio} > 1.6 (Rule 1193). Favors Electrical/Mechanical/Civil core engineering.`;
+  } else if (ratio < 0.62) {
+    classification = 'PURE_CSE_IT';
+    ratioRationale = `Software/Logic vector (${logicScore}) significantly outweighs Hardware (${hardwareScore}) with ratio ${ratio} < 0.62 (Rule 1193). Favors pure Computer Science & Software Engineering.`;
+  } else {
+    classification = 'ECE_HARDWARE_SOFTWARE_HYBRID';
+    ratioRationale = `Balanced Hardware (${hardwareScore}) and Logic/Communication (${logicScore}) in the golden zone 0.65 ≤ ratio (${ratio}) ≤ 1.55 (Rule 1193). Fuses Martian/Solar circuits with Mercurial signal processing into Electronics & Communication Engineering (ECE).`;
+  }
+
+  let eceScore = 65;
+  if (classification === 'ECE_HARDWARE_SOFTWARE_HYBRID') eceScore += 26;
+  else if (classification === 'CORE_EEE_MECHANICAL') eceScore += 14;
+  else eceScore += 8;
+  eceScore = Math.min(95, Math.max(50, eceScore));
+
+  let mechScore = 60;
+  if (mars && sat) mechScore += 15;
+  if (classification === 'CORE_EEE_MECHANICAL') mechScore += 15;
+  mechScore = Math.min(92, Math.max(45, mechScore));
+
   const evaluatedTracks: AcademicStreamTrack[] = [
     {
       trackName: 'AI / Machine Learning Engineer',
       compatibilityScore: aiScore,
       dominantPlanets: ['Mercury', 'Rahu', 'Jupiter'],
       astrologicalRationale: 'Mercury-Jupiter cognitive axis in D-1/D-24 paired with Rahu network amplification; mastery over algorithmic computation and statistical modeling (Rule 1010).',
+    },
+    {
+      trackName: 'Electronics & Communication Engineering (ECE)',
+      compatibilityScore: eceScore,
+      dominantPlanets: ['Mars', 'Mercury', 'Sun'],
+      astrologicalRationale: 'Hardware-to-logic bridge fusing Martian circuitry/diodes with Mercurial signal processing and telecommunications (Rule 1128 & Rule 1193).',
     },
     {
       trackName: 'Data Scientist & Data Intelligence Specialist',
@@ -1756,15 +1848,45 @@ export function calculateAcademicStreamFacts(
       dominantPlanets: ['Mercury', 'Venus', 'Jupiter'],
       astrologicalRationale: '2nd and 11th wealth houses connecting with commercial Mercurial calculation and financial expansion (Rule 1020).',
     },
+    {
+      trackName: 'Mechanical & Heavy Systems Engineering',
+      compatibilityScore: mechScore,
+      dominantPlanets: ['Mars', 'Saturn'],
+      astrologicalRationale: 'Martian kinematics and Saturnian metallurgy applied to industrial machinery and structural design (Rule 1132).',
+    },
   ];
 
   evaluatedTracks.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
   const primary = evaluatedTracks[0];
   const secondary = evaluatedTracks[1];
 
+  // Decoupled 5th House (Enrolled Degree) vs 10th House (Applied Career) (Rules 1102 & 1200)
+  const h5Lord = SIGN_LORDS[ZODIAC_SIGNS[h5SignIdx]];
+  const h10Lord = SIGN_LORDS[ZODIAC_SIGNS[h10SignIdx]];
+
+  let enrolledBranch = 'Core / Circuit Engineering (ECE / Electrical)';
+  if (['Mercury', 'Venus'].includes(h5Lord) && classification === 'PURE_CSE_IT') {
+    enrolledBranch = 'Computer Science & Software Systems (CSE / IT)';
+  } else if (['Mars', 'Sun'].includes(h5Lord) || (mars && mars.signIndex === h5SignIdx)) {
+    enrolledBranch = classification === 'ECE_HARDWARE_SOFTWARE_HYBRID' ? 'Electronics & Communication Engineering (ECE)' : 'Electrical / Mechanical Engineering';
+  } else if (classification === 'ECE_HARDWARE_SOFTWARE_HYBRID') {
+    enrolledBranch = 'Electronics & Communication Engineering (ECE)';
+  }
+
+  let careerFocus = 'Software Architecture, Data & Intelligent Systems';
+  if (['Mars', 'Sun'].includes(h10Lord) && !merc) {
+    careerFocus = 'Industrial Core Engineering, Heavy Infrastructure & Public Sector (PSU)';
+  } else if (['Mercury', 'Saturn', 'Rahu'].includes(h10Lord) || (merc && merc.signIndex === h10SignIdx)) {
+    careerFocus = 'Software Engineering, AI/Data Intelligence & Enterprise IT Systems';
+  }
+
+  const isHybridPivot = enrolledBranch !== careerFocus;
+  const synthesisNarrative = isHybridPivot
+    ? `Undergraduate degree grounded in ${enrolledBranch} (governed by 5th house/D-24 and Age-17.5 Dasha), subsequently pivoting into ${careerFocus} under professional career transits (Rules 1102, 1105 & 1200).`
+    : `Direct alignment between undergraduate degree (${enrolledBranch}) and workplace career (${careerFocus}) (Rule 1102).`;
+
   // 1. Job vs Business Equation (Rule 1037)
   const h7SignIdx = (lagnaSignIdx + 6) % 12;
-  const h10SignIdx = (lagnaSignIdx + 9) % 12;
 
   let jobScore = 70;
   if (sat) jobScore += 10;
@@ -1815,6 +1937,25 @@ export function calculateAcademicStreamFacts(
     d24FifthHouseLord: d24H5Lord,
     d24NinthHouseLord: d24H9Lord,
     evaluatedTracks,
+    hardwareToLogicRatio: {
+      hardwareScore,
+      logicScore,
+      ratio,
+      classification,
+      rationale: ratioRationale,
+    },
+    temporalLookback: {
+      interAdmissionAge: 15.5,
+      ugAdmissionAge: 17.5,
+      careerTransitionAge: 21.5,
+      shastricRule: 'Rule 1101: Temporal Dasha Lookback Equation mandates evaluating Mahadasha/Antardasha active at Age 17.5 for undergraduate admissions rather than current timestamp.',
+    },
+    enrolledVsCareer: {
+      enrolledDegreeBranch: enrolledBranch,
+      appliedCareerDomain: careerFocus,
+      isHybridPivot,
+      synthesisNarrative,
+    },
     jobVsBusiness: {
       jobScore,
       businessScore: bizScore,
@@ -1831,7 +1972,7 @@ export function calculateAcademicStreamFacts(
       rationale: examRationale,
     },
     dashaOverrideNote: 'Age 16–21 Dasha-Stream Override Trick (Rule 1006): Academic stream selection is actively channeled through the running Mahadasha/Antardasha sub-period and its Nakshatra dispositor during the undergraduate entry window.',
-    shastricSignificance: `Highest Academic Alignment: ${primary.trackName} (${primary.compatibilityScore}% compatibility). Grounded in BPHS Ch. 6 (Siddhamsha D-24) & Research Corpus Rules 1006–1015.`,
+    shastricSignificance: `Highest Academic Alignment: ${primary.trackName} (${primary.compatibilityScore}% compatibility). Grounded in BPHS Ch. 6 (Siddhamsha D-24) & Research Corpus Rules 1006–1015, 1101–1128, 1193.`,
   };
 }
 

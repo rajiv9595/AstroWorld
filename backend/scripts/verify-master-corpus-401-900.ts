@@ -46,9 +46,9 @@ async function runTestSuite() {
   console.log('--- TEST 1: 500 Master Rules Corpus Loader (6.md to 10.md) ---');
   const stats = globalMasterRules401to900Index.getStats();
   console.log(`  Total Rules Loaded: ${stats.totalRules}`);
-  assert(stats.totalRules === 700, `Expected exactly 700 rules, got ${stats.totalRules}`);
+  assert(stats.totalRules === 800, `Expected exactly 800 rules, got ${stats.totalRules}`);
 
-  const expectedFiles = ['6.md', '7.md', '8.md', '9.md', '10.md', '11.md', '12.md'];
+  const expectedFiles = ['6.md', '7.md', '8.md', '9.md', '10.md', '11.md', '12.md', '13.md'];
   for (const f of expectedFiles) {
     const expected = (f === '11.md') ? 105 : (f === '12.md') ? 95 : 100;
     assert(stats.fileCounts[f] === expected, `Expected ${expected} rules in ${f}, got ${stats.fileCounts[f]}`);
@@ -93,6 +93,18 @@ async function runTestSuite() {
 
   const r1100 = globalMasterRules401to900Index.getRuleByNumber(1100);
   assert(Boolean(r1100), 'Rule 1100 (Final Master Rule of Batch 5) loaded correctly');
+
+  const r1101 = globalMasterRules401to900Index.getRuleByNumber(1101);
+  assert(Boolean(r1101 && r1101.title.includes('Temporal Dasha Lookback')), 'Rule 1101 (Temporal Dasha Lookback) loaded correctly');
+
+  const r1128 = globalMasterRules401to900Index.getRuleByNumber(1128);
+  assert(Boolean(r1128 && r1128.title.includes('Electronics & Communication')), 'Rule 1128 (ECE Hardware + Signal Bridge) loaded correctly');
+
+  const r1193 = globalMasterRules401to900Index.getRuleByNumber(1193);
+  assert(Boolean(r1193 && r1193.title.includes('ECE-CSE')), 'Rule 1193 (ECE vs CSE Discriminator) loaded correctly');
+
+  const r1200 = globalMasterRules401to900Index.getRuleByNumber(1200);
+  assert(Boolean(r1200 && r1200.title.includes('Unified Academic')), 'Rule 1200 (Unified Academic & Career Tensor) loaded correctly');
 
   // Search performance
   const tStart = Date.now();
@@ -236,9 +248,14 @@ async function runTestSuite() {
   assert(Boolean(chart.specialPoints.nabhasaYogas), 'chart.specialPoints.nabhasaYogas generated');
   assert(Boolean(chart.specialPoints.tajikaSahams), 'chart.specialPoints.tajikaSahams generated');
   assert(Boolean(chart.specialPoints.academicStream), 'chart.specialPoints.academicStream generated');
+  assert(Boolean(chart.specialPoints.academicStream.hardwareToLogicRatio), 'chart.specialPoints.academicStream.hardwareToLogicRatio generated (Rule 1193)');
+  assert(Boolean(chart.specialPoints.academicStream.temporalLookback), 'chart.specialPoints.academicStream.temporalLookback generated (Rule 1101)');
+  assert(Boolean(chart.specialPoints.academicStream.enrolledVsCareer), 'chart.specialPoints.academicStream.enrolledVsCareer generated (Rule 1102 & 1200)');
   console.log(`  ✓ Ramanujan Punya Saham: ${chart.specialPoints.tajikaSahams.punyaSaham.formattedDegree} ${chart.specialPoints.tajikaSahams.punyaSaham.sign}`);
   console.log(`  ✓ Ramanujan Vidya Saham: ${chart.specialPoints.tajikaSahams.vidyaSaham.formattedDegree} ${chart.specialPoints.tajikaSahams.vidyaSaham.sign}`);
   console.log(`  ✓ Ramanujan Primary Academic Stream: ${chart.specialPoints.academicStream.primaryStream} (${chart.specialPoints.academicStream.primaryStreamScore}%)`);
+  console.log(`  ✓ Ramanujan Hardware-to-Logic Classification: ${chart.specialPoints.academicStream.hardwareToLogicRatio.classification} (Ratio: ${chart.specialPoints.academicStream.hardwareToLogicRatio.ratio})`);
+  console.log(`  ✓ Ramanujan Enrolled vs Career: Enrolled "${chart.specialPoints.academicStream.enrolledVsCareer.enrolledDegreeBranch}" -> Career "${chart.specialPoints.academicStream.enrolledVsCareer.appliedCareerDomain}"`);
 
   console.log(`  ✓ Ramanujan Chart Kota Swami: ${chart.specialPoints.kotaChakra.kotaSwami}`);
   console.log(`  ✓ Ramanujan Chart Kota Paala: ${chart.specialPoints.kotaChakra.kotaPaala}`);
