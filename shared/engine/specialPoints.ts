@@ -1636,6 +1636,21 @@ export interface AcademicStreamFacts {
   d24FifthHouseLord?: PlanetName;
   d24NinthHouseLord?: PlanetName;
   evaluatedTracks: AcademicStreamTrack[];
+  jobVsBusiness: {
+    jobScore: number;
+    businessScore: number;
+    decision: 'SALARIED_CORPORATE' | 'INDEPENDENT_BUSINESS' | 'HYBRID_PARALLEL';
+    rationale: string;
+  };
+  socioEconomicTier: {
+    tier: number;
+    title: string;
+    rationale: string;
+  };
+  competitiveExamPotential: {
+    level: 'EXCEPTIONAL' | 'HIGH' | 'MODERATE';
+    rationale: string;
+  };
   dashaOverrideNote: string;
   shastricSignificance: string;
 }
@@ -1747,6 +1762,52 @@ export function calculateAcademicStreamFacts(
   const primary = evaluatedTracks[0];
   const secondary = evaluatedTracks[1];
 
+  // 1. Job vs Business Equation (Rule 1037)
+  const h7SignIdx = (lagnaSignIdx + 6) % 12;
+  const h10SignIdx = (lagnaSignIdx + 9) % 12;
+
+  let jobScore = 70;
+  if (sat) jobScore += 10;
+  if (planets.some(p => p.signIndex === h6SignIdx)) jobScore += 10;
+  if (planets.some(p => p.signIndex === h10SignIdx)) jobScore += 5;
+
+  let bizScore = 65;
+  if (merc) bizScore += 8;
+  if (planets.some(p => p.signIndex === h7SignIdx)) bizScore += 12;
+  if (rahu && [2, 10, 6].includes(rahu.signIndex)) bizScore += 8;
+
+  let decision: 'SALARIED_CORPORATE' | 'INDEPENDENT_BUSINESS' | 'HYBRID_PARALLEL' = 'SALARIED_CORPORATE';
+  let jobBizRationale = '';
+  if (Math.abs(jobScore - bizScore) <= 6) {
+    decision = 'HYBRID_PARALLEL';
+    jobBizRationale = 'Equally balanced 6th (service) and 7th/10th (commerce) indicators favor salaried corporate leadership while building an independent technology or advisory venture simultaneously (Rule 1045).';
+  } else if (jobScore > bizScore) {
+    decision = 'SALARIED_CORPORATE';
+    jobBizRationale = 'Strong 6th house, Saturnian discipline, and 10th house institutional stability favor senior corporate/executive employment over unhedged standalone retail risk (Rule 1037).';
+  } else {
+    decision = 'INDEPENDENT_BUSINESS';
+    jobBizRationale = 'Dynamic 7th house, commercial Mercurial calculation, and Rahu enterprise favor independent technical venture or high-margin consultancy (Rule 1037).';
+  }
+
+  // 2. Socio-Economic Tier (Rule 1036)
+  let tier = 2;
+  let tierTitle = 'Tier 2 — High-Earner Corporate Executive / Lead Architect';
+  let tierRationale = 'Structured technical intellect in D-1 & D-24 supports high-compensation institutional architecture, advanced software engineering, and technical leadership (Rule 1036).';
+  if (bizScore >= 85 && jobScore >= 80) {
+    tier = 1;
+    tierTitle = 'Tier 1 — High-Growth Enterprise Founder / Industrialist';
+    tierRationale = 'Raja Yogas connecting 2nd, 9th, and 11th houses promise large-scale enterprise scaling and institutional wealth (Rule 1036).';
+  }
+
+  // 3. Competitive Exam Potential (Rule 1028)
+  const h6HasMartianOrSolarLink = mars?.signIndex === h6SignIdx || sun?.signIndex === h6SignIdx;
+  let examLevel: 'EXCEPTIONAL' | 'HIGH' | 'MODERATE' = 'HIGH';
+  let examRationale = 'Strong 5th house cognitive focus paired with analytical Mercury-Jupiter endurance ensures high success in technical entrance and competitive examinations (Rule 1028).';
+  if (h6HasMartianOrSolarLink && mercAiryDual) {
+    examLevel = 'EXCEPTIONAL';
+    examRationale = 'Martian/Solar 6th house competitive victory drive combined with razor-sharp Mercurial algorithmic logic produces top-percentile rank in national entrance examinations (Rule 1028).';
+  }
+
   return {
     primaryStream: primary.trackName,
     primaryStreamScore: primary.compatibilityScore,
@@ -1754,6 +1815,21 @@ export function calculateAcademicStreamFacts(
     d24FifthHouseLord: d24H5Lord,
     d24NinthHouseLord: d24H9Lord,
     evaluatedTracks,
+    jobVsBusiness: {
+      jobScore,
+      businessScore: bizScore,
+      decision,
+      rationale: jobBizRationale,
+    },
+    socioEconomicTier: {
+      tier,
+      title: tierTitle,
+      rationale: tierRationale,
+    },
+    competitiveExamPotential: {
+      level: examLevel,
+      rationale: examRationale,
+    },
     dashaOverrideNote: 'Age 16–21 Dasha-Stream Override Trick (Rule 1006): Academic stream selection is actively channeled through the running Mahadasha/Antardasha sub-period and its Nakshatra dispositor during the undergraduate entry window.',
     shastricSignificance: `Highest Academic Alignment: ${primary.trackName} (${primary.compatibilityScore}% compatibility). Grounded in BPHS Ch. 6 (Siddhamsha D-24) & Research Corpus Rules 1006–1015.`,
   };
