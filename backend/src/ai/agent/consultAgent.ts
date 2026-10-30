@@ -853,6 +853,8 @@ export class ConsultAgent {
           researchData.lajjitadiAvasthas = bc.specialPoints.lajjitadiAvasthas;
           researchData.lalKitabTevas = bc.specialPoints.lalKitabTevas;
           researchData.nabhasaYogas = bc.specialPoints.nabhasaYogas;
+          researchData.tajikaSahams = bc.specialPoints.tajikaSahams;
+          researchData.academicStream = bc.specialPoints.academicStream;
         }
 
         toolPayloads.research_diagnostics = researchData;
@@ -1906,6 +1908,48 @@ EPISTEMIC GUARDRAIL: Explain compatibility as heuristic alignment (0–100), nev
         for (const jr of rd.jyotishaCorpusRules) {
           parts.push(`  - [${jr.id}] (${jr.section} | ${jr.status}): ${jr.text.slice(0, 200)}...`);
         }
+      }
+      if (rd.masterRules401to900 && rd.masterRules401to900.length > 0) {
+        parts.push(`• Master Astrological Corpus Directives (Rules 401–1100 RAG):`);
+        for (const mr of rd.masterRules401to900) {
+          parts.push(`  - [Rule ${mr.ruleNumber}] ${mr.title} (${mr.part} | ${mr.category}): ${mr.text.slice(0, 280)}...`);
+        }
+      }
+      if (rd.academicStream) {
+        const as = rd.academicStream;
+        parts.push(`• Academic & Livelihood Intelligence (Rules 1006–1070):`);
+        parts.push(`  - Primary Stream: ${as.primaryStream} (${as.primaryStreamScore}% Compatibility) | Secondary: ${as.secondaryStream}`);
+        if (as.jobVsBusiness) {
+          parts.push(`  - Job vs Business Equation (Rule 1037): Job Score: ${as.jobVsBusiness.jobScore}, Business Score: ${as.jobVsBusiness.businessScore} -> Decision: ${as.jobVsBusiness.decision} (${as.jobVsBusiness.rationale})`);
+        }
+        if (as.socioEconomicTier) {
+          parts.push(`  - Socio-Economic Tier (Rule 1036): Tier ${as.socioEconomicTier.tier} (${as.socioEconomicTier.title}) — ${as.socioEconomicTier.rationale}`);
+        }
+        if (as.competitiveExamPotential) {
+          parts.push(`  - Competitive Exam Aptitude (Rule 1028): Level: ${as.competitiveExamPotential.level} — ${as.competitiveExamPotential.rationale}`);
+        }
+        if (as.d24FifthHouseLord || as.d24NinthHouseLord) {
+          parts.push(`  - D-24 Siddhamsha Lords: 5th Lord: ${as.d24FifthHouseLord || 'N/A'}, 9th Lord: ${as.d24NinthHouseLord || 'N/A'}`);
+        }
+      }
+      if (rd.tajikaSahams) {
+        const ts = rd.tajikaSahams;
+        parts.push(`• Tajika Sahams Sensitive Arabic Lots (Rules 917–925): Punya: ${ts.punyaSaham.formattedDegree} in ${ts.punyaSaham.sign} (H${ts.punyaSaham.houseNumber}) | Vidya: ${ts.vidyaSaham.formattedDegree} in ${ts.vidyaSaham.sign} (H${ts.vidyaSaham.houseNumber}) | Yashas: ${ts.yashasSaham.formattedDegree} in ${ts.yashasSaham.sign} (H${ts.yashasSaham.houseNumber}) | Karma: ${ts.karmaSaham.formattedDegree} in ${ts.karmaSaham.sign} (H${ts.karmaSaham.houseNumber}) | Vivaha: ${ts.vivahaSaham.formattedDegree} in ${ts.vivahaSaham.sign} (H${ts.vivahaSaham.houseNumber})`);
+      }
+      if (rd.kotaChakra) {
+        const kc = rd.kotaChakra;
+        parts.push(`• Kota Chakra 28-Nakshatra Fortress Diagnostics (Rules 626–627): Swami: ${kc.kotaSwami}, Paala: ${kc.kotaPaala}, Siege State: ${kc.siegeState} | Stambha Occupants: ${kc.stambhaOccupants.join(', ') || 'None'} | Madhya: ${kc.madhyaOccupants.join(', ') || 'None'}`);
+      }
+      if (rd.lajjitadiAvasthas) {
+        const la = Object.entries(rd.lajjitadiAvasthas).map(([pl, st]: any) => `${pl}: ${st.dominantState}`).join(', ');
+        parts.push(`• Lajjitadi Psychological Avasthas (Rule 404): ${la}`);
+      }
+      if (rd.lalKitabTevas) {
+        const lk = rd.lalKitabTevas;
+        parts.push(`• Lal Kitab Tevas & Debts (Rules 830–833): Classification: ${lk.classification} (Andha: ${lk.isAndhaTeva}, Dharmi: ${lk.isDharmiTeva}) | Active Ancestral Debts: ${lk.debts.filter((d: any) => d.isActive).map((d: any) => d.debtName).join(', ') || 'None'}`);
+      }
+      if (rd.nabhasaYogas && rd.nabhasaYogas.length > 0) {
+        parts.push(`• Classical Nabhasa Yogas (Rules 501–505): ${rd.nabhasaYogas.join(', ')}`);
       }
     }
 
