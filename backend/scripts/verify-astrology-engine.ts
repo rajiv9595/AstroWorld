@@ -166,6 +166,56 @@ async function main() {
       'Pushkara Navamshas: ' + sp?.pushkaraSummary.pushkaraNavamshaPlanets.length + ', Pushkara Bhagas: ' + sp?.pushkaraSummary.pushkaraBhagaPlanets.length + ', Gandanta: ' + sp?.pushkaraSummary.gandantaPlanets.length
     );
 
+    // Test 15: Kota Chakra Fortress Grid & Siege Diagnostics (Rules 626–627)
+    assert(
+      'Kota Chakra Fortress Grid (Rules 626–627)',
+      Boolean(
+        sp?.kotaChakra &&
+        sp.kotaChakra.stambhaStars.length === 4 &&
+        sp.kotaChakra.madhyaStars.length === 8 &&
+        sp.kotaChakra.prakaraStars.length === 8 &&
+        sp.kotaChakra.bahyaEntryStars.length === 4 &&
+        sp.kotaChakra.bahyaExitStars.length === 4 &&
+        sp.kotaChakra.kotaSwami &&
+        sp.kotaChakra.kotaPaala
+      ),
+      'Swami: ' + sp?.kotaChakra.kotaSwami + ', Paala: ' + sp?.kotaChakra.kotaPaala + ', Siege State: ' + sp?.kotaChakra.siegeState + ', Stambha Occupants: [' + (sp?.kotaChakra.stambhaOccupants.join(', ') || 'None') + ']'
+    );
+
+    // Test 16: Lajjitadi Avasthas 6 Psychological States (Rule 404)
+    assert(
+      'Lajjitadi Avasthas Diagnostics (Rule 404)',
+      Boolean(
+        sp?.lajjitadiAvasthas &&
+        sp.lajjitadiAvasthas.Sun &&
+        sp.lajjitadiAvasthas.Moon &&
+        sp.lajjitadiAvasthas.Jupiter
+      ),
+      'Jupiter: ' + sp?.lajjitadiAvasthas.Jupiter.dominantState + ', Moon: ' + sp?.lajjitadiAvasthas.Moon.dominantState + ', Sun: ' + sp?.lajjitadiAvasthas.Sun.dominantState
+    );
+
+    // Test 17: Lal Kitab Special Tevas & Ancestral Debts (Rules 830–833)
+    assert(
+      'Lal Kitab Special Tevas & Ancestral Debts (Rules 830–833)',
+      Boolean(
+        sp?.lalKitabTevas &&
+        sp.lalKitabTevas.ancestralDebts.length === 9 &&
+        typeof sp.lalKitabTevas.isAndhaTeva === 'boolean' &&
+        typeof sp.lalKitabTevas.isAdhAndhaTeva === 'boolean' &&
+        typeof sp.lalKitabTevas.isNabaligTeva === 'boolean'
+      ),
+      'Classification: ' + sp?.lalKitabTevas.overallClassification + ', Active Ancestral Debts: ' + sp?.lalKitabTevas.activeDebtsCount + '/9'
+    );
+
+    // Test 18: Classical Nabhasa Yogas Continuous Geometries (Rules 501–505)
+    assert(
+      'Classical Nabhasa Yogas Engine (Rules 501–505)',
+      Boolean(sp?.nabhasaYogas && Array.isArray(sp.nabhasaYogas.allYogasFound)),
+      'Active Ashraya: ' + (sp?.nabhasaYogas.activeAshrayaYoga?.name || 'Mixed Modality') + ', Active Dala: ' + (sp?.nabhasaYogas.activeDalaYoga?.name || 'Mixed Kendras') + ', All Nabhasa Yogas: [' + (sp?.nabhasaYogas.allYogasFound.join(', ') || 'Standard') + ']'
+    );
+
+
+
     console.log(`ASTROLOGY ENGINE INTEGRITY: ${passed} PASSED | ${failed} FAILED`);
     console.log(`==================================================\n`);
 

@@ -58,6 +58,7 @@ import {
   calculateSpecialKarmicNakshatras,
   globalAstrologyCorpusIndex,
   globalJyotishaCorpusIndex,
+  globalMasterRules401to900Index,
 } from '../research/index.ts';
 import { NAKSHATRAS } from '../../../../shared/engine/constants.ts';
 
@@ -831,6 +832,27 @@ export class ConsultAgent {
             traditionScope: r.traditionScope,
             text: r.text,
           }));
+        }
+
+        // 16. Master Astrological Corpus Rules 401–900 Matches (6.md to 10.md)
+        const masterMatches = globalMasterRules401to900Index.search(question, { limit: 4 });
+        if (masterMatches.length > 0) {
+          researchData.masterRules401to900 = masterMatches.map((r: any) => ({
+            id: r.id,
+            ruleNumber: r.ruleNumber,
+            title: r.title,
+            part: r.part,
+            category: r.category,
+            text: r.text,
+          }));
+        }
+
+        // 17. Ingest Canonical Special Points from Core Engine
+        if (bc.specialPoints) {
+          researchData.kotaChakra = bc.specialPoints.kotaChakra;
+          researchData.lajjitadiAvasthas = bc.specialPoints.lajjitadiAvasthas;
+          researchData.lalKitabTevas = bc.specialPoints.lalKitabTevas;
+          researchData.nabhasaYogas = bc.specialPoints.nabhasaYogas;
         }
 
         toolPayloads.research_diagnostics = researchData;
