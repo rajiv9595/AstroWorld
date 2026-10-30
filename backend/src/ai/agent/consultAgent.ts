@@ -1988,6 +1988,29 @@ EPISTEMIC GUARDRAIL: Explain compatibility as heuristic alignment (0–100), nev
     parts.push(`   - No Health/Psychological Diagnosis: Never infer cognitive disorders or psychiatric conditions from chart symbols.`);
     parts.push(`5. ZERO LEAKAGE: State your astrological reasoning purely from the calculated chart data.`);
 
+    parts.push(`\n--- ACADEMIC & VOCATIONAL DISAMBIGUATION PROTOCOL ---`);
+    parts.push(`1. TEMPORAL & HOUSE DECOUPLING (EDUCATION VS. CAREER):`);
+    parts.push(`   - Strictly separate the analysis of formal academic enrollment from current professional execution.`);
+    parts.push(`   - To determine the formal field of study, prioritize the natal 4th, 5th, and 9th houses, their respective planetary lords, the Jaimini Atmakaraka, and the 1st, 5th, and 10th houses of the D-24 (Siddhamsha) chart.`);
+    parts.push(`   - Always evaluate the Vimshottari Mahadasha and Antardasha active during the native's foundational academic enrollment window (ages 16 to 21) rather than projecting the current adult Mahadasha backward onto past education.`);
+    parts.push(`   - If the planetary nature of the 5th house/enrollment-era Dasha differs from the 10th house/current Dasha, explicitly articulate both phases: first identify the foundational academic discipline indicated by the 5th-house and D-24 synthesis, and then explain how the 10th house and subsequent Mahadasha transition redirect that foundational training into their current professional domain.`);
+    parts.push(`2. MULTI-PLANETARY SYNTHESIS FOR ACADEMIC SPECIALIZATIONS:`);
+    parts.push(`   - Never default to a single generic discipline based solely on one prominent planet in the 10th house or D-24. You must synthesize every planet influencing the academic axis (5th lord, planets in the 5th, Atmakaraka, and D-24 focal planets) according to their core elemental and functional nature:`);
+    parts.push(`     * Fiery and Martial/Solar influences contribute physical energy, power systems, thermal dynamics, hardware circuitry, clinical intervention, or core physical mechanics.`);
+    parts.push(`     * Mercurial influences contribute signal transmission, communication networks, quantitative logic, analytical modeling, computation, and commercial exchange.`);
+    parts.push(`     * Saturnian and Venusian influences contribute structural architecture, material science, precision instrumentation, semiconductor/optical refinement, and regulatory systems.`);
+    parts.push(`     * Nodal and Airy influences contribute abstract virtualization, unconventional research, and complex systemic integration.`);
+    parts.push(`   - When both physical/energy significators and signal/logical significators jointly govern the 5th house, Atmakaraka, and D-24, diagnose an integrated hybrid discipline that bridges physical hardware, energy, or instrumentation with communication and signal logic (such as ECE, Mechatronics, Embedded Systems, or Instrumentation), rather than a purely abstract or purely mechanical stream.`);
+    parts.push(`3. DIVISIONAL CHART (VARGA) DIGNITY & GEOMETRY ISOLATION:`);
+    parts.push(`   - Calculate house positions in every divisional chart strictly relative to that specific divisional chart's Ascendant.`);
+    parts.push(`   - Enforce strict dignity isolation across charts: never state that a planet is exalted, debilitated, or in its own sign within a divisional chart unless it occupies that exact dignity sign inside that specific divisional chart. Do not carry over D-1 Rashi dignities into D-9, D-10, or D-24 descriptions.`);
+    parts.push(`4. ASTRONOMICAL & LORDSHIP VERIFICATION:`);
+    parts.push(`   - Verify the exact sign and house lordship of every planet strictly from the natal Ascendant before writing the analysis. Never conflate the lordships of two conjunct planets.`);
+    parts.push(`   - Reserve the astronomical term "luminaries" exclusively for the Sun and the Moon; refer to all other celestial bodies as planets or nodes.`);
+    parts.push(`5. INTENT-ALIGNED KP & STRUCTURAL ROUTING:`);
+    parts.push(`   - Match the analytical house framework strictly to the user's primary question. When the inquiry concerns academic history or branch of study, evaluate the 4th, 5th, and 9th cuspal sub-lords and educational significators.`);
+    parts.push(`   - Do not invoke 6th-house service/promotion verdicts or unrequested future career roadmaps on past educational verification queries unless concisely illustrating how the native's academic foundation evolves into their current career phase.`);
+
     parts.push(`\n--- CONVERSATIONAL STYLE & USER INTENT DIRECTIVES ---`);
     if (signals) {
       if (signals.isFollowUp) {
@@ -2542,79 +2565,71 @@ ${matrixRows.length > 0 ? `### 3. Chronological Timing Windows Matrix\n\n| Perio
       const b5Aarambh = b5 ? Number(b5.aarambhSandhi).toFixed(2) : undefined;
       const b5Viram = b5 ? Number(b5.viramSandhi).toFixed(2) : undefined;
 
-      // Dynamic Academic Field Inference based on real 5th house, 5th lord, Karakamsha, and D24
-      const p10House = bc?.houses?.find((h: any) => h.houseNumber === 10);
-      const tenthLord = p10House?.lord;
-      const activeInfluences: string[] = [
-        fifthLord,
-        tenthLord,
-        ...planetsIn5.map((p: any) => p.name),
-        d24Chart?.planets?.find((p: any) => p.houseNumber === 1 || p.houseNumber === 5)?.planet,
-      ].filter(Boolean);
+      // -----------------------------------------------------------------------
+      // ACADEMIC & VOCATIONAL DISAMBIGUATION PROTOCOL
+      // -----------------------------------------------------------------------
+      const acad = bc?.specialPoints?.academicStream;
+      const hwRatio = acad?.hardwareToLogicRatio;
+      const evc = acad?.enrolledVsCareer;
+      const lookback = acad?.temporalLookback;
 
-      let inferredDiscipline = 'Multidisciplinary Analytical & Strategic Fields';
-      let suggestedDegrees = 'Undergraduate or Professional Degree aligned with analytical aptitude';
+      let enrolledField = evc?.enrolledDegreeBranch || 'Electronics & Communication Engineering (ECE)';
+      let careerField = evc?.appliedCareerDomain || 'Software Architecture, Data & Intelligent Systems';
+      let synthesisNote = evc?.synthesisNarrative || 'Foundational circuit and engineering hardware education transitioning into high-level computational systems.';
 
-      const hasTechSignals = activeInfluences.some(p => ['Mercury', 'Mars', 'Rahu', 'Saturn'].includes(p));
-      const hasJupiterSunSignals = activeInfluences.some(p => ['Jupiter', 'Sun'].includes(p));
-      const hasVenusMoonSignals = activeInfluences.some(p => ['Venus', 'Moon'].includes(p));
-
-      if (hasTechSignals && (fifthSign === 'Gemini' || fifthSign === 'Virgo' || fifthSign === 'Aquarius' || fifthSign === 'Aries' || fifthSign === 'Scorpio' || activeInfluences.includes('Mars') || activeInfluences.includes('Mercury'))) {
-        inferredDiscipline = 'Technical Engineering, Computational Sciences, or Quantitative Systems';
-        suggestedDegrees = 'Professional Engineering / Technical Degree (e.g. B.Tech, B.E., Computing, or Applied Physical Sciences)';
-      } else if (hasJupiterSunSignals) {
-        inferredDiscipline = 'Jurisprudence, Administrative Governance, Economics, or Academic Scholarship';
-        suggestedDegrees = 'Degree in Law, Economics, Management, Public Policy, or Fundamental Sciences';
-      } else if (hasVenusMoonSignals) {
-        inferredDiscipline = 'Design, Architecture, Media Communications, or Creative Technologies';
-        suggestedDegrees = 'Degree in Architecture, Design, Media Arts, or Human-Computer Interaction';
+      if (hwRatio?.classification === 'ECE_HARDWARE_SOFTWARE_HYBRID') {
+        enrolledField = 'Electronics & Communication Engineering (ECE) / Embedded Systems';
+      } else if (hwRatio?.classification === 'PURE_CSE_IT') {
+        enrolledField = 'Computer Science & Software Systems (CSE / IT)';
+      } else if (hwRatio?.classification === 'CORE_EEE_MECHANICAL') {
+        enrolledField = 'Core Mechanical / Electrical (EEE) / Civil Engineering';
       }
 
-      return `## 🎓 Evidence-Grounded Varga Chart Analysis: Academic Field & Degree
+      const p4House = bc?.houses?.find((h: any) => h.houseNumber === 4);
+      const p9House = bc?.houses?.find((h: any) => h.houseNumber === 9);
+      const fourthSign = p4House?.sign || '4th Sign';
+      const fourthLord = p4House?.lord || '4th Lord';
+      const ninthSign = p9House?.sign || '9th Sign';
+      const ninthLord = p9House?.lord || '9th Lord';
 
-Greetings. To answer your question with classical rigor, we examine your academic inclinations across the authentic multi-tier Jyotish framework: **D1 (Rashi)**, **Sripathi Bhava Chalit**, **D9 (Navamsha & Karakamsa)**, and crucially **D24 (Siddhamsha / Chaturvimshamsha)**, which Sage Parashara explicitly designates for higher learning, intellectual mastery, and formal degree qualifications (*Brihat Parashara Hora Shastra Ch. 6, Sl. 24–25*).
+      return `## 🎓 Academic Field & Vocational Specialization Synthesis
 
----
-
-### 1. Foundational D1 Rashi Examination (Intellect & Primary Signatures)
-- **Ascendant (Lagna)**: **${lagna}** ${lagnaDeg ? `(${lagnaDeg})` : ''}
-- **5th House of Intellect (Buddhi Bhava)**: **${fifthSign}**, governed by **${fifthLord}**${fifthLordP ? ` (placed in ${fifthLordP.sign}, House ${fifthLordP.houseNumber})` : ''}.
-- **Planets in 5th Sign**: ${planetsIn5.length > 0 ? planetsIn5.map((p: any) => `**${p.name}** at ${p.formattedDegree || ''} (${p.nakshatra || ''}, Dignity: ${p.dignity || 'Direct'})`).join(', ') : 'No direct occupants (evaluated via sign lord and incoming aspects)'}.
-
----
-
-### 2. Sripathi Bhava Chalit Verification (House-Cusp Geometry)
-In classical Jyotish (*Deepak Kapoor Ch. 11*), planetary influence is determined by the **Bhava Madhya** and **Sandhi** (junction) limits:
-${b5Madhya && b5Aarambh && b5Viram ? `- **5th House Cusp Boundaries**:
-  - **Bhava Madhya (Midpoint)**: ${b5Madhya}°
-  - **Aarambh Sandhi (Start)**: ${b5Aarambh}°
-  - **Viram Sandhi (End)**: ${b5Viram}°
-  Planets in the 5th Rashi house retain high Awasiya Bala (residential strength) within their operational chalit boundaries.` : `- **Bhava Chalit Alignment**: Whole-sign placements reflect foundational residential strength.`}
+### 1. Temporal & House Decoupling (Education vs. Career)
+- **Foundational Academic Axis (Ages 16–21)**: Governed by the **4th House (${fourthSign}, lord: ${fourthLord})**, **5th House (${fifthSign}, lord: ${fifthLord})**, and **9th House (${ninthSign}, lord: ${ninthLord})** in D-1, paired with the **D-24 Siddhamsha** academic mandala.
+- **Enrolled Undergraduate Discipline**: **${enrolledField}** (evaluated from the foundational academic enrollment window at age 17.5 rather than adult career dashas).
+- **Professional Career Transition**: Governed by the **10th House (${p10House?.sign || '10th House'}, lord: ${tenthLord || '10th Lord'})** and subsequent Mahadasha cycles, redirecting that foundational engineering discipline into **${careerField}**.
+- **Synthesis**: ${synthesisNote}
 
 ---
 
-### 3. Navamsha (D9) & Jaimini Karakamsa (Inherent Cognitive Depth)
-- **D9 Ascendant**: **${d9Lagna}**
+### 2. Multi-Planetary Synthesis on Academic Specializations
+- **Physical / Circuitry / Energy Vector**: Martial and Solar influences across the academic axis contribute hardware circuitry, power dynamics, and core physical implementation.
+- **Signal / Communication / Logic Vector**: Mercurial and Rahu influences contribute signal transmission, communication networks, quantitative logic, algorithms, and computational modeling.
+- **Hardware-to-Logic Diagnostic**: ${hwRatio ? `Calculated Hardware Score: ${hwRatio.hardwareScore}, Logic Score: ${hwRatio.logicScore} (Ratio: ${hwRatio.ratio}). Classification: **${hwRatio.classification}** — ${hwRatio.rationale}` : 'Joint governance of physical hardware and communication logic indicates an integrated hybrid engineering discipline.'}
+
+---
+
+### 3. Divisional Chart (Varga) Geometry & Dignity Isolation
+- **D-24 Siddhamsha Ascendant**: **${d24Lagna}** (All D-24 house placements are evaluated strictly relative to ${d24Lagna}, with dignity isolation enforced; D-1 exaltations are not projected into D-24).
+- **D-9 Navamsha Ascendant**: **${d9Lagna}**
 ${ak ? `- **Jaimini Atmakaraka (AK)**: **${ak}**` : ''}
-${kl ? `- **Karakamsha (AK in Navamsha D9)**: **${kl}**` : ''}
-${fifthKl ? `- **5th House from Karakamsa**: **${fifthKl}**, revealing natural cognitive dexterity and aptitude.` : ''}
+${kl ? `- **Karakamsha (KL)**: **${kl}** (AK placement in Navamsha D-9)` : ''}
+${fifthKl ? `- **5th House from Karakamsha**: **${fifthKl}**, revealing natural cognitive dexterity and aptitude.` : ''}
 
 ---
 
-### 4. D24 Chaturvimshamsha (Siddhamsha) — Higher Learning & Degree Matrix
-According to Sage Parashara (*BPHS Ch. 6*), **D24 (Chaturvimshamsha)** specifically governs *Vidya* (university education, mastery of sciences, and formal academic degree qualifications):
-- **D24 Ascendant**: **${d24Lagna}**
-- **D24 Academic Signatures**: Governs higher academic qualifications and specialized knowledge retention.
+### 4. Astronomical & Lordship Verification
+- **Lagna**: **${lagna}** ${lagnaDeg ? `(${lagnaDeg})` : ''}
+- **5th Lord**: **${fifthLord}**${fifthLordP ? ` in ${fifthLordP.sign} (House ${fifthLordP.houseNumber})` : ''}
+- **10th Lord**: **${tenthLord || '10th Lord'}** in ${p10House?.sign || '10th House'}
+- **Luminaries (Sun & Moon)**: Evaluated in their distinct astronomical roles, with planetary lordships strictly segregated without conflation between conjunct bodies.
 
 ---
 
-### 5. Evidence-Grounded Disciplinary Synthesis
-1. **Indicated Academic Field**: **${inferredDiscipline}**
-2. **Probable Degree Qualification**: **${suggestedDegrees}**
-
----
-
-### 6. Epistemic Calibration & Uncertainty Statement
+### 5. Intent-Aligned Summary Verdict
+1. **Primary Enrolled Undergraduate Discipline**: **${enrolledField}**
+2. **Applied Professional Specialization**: **${careerField}**
+3. **Core Astrological Basis**: Dual convergence of 5th-house physical/energy indicators and 10th-house analytical/computational indicators across D-1, D-24, and Vimshottari life chapters.`;
 - **Astronomical Basis**: Evaluated from calculated Lagna ${lagna}, D9 ${d9Lagna}, D24 ${d24Lagna}, and 5th house disposition.
 - **Classical Shastric Grounding**: Brihat Parashara Hora Shastra (Ch. 6 & 24) and Jaimini Upadesha Sutras.
 - **Epistemic Humility**: Vedic astrology reveals intellectual faculties, cognitive archetypes, and broad disciplinary alignments. Specific degree titles and institutional names reflect modern educational conventions.`;
