@@ -591,6 +591,8 @@ export interface AIInterpretationContext {
   transits: TransitFacts;
   timingSignals: TimingSignal[];
   evidencePool: EvidenceRecord[];
+  /** Special sensitive points, sphutas, pushkara dignities, and karmic metrics */
+  specialPoints?: import('./specialPoints.ts').SpecialPointsFacts;
 }
 
 export interface NarrativeClaim {

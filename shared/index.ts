@@ -23,4 +23,5 @@ export * from './engine/provenance.ts';
 export * from './engine/chalit.ts';
 export * from './engine/upgrahas.ts';
 export * from './engine/pastCalibration.ts';
+export * from './engine/specialPoints.ts';
 export * from './engine/canonicalChart.ts';

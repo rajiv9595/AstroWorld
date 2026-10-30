@@ -39,6 +39,7 @@ import { calculateYogasAndDoshas } from './yogas.ts';
 import { calculateMidheaven, calculateChalitChart } from './chalit.ts';
 import { calculateAllUpgrahas } from './upgrahas.ts';
 import { calibratePastMilestones } from './pastCalibration.ts';
+import { calculateAllSpecialPoints } from './specialPoints.ts';
 
 export const DEFAULT_BIRTH_PROFILE: BirthProfile = {
   name: 'Swami Vivekananda',
@@ -376,6 +377,16 @@ export function computeCanonicalChart(
   );
 
   // 16. Evidence and Provenance Pool
+  // 15c. Special Sensitive Points, Sphutas, Pushkara & Karmic Mandala
+  const specialPoints = calculateAllSpecialPoints(
+    ascendant,
+    planets,
+    houses,
+    vargas,
+    panchanga?.tithi?.number || 1,
+    birthUtcDate.getUTCDay()
+  );
+
   const evidencePool = buildEvidencePool(
     ascendant,
     planets,
@@ -414,6 +425,7 @@ export function computeCanonicalChart(
     ashtakavarga,
     transits,
     timingSignals,
+    specialPoints,
     evidencePool,
   };
 }

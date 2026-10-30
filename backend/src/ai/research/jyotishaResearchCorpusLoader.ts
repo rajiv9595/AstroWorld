@@ -208,3 +208,4 @@ export class JyotishaResearchCorpusIndex {
 }
 
 export const globalJyotishaCorpusIndex = new JyotishaResearchCorpusIndex();
+

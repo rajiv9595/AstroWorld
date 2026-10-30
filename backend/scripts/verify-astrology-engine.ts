@@ -133,6 +133,39 @@ async function main() {
     );
 
     console.log(`\n==================================================`);
+    // Test 12: Special Sensitive Points & Diagnostics Engine
+    const sp = canonical.specialPoints;
+    assert(
+      'Special Sensitive Points & Diagnostics Engine',
+      Boolean(
+        sp &&
+        sp.induLagna &&
+        sp.yogiAvayogi &&
+        sp.bhriguBindu &&
+        sp.fertilitySphutas &&
+        sp.latta &&
+        sp.karmicNakshatras &&
+        sp.tripushkaraYoga &&
+        sp.vaisheshikamsha &&
+        sp.ayurvedicTridosha
+      ),
+      'Indu: ' + sp?.induLagna.induSign + ' (' + sp?.induLagna.totalKalas + ' Kalas), Yogi: ' + sp?.yogiAvayogi.yogiPlanet + ', Bhrigu Bindu: ' + sp?.bhriguBindu.formattedDegree + ' ' + sp?.bhriguBindu.sign + ', Tridosha: ' + sp?.ayurvedicTridosha.dominantDosha
+    );
+
+    // Test 13: Fertility Sphutas (Beeja & Kshetra) Validation
+    assert(
+      'Biological Fertility Sphutas (Beeja & Kshetra)',
+      Boolean(sp?.fertilitySphutas.beejaSphuta.sign && sp?.fertilitySphutas.kshetraSphuta.sign),
+      'Beeja: ' + sp?.fertilitySphutas.beejaSphuta.sign + ' (' + (sp?.fertilitySphutas.beejaSphuta.isAuspicious ? 'Auspicious' : 'Needs Support') + '), Kshetra: ' + sp?.fertilitySphutas.kshetraSphuta.sign + ' (' + (sp?.fertilitySphutas.kshetraSphuta.isAuspicious ? 'Auspicious' : 'Needs Support') + ')'
+    );
+
+    // Test 14: Pushkara & Gandanta Diagnostics
+    assert(
+      'Pushkara & Gandanta Matrix',
+      Boolean(sp?.pushkaraSummary && sp?.planetAnalyses),
+      'Pushkara Navamshas: ' + sp?.pushkaraSummary.pushkaraNavamshaPlanets.length + ', Pushkara Bhagas: ' + sp?.pushkaraSummary.pushkaraBhagaPlanets.length + ', Gandanta: ' + sp?.pushkaraSummary.gandantaPlanets.length
+    );
+
     console.log(`ASTROLOGY ENGINE INTEGRITY: ${passed} PASSED | ${failed} FAILED`);
     console.log(`==================================================\n`);
 
